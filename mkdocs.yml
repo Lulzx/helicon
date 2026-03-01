@@ -1,0 +1,94 @@
+site_name: MagNozzleX
+site_description: GPU-Accelerated Magnetic Nozzle Simulation & Detachment Analysis Toolkit
+site_url: https://magnozzlex.github.io/magnozzlex
+repo_url: https://github.com/magnozzlex/magnozzlex
+repo_name: magnozzlex/magnozzlex
+
+theme:
+  name: material
+  palette:
+    - scheme: default
+      primary: indigo
+      accent: blue
+      toggle:
+        icon: material/brightness-7
+        name: Switch to dark mode
+    - scheme: slate
+      primary: indigo
+      accent: blue
+      toggle:
+        icon: material/brightness-4
+        name: Switch to light mode
+  features:
+    - navigation.tabs
+    - navigation.sections
+    - navigation.top
+    - search.suggest
+    - content.code.annotate
+    - content.code.copy
+
+nav:
+  - Home: index.md
+  - Physics: physics.md
+  - User Guide:
+      - Installation: guide/install.md
+      - Quick Start: guide/quickstart.md
+      - Configuration: guide/configuration.md
+      - Running Simulations: guide/running.md
+      - Post-Processing: guide/postprocessing.md
+      - Parameter Scans: guide/scans.md
+      - Optimization: guide/optimization.md
+  - Validation:
+      - Overview: validation/index.md
+      - Free Expansion: validation/free_expansion.md
+      - Merino-Ahedo: validation/merino_ahedo.md
+      - VASIMR VX-200: validation/vasimr.md
+      - Resistive Detachment: validation/dimov.md
+  - API Reference:
+      - magnozzlex.fields: api/fields.md
+      - magnozzlex.config: api/config.md
+      - magnozzlex.runner: api/runner.md
+      - magnozzlex.postprocess: api/postprocess.md
+      - magnozzlex.optimize: api/optimize.md
+      - magnozzlex.validate: api/validate.md
+  - FAQ: faq.md
+  - Contributing: contributing.md
+  - Changelog: changelog.md
+
+plugins:
+  - search
+  - mkdocstrings:
+      handlers:
+        python:
+          options:
+            docstring_style: numpy
+            show_source: true
+            show_root_heading: true
+            show_category_heading: true
+            merge_init_into_class: true
+
+markdown_extensions:
+  - admonition
+  - pymdownx.details
+  - pymdownx.superfences
+  - pymdownx.highlight:
+      anchor_linenums: true
+  - pymdownx.inlinehilite
+  - pymdownx.snippets
+  - pymdownx.arithmatex:
+      generic: true
+  - attr_list
+  - md_in_html
+  - tables
+
+extra_javascript:
+  - https://polyfill.io/v3/polyfill.min.js?features=es6
+  - https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js
+
+extra:
+  social:
+    - icon: fontawesome/brands/github
+      link: https://github.com/magnozzlex/magnozzlex
+
+watch:
+  - magnozzlex/

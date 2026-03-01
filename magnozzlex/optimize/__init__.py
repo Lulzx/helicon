@@ -1,8 +1,15 @@
 """Nozzle design optimization — parameter scans, Bayesian optimization,
 Sobol sensitivity analysis, MLX gradient-based coil optimization,
-analytical pre-screening, and Pareto front computation.
+analytical pre-screening, Pareto front computation, and engineering
+constraint evaluation.
 """
 
+from magnozzlex.optimize.constraints import (
+    CoilConstraintResult,
+    CoilConstraints,
+    evaluate_constraints,
+    make_constrained_objective,
+)
 from magnozzlex.optimize.analytical import (
     NozzleScreeningResult,
     divergence_half_angle,
@@ -25,6 +32,8 @@ from magnozzlex.optimize.surrogate import BayesianOptimizer, GPSurrogate
 
 __all__ = [
     "BayesianOptimizer",
+    "CoilConstraintResult",
+    "CoilConstraints",
     "GPSurrogate",
     "NozzleScreeningResult",
     "OptimizationResult",
@@ -35,8 +44,10 @@ __all__ = [
     "SobolResult",
     "compute_sobol",
     "divergence_half_angle",
+    "evaluate_constraints",
     "generate_scan_points",
     "hypervolume_indicator",
+    "make_constrained_objective",
     "mirror_ratio",
     "optimize_coils_mlx",
     "pareto_front",

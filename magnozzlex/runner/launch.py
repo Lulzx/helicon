@@ -89,6 +89,9 @@ def run_simulation(
     # Step 3: Collect metadata
     meta = collect_metadata(config)
     meta["hardware"] = hardware.summary()
+    # Flag non-physical configurations for downstream citation guards
+    meta["mass_ratio_reduced"] = config.plasma.mass_ratio is not None
+    meta["electron_model"] = config.plasma.electron_model
     meta_path = out / "run_metadata.json"
     meta_path.write_text(json.dumps(meta, indent=2, default=str))
 

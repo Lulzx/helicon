@@ -65,6 +65,13 @@ class PlasmaSourceConfig(BaseModel):
         default=None,
         description="Ion-to-electron mass ratio. None = physical ratio.",
     )
+    electron_model: Literal["kinetic", "fluid"] = Field(
+        default="kinetic",
+        description=(
+            "Electron treatment: 'kinetic' (default, full PIC) or 'fluid' "
+            "(hybrid, faster parameter scans, less accurate electron detachment)."
+        ),
+    )
 
 
 class DiagnosticsConfig(BaseModel):

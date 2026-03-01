@@ -7,10 +7,13 @@ magnetic nozzle simulations.
 from __future__ import annotations
 
 import hashlib
+import logging
 import math
 from pathlib import Path
 
 from magnozzlex.config.parser import SimConfig
+
+log = logging.getLogger(__name__)
 
 # Species mass table [kg]
 SPECIES_MASS = {
@@ -114,14 +117,59 @@ def generate_warpx_input(config: SimConfig) -> str:
     lines.append("")
 
     eV_to_J = 1.602176634e-19
+    m_e_physical = SPECIES_MASS["e-"]
+
+    # Reduced mass ratio: override electron mass
+    reduced_mass_ratio = config.plasma.mass_ratio is not None and has_electrons
+    if reduced_mass_ratio:
+        mr = config.plasma.mass_ratio
+        log.warning(
+            "Reduced mass ratio m_i/m_e = %.1f requested. "
+            "Electron dynamics are qualitatively correct but quantitatively shifted. "
+            "Output will be flagged mass_ratio_reduced=true. "
+            "Use full physical ratio for publication-quality detachment predictions.",
+            mr,
+        )
+        # Use the lightest ion mass to compute effective electron mass
+        ion_species = [s for s in config.plasma.species if s != "e-"]
+        m_ion_ref = min(SPECIES_MASS.get(s, 1.67e-27) for s in ion_species) if ion_species else 1.67e-27
+        m_e_effective = m_ion_ref / mr
+    else:
+        m_e_effective = m_e_physical
+
+    # Fluid-hybrid electron mode
+    fluid_electrons = config.plasma.electron_model == "fluid" and has_electrons
+    if fluid_electrons:
+        lines.extend(
+            [
+                "################",
+                "# HYBRID ELECTRON MODEL",
+                "################",
+                "# Fluid (hybrid) electron model: faster than fully kinetic,",
+                "# less accurate for electron detachment physics.",
+                "warpx.do_hybrid_model = 1",
+                f"hybrid_model.Te_eV = {config.plasma.T_e_eV:.4f}",
+                f"hybrid_model.n0_m3 = {config.plasma.n0:.6e}",
+                "hybrid_model.plasma_resistivity = 0.0",
+                "",
+            ]
+        )
 
     for sp, safe_name in zip(config.plasma.species, species_names, strict=True):
+        # Skip electron particle species when using fluid model
+        if sp == "e-" and fluid_electrons:
+            continue
+
         mass = SPECIES_MASS.get(sp)
         charge = SPECIES_CHARGE.get(sp)
         if mass is None or charge is None:
             lines.append(f"# WARNING: Unknown species {sp}, using placeholder values")
             mass = mass or 1.67262192595e-27
             charge = charge or 1.602176634e-19
+
+        # Override electron mass for reduced mass ratio
+        if sp == "e-" and reduced_mass_ratio:
+            mass = m_e_effective
 
         T_eV = config.plasma.T_e_eV if sp == "e-" else config.plasma.T_i_eV
         T_J = T_eV * eV_to_J
@@ -149,9 +197,10 @@ def generate_warpx_input(config: SimConfig) -> str:
             ]
         )
 
-    # Mass ratio override
-    if config.plasma.mass_ratio is not None and has_electrons:
-        lines.append(f"# NOTE: Reduced mass ratio = {config.plasma.mass_ratio}")
+    if reduced_mass_ratio:
+        lines.append(f"# METADATA: mass_ratio_reduced = true (m_i/m_e = {config.plasma.mass_ratio})")
+    if fluid_electrons:
+        lines.append("# METADATA: electron_model = fluid")
 
     lines.extend(
         [
