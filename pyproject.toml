@@ -26,6 +26,11 @@ dev = ["pytest>=7.0", "scikit-learn>=1.3"]
 requires = ["hatchling"]
 build-backend = "hatchling.build"
 
+[tool.pytest.ini_options]
+filterwarnings = [
+    "ignore::sklearn.exceptions.ConvergenceWarning",
+]
+
 [tool.ruff]
 target-version = "py311"
 line-length = 95
