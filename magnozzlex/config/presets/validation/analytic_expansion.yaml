@@ -1,0 +1,31 @@
+# Free expansion validation case
+# Adiabatic expansion of Maxwellian plasma into diverging B-field
+# Tests: momentum conservation, basic thrust recovery
+nozzle:
+  type: solenoid
+  coils:
+    - z: 0.0
+      r: 0.10
+      I: 40000
+  domain:
+    z_min: -0.3
+    z_max: 2.0
+    r_max: 0.6
+  resolution:
+    nz: 256
+    nr: 128
+
+plasma:
+  species: ["H+", "e-"]
+  n0: 1.0e18
+  T_i_eV: 100.0
+  T_e_eV: 100.0
+  v_injection_ms: 50000.0
+
+diagnostics:
+  mode: analysis
+  field_dump_interval: 200
+  particle_dump_interval: 2000
+
+timesteps: 20000
+output_dir: results/validation/free_expansion

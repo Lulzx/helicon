@@ -1,0 +1,33 @@
+# Pulsar Sunbird (DDFD) reference configuration
+# Based on published parameters for a direct-drive fusion device
+nozzle:
+  type: converging_diverging
+  coils:
+    - z: 0.0
+      r: 0.15
+      I: 50000
+    - z: 0.3
+      r: 0.25
+      I: 30000
+  domain:
+    z_min: -0.5
+    z_max: 2.0
+    r_max: 0.8
+  resolution:
+    nz: 512
+    nr: 256
+
+plasma:
+  species: ["D+", "e-"]
+  n0: 1.0e19
+  T_i_eV: 5000.0
+  T_e_eV: 2000.0
+  v_injection_ms: 200000.0
+
+diagnostics:
+  mode: analysis
+  field_dump_interval: 500
+  particle_dump_interval: 5000
+
+timesteps: 50000
+output_dir: results/sunbird

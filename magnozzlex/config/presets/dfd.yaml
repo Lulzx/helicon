@@ -1,0 +1,33 @@
+# Princeton Direct Fusion Drive reference configuration
+# Two-coil converging-diverging nozzle geometry
+nozzle:
+  type: converging_diverging
+  coils:
+    - z: 0.0
+      r: 0.20
+      I: 60000
+    - z: 0.5
+      r: 0.35
+      I: 25000
+  domain:
+    z_min: -0.8
+    z_max: 3.0
+    r_max: 1.0
+  resolution:
+    nz: 512
+    nr: 256
+
+plasma:
+  species: ["D+", "He3+", "e-"]
+  n0: 5.0e18
+  T_i_eV: 8000.0
+  T_e_eV: 3000.0
+  v_injection_ms: 250000.0
+
+diagnostics:
+  mode: analysis
+  field_dump_interval: 500
+  particle_dump_interval: 5000
+
+timesteps: 50000
+output_dir: results/dfd

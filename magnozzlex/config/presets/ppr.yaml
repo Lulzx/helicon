@@ -1,0 +1,30 @@
+# Howe Pulsed Plasma Rocket reference configuration
+# Single strong solenoid for pulsed plasma acceleration
+nozzle:
+  type: solenoid
+  coils:
+    - z: 0.0
+      r: 0.10
+      I: 80000
+  domain:
+    z_min: -0.3
+    z_max: 1.5
+    r_max: 0.5
+  resolution:
+    nz: 512
+    nr: 256
+
+plasma:
+  species: ["H+", "e-"]
+  n0: 2.0e19
+  T_i_eV: 3000.0
+  T_e_eV: 1500.0
+  v_injection_ms: 150000.0
+
+diagnostics:
+  mode: analysis
+  field_dump_interval: 250
+  particle_dump_interval: 2500
+
+timesteps: 30000
+output_dir: results/ppr
