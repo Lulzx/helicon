@@ -15,6 +15,7 @@ import numpy as np
 try:
     from sklearn.gaussian_process import GaussianProcessRegressor
     from sklearn.gaussian_process.kernels import Matern
+    from sklearn.preprocessing import StandardScaler
 
     HAS_SKLEARN = True
 except ImportError:
@@ -57,23 +58,33 @@ class GPSurrogate:
                 "scikit-learn is required for GPSurrogate. "
                 "Install with: pip install scikit-learn"
             )
-        kernel = Matern(nu=2.5)
+        # Wider bounds avoid hitting the lower limit when inputs span many
+        # orders of magnitude (e.g. coil current 1e3–1e5 A).  After
+        # StandardScaler normalization the effective length scale is ~O(1).
+        kernel = Matern(nu=2.5, length_scale_bounds=(1e-2, 1e2))
         self._gp = GaussianProcessRegressor(
             kernel=kernel,
             n_restarts_optimizer=n_restarts,
             normalize_y=normalize_y,
         )
+        self._scaler: StandardScaler = StandardScaler()
         self._fitted = False
 
     def fit(self, X: np.ndarray, y: np.ndarray) -> None:
         """Fit the GP to observations.
+
+        Inputs are normalized to zero mean and unit variance so the GP
+        length-scale hyperparameter operates in a consistent numerical range
+        regardless of the physical units of the parameters.
 
         Parameters
         ----------
         X : array, shape (n_samples, n_params)
         y : array, shape (n_samples,)
         """
-        self._gp.fit(np.asarray(X), np.asarray(y))
+        X_np = np.asarray(X, dtype=float)
+        self._scaler.fit(X_np)
+        self._gp.fit(self._scaler.transform(X_np), np.asarray(y, dtype=float))
         self._fitted = True
 
     def predict(self, X: np.ndarray) -> SurrogateResult:
@@ -89,7 +100,8 @@ class GPSurrogate:
         """
         if not self._fitted:
             raise RuntimeError("GPSurrogate must be fit() before predict()")
-        mean, std = self._gp.predict(np.asarray(X), return_std=True)
+        X_scaled = self._scaler.transform(np.asarray(X, dtype=float))
+        mean, std = self._gp.predict(X_scaled, return_std=True)
         return SurrogateResult(mean=mean, std=std)
 
     def expected_improvement(
