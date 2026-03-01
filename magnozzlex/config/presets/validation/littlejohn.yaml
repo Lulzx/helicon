@@ -1,0 +1,33 @@
+# Guiding-center limit validation case
+# Tests that low-beta plasma follows magnetic field lines (guiding-center approximation)
+# Reference: Littlejohn (1983) guiding-center Hamiltonian formalism
+# Acceptance: particle trajectories deviate < 1% from field-line path for r_L/L << 1
+nozzle:
+  type: solenoid
+  coils:
+    - z: 0.0
+      r: 0.08
+      I: 30000
+  domain:
+    z_min: -0.2
+    z_max: 1.5
+    r_max: 0.4
+  resolution:
+    nz: 256
+    nr: 128
+
+plasma:
+  species: ["H+", "e-"]
+  n0: 1.0e16        # low density → low beta → guiding-center valid
+  T_i_eV: 10.0      # low temperature → small Larmor radius
+  T_e_eV: 5.0
+  v_injection_ms: 20000.0
+  mass_ratio: null   # physical mass ratio required for guiding-center test
+
+diagnostics:
+  mode: analysis
+  field_dump_interval: 100
+  particle_dump_interval: 1000
+
+timesteps: 10000
+output_dir: results/validation/guiding_center
