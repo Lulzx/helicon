@@ -131,7 +131,8 @@ class TestValidators:
                 n0=1e19, T_i_eV=5000, T_e_eV=2000, v_injection_ms=200000
             ),
         )
-        result = validate_config(config)
+        with pytest.warns(UserWarning):
+            result = validate_config(config)
         assert not result.passed
         assert any("exceeds domain" in e for e in result.errors)
 
@@ -149,5 +150,6 @@ class TestValidators:
                 mass_ratio=25,
             ),
         )
-        result = validate_config(config)
+        with pytest.warns(UserWarning):
+            result = validate_config(config)
         assert any("mass ratio" in w.lower() for w in result.warnings)
