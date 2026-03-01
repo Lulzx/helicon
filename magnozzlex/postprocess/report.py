@@ -108,3 +108,51 @@ def save_report(report: RunReport, path: str | Path) -> None:
 def load_report(path: str | Path) -> dict:
     """Load a report from JSON."""
     return json.loads(Path(path).read_text())
+
+
+def save_scan_csv(
+    reports: list[RunReport],
+    param_labels: list[str],
+    param_values: list[list[float]],
+    path: str | Path,
+) -> None:
+    """Save a parameter scan summary to CSV.
+
+    Parameters
+    ----------
+    reports : list of RunReport
+        One report per scan point.
+    param_labels : list of str
+        Names of the varied parameters.
+    param_values : list of list of float
+        Parameter values for each scan point.
+    path : path
+        Output CSV file path.
+    """
+    import csv
+
+    path = Path(path)
+    path.parent.mkdir(parents=True, exist_ok=True)
+
+    metric_keys = [
+        "thrust_N",
+        "isp_s",
+        "exhaust_velocity_ms",
+        "mass_flow_rate_kgs",
+        "plume_half_angle_deg",
+        "beam_efficiency",
+        "thrust_coefficient",
+        "detachment_momentum",
+        "detachment_particle",
+        "detachment_energy",
+    ]
+
+    fieldnames = list(param_labels) + metric_keys
+    with path.open("w", newline="") as fh:
+        writer = csv.DictWriter(fh, fieldnames=fieldnames)
+        writer.writeheader()
+        for params, report in zip(param_values, reports):
+            row: dict = dict(zip(param_labels, params))
+            for key in metric_keys:
+                row[key] = getattr(report, key, None)
+            writer.writerow(row)

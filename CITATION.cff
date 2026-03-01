@@ -1,0 +1,73 @@
+cff-version: 1.2.0
+message: "If you use MagNozzleX in your research, please cite it as below."
+type: software
+title: "MagNozzleX: GPU-Accelerated Magnetic Nozzle Simulation & Detachment Analysis Toolkit"
+version: 0.2.0
+date-released: "2026-03-02"
+license: MIT
+repository-code: "https://github.com/magnozzlex/magnozzlex"
+abstract: >
+  MagNozzleX is a Python toolkit for simulating plasma detachment and thrust
+  generation in magnetic nozzle thrusters. It combines GPU-accelerated
+  Biot-Savart field computation (via MLX on Apple Silicon), WarpX PIC
+  integration, analytical pre-screening models, Bayesian coil optimization,
+  and Sobol sensitivity analysis. Validated against published experimental
+  data from the VASIMR VX-200 and theoretical predictions from resistive
+  detachment theory (Moses 1991, Dimov 2005).
+keywords:
+  - magnetic nozzle
+  - plasma propulsion
+  - electric propulsion
+  - Biot-Savart
+  - WarpX
+  - particle-in-cell
+  - plasma detachment
+  - MLX
+  - GPU
+  - optimization
+references:
+  - type: article
+    authors:
+      - family-names: Olsen
+        given-names: "C. S."
+    title: "Investigation of plasma detachment from a magnetic nozzle in the plume of the VX-200 magnetoplasma thruster"
+    journal: "IEEE Transactions on Plasma Science"
+    volume: 43
+    issue: 1
+    pages: "252-268"
+    year: 2015
+    doi: "10.1109/TPS.2014.2320259"
+  - type: article
+    authors:
+      - family-names: Breizman
+        given-names: "B. N."
+      - family-names: Arefiev
+        given-names: "A. V."
+    title: "Paraxial model of a magnetic nozzle"
+    journal: "Physics of Plasmas"
+    volume: 15
+    year: 2008
+    doi: "10.1063/1.2912440"
+  - type: article
+    authors:
+      - family-names: Little
+        given-names: "J. M."
+      - family-names: Choueiri
+        given-names: "E. Y."
+    title: "Thrust and efficiency model for electron-driven magnetic nozzles"
+    journal: "Physics of Plasmas"
+    volume: 20
+    year: 2013
+    doi: "10.1063/1.4826508"
+  - type: conference-paper
+    authors:
+      - family-names: Moses
+        given-names: "R. W."
+      - family-names: Gerwin
+        given-names: "R. A."
+      - family-names: Schoenberg
+        given-names: "K. F."
+    title: "Resistive plasma detachment in nozzle based coaxial thrusters"
+    collection-title: "AIP Conference Proceedings"
+    volume: 246
+    year: 1991
