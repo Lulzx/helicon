@@ -161,5 +161,66 @@ def validate(
         sys.exit(1)
 
 
+@main.command()
+@click.option("--config", "config_path", required=True, type=click.Path(exists=True))
+@click.option(
+    "--vary",
+    "vary_specs",
+    multiple=True,
+    required=True,
+    metavar="PATH:LOW:HIGH:N",
+    help="Parameter range, e.g. coils.0.I:20000:80000:5",
+)
+@click.option("--output", "output_dir", default="scan_results", type=click.Path())
+@click.option(
+    "--method",
+    type=click.Choice(["grid", "lhc"]),
+    default="grid",
+    show_default=True,
+    help="Sampling method: full grid or Latin Hypercube",
+)
+@click.option("--dry-run", is_flag=True, help="Skip WarpX; generate configs only")
+@click.option("--seed", default=0, type=int, show_default=True, help="RNG seed (LHC only)")
+def scan(
+    config_path: str,
+    vary_specs: tuple[str, ...],
+    output_dir: str,
+    method: str,
+    dry_run: bool,
+    seed: int,
+) -> None:
+    """Run a parameter scan over coil/plasma parameters."""
+    from magnozzlex.config.parser import SimConfig
+    from magnozzlex.optimize.scan import ParameterRange, run_scan
+
+    config = SimConfig.from_yaml(config_path)
+
+    try:
+        ranges = [ParameterRange.from_string(s) for s in vary_specs]
+    except ValueError as exc:
+        click.echo(f"Error parsing --vary: {exc}", err=True)
+        sys.exit(1)
+
+    n_points = 1
+    for r in ranges:
+        n_points *= r.n
+    click.echo(f"Scan: {n_points} points, method={method}")
+    for r in ranges:
+        click.echo(f"  {r.path}: [{r.low}, {r.high}] n={r.n}")
+
+    result = run_scan(
+        config,
+        ranges,
+        output_base=output_dir,
+        method=method,
+        dry_run=dry_run,
+        seed=seed,
+    )
+
+    n_ok = sum(1 for m in result.metrics if m.get("success"))
+    click.echo(f"Done: {n_ok}/{n_points} points succeeded.")
+    click.echo(f"Output: {output_dir}/")
+
+
 if __name__ == "__main__":
     main()
