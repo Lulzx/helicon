@@ -377,6 +377,46 @@ class TestValidationFlags:
         d = report.to_spec_dict()
         assert d["validation_flags"]["particle_statistics_sufficient"] is None
 
+    def test_energy_conservation_error_none_by_default(self) -> None:
+        report = _make_report()
+        d = report.to_spec_dict()
+        assert d["validation_flags"]["energy_conservation_error"] is None
+
+    def test_energy_conservation_error_set(self) -> None:
+        report = _make_report(energy_conservation_relative_error=0.002)
+        d = report.to_spec_dict()
+        assert d["validation_flags"]["energy_conservation_error"] == pytest.approx(0.002)
+
+    def test_energy_conservation_error_in_spec_example(self) -> None:
+        """Spec §6.3 example shows energy_conservation_error: 0.002."""
+        report = _make_report(energy_conservation_relative_error=0.002)
+        d = report.to_spec_dict()
+        assert d["validation_flags"]["energy_conservation_error"] < 0.005
+
+    def test_generate_report_reads_energy_from_reducedfiles(self, tmp_path: Path) -> None:
+        """generate_report() picks up energy conservation from WarpX text files."""
+        import numpy as np
+
+        diag_dir = tmp_path / "diags" / "reducedfiles"
+        diag_dir.mkdir(parents=True)
+        ef = diag_dir / "TotalEnergy.txt"
+        # Write 10 rows: step, time, total_energy (drifting 0.5 %)
+        rows = np.column_stack(
+            [
+                np.arange(10),
+                np.linspace(0, 1e-7, 10),
+                np.linspace(1.0e4, 1.005e4, 10),
+            ]
+        )
+        header = "[0]step() [1]time(s) [2]total(J)"
+        np.savetxt(ef, rows, header=header, comments="#")
+
+        from helicon.postprocess.report import generate_report
+
+        report = generate_report(tmp_path)
+        assert report.energy_conservation_relative_error is not None
+        assert report.energy_conservation_relative_error == pytest.approx(0.005, rel=0.01)
+
 
 class TestAutoPlots:
     """Tests for generate_all_plots (spec §6.3)."""

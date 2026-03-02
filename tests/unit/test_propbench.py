@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import csv
 import json
 from pathlib import Path
 
@@ -9,6 +10,7 @@ from helicon.postprocess.propbench import (
     PropBenchResult,
     load_propbench,
     save_propbench,
+    to_poliastro_csv,
     to_propbench,
 )
 from helicon.postprocess.report import RunReport
@@ -131,3 +133,70 @@ class TestSaveLoadPropBench:
         save_propbench(result, path)
         data = json.loads(path.read_text())
         assert data["code_name"] == "Helicon"
+
+
+class TestPoliastroCSV:
+    """Tests for poliastro-compatible CSV export (spec §6.3 / v0.4)."""
+
+    def test_writes_csv_file(self, tmp_path: Path) -> None:
+        result = PropBenchResult(isp_s=11200.0, thrust_N=4.82)
+        path = tmp_path / "poliastro.csv"
+        to_poliastro_csv(result, path)
+        assert path.exists()
+
+    def test_header_row(self, tmp_path: Path) -> None:
+        result = PropBenchResult(isp_s=11200.0, thrust_N=4.82)
+        path = tmp_path / "poliastro.csv"
+        to_poliastro_csv(result, path)
+        with path.open() as fh:
+            reader = csv.DictReader(fh)
+            assert set(reader.fieldnames or []) == {
+                "isp_s",
+                "thrust_N",
+                "mass_flow_rate_kgs",
+                "exhaust_velocity_ms",
+            }
+
+    def test_values_written(self, tmp_path: Path) -> None:
+        result = PropBenchResult(
+            isp_s=11200.0,
+            thrust_N=4.82,
+            mass_flow_rate_kgs=4.39e-5,
+            exhaust_velocity_ms=109800.0,
+        )
+        path = tmp_path / "poliastro.csv"
+        to_poliastro_csv(result, path)
+        with path.open() as fh:
+            reader = csv.DictReader(fh)
+            rows = list(reader)
+        assert len(rows) == 1
+        assert float(rows[0]["isp_s"]) == 11200.0
+        assert float(rows[0]["thrust_N"]) == 4.82
+
+    def test_multiple_results(self, tmp_path: Path) -> None:
+        results = [
+            PropBenchResult(isp_s=11200.0, thrust_N=4.82),
+            PropBenchResult(isp_s=12000.0, thrust_N=5.0),
+        ]
+        path = tmp_path / "multi.csv"
+        to_poliastro_csv(results, path)
+        with path.open() as fh:
+            reader = csv.DictReader(fh)
+            rows = list(reader)
+        assert len(rows) == 2
+        assert float(rows[1]["isp_s"]) == 12000.0
+
+    def test_creates_parent_dirs(self, tmp_path: Path) -> None:
+        result = PropBenchResult(isp_s=11200.0)
+        path = tmp_path / "deep" / "nested" / "poliastro.csv"
+        to_poliastro_csv(result, path)
+        assert path.exists()
+
+    def test_none_values_written_as_empty(self, tmp_path: Path) -> None:
+        result = PropBenchResult()
+        path = tmp_path / "nones.csv"
+        to_poliastro_csv(result, path)
+        with path.open() as fh:
+            reader = csv.DictReader(fh)
+            rows = list(reader)
+        assert len(rows) == 1

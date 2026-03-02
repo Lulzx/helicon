@@ -112,3 +112,46 @@ def load_propbench(path: str | Path) -> PropBenchResult:
     """Load a PropBenchResult from a JSON file."""
     data = json.loads(Path(path).read_text())
     return PropBenchResult(**data)
+
+
+def to_poliastro_csv(
+    results: PropBenchResult | list[PropBenchResult],
+    path: str | Path,
+) -> None:
+    """Write poliastro-compatible propulsion CSV (spec §6.3 / v0.4).
+
+    Poliastro's ``ConstantThrust`` and ``STR`` maneuver classes accept Isp
+    and thrust as tabular CSV inputs.  The generated file has one header row
+    followed by one data row per result::
+
+        isp_s,thrust_N,mass_flow_rate_kgs,exhaust_velocity_ms
+        11200,4.82,4.39e-05,109800.0
+
+    Parameters
+    ----------
+    results : PropBenchResult or list of PropBenchResult
+        One or more simulation results to export.
+    path : path-like
+        Output ``.csv`` file path.  Parent directories are created if needed.
+    """
+    import csv
+
+    if not isinstance(results, list):
+        results = [results]
+
+    path = Path(path)
+    path.parent.mkdir(parents=True, exist_ok=True)
+
+    fieldnames = ["isp_s", "thrust_N", "mass_flow_rate_kgs", "exhaust_velocity_ms"]
+    with path.open("w", newline="") as fh:
+        writer = csv.DictWriter(fh, fieldnames=fieldnames)
+        writer.writeheader()
+        for r in results:
+            writer.writerow(
+                {
+                    "isp_s": r.isp_s,
+                    "thrust_N": r.thrust_N,
+                    "mass_flow_rate_kgs": r.mass_flow_rate_kgs,
+                    "exhaust_velocity_ms": r.exhaust_velocity_ms,
+                }
+            )

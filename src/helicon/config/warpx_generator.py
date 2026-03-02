@@ -138,12 +138,34 @@ def generate_warpx_input(config: SimConfig) -> str:
     reduced_mass_ratio = config.plasma.mass_ratio is not None and has_electrons
     if reduced_mass_ratio:
         mr = config.plasma.mass_ratio
+        # Quantitative guidance (spec §8 v0.3: reduced mass ratio guidance documentation)
+        # Physical D/e ratio = 3670.  Error bounds from PIC benchmarking literature:
+        #   mr < 100  → qualitative only; η_d errors typically >30 %
+        #   100 ≤ mr < 500  → qualitative trends correct; ~20–30 % η_d error
+        #   500 ≤ mr < 1836 → semi-quantitative; ~5–15 % η_d error
+        #   mr ≥ 1836       → near-physical; errors typically <5 % for D/e
+        if mr < 100:
+            _mr_guidance = (
+                "Qualitative trends only; quantitative errors >30 % in η_d. "
+                "Do not cite detachment numbers from this run."
+            )
+        elif mr < 500:
+            _mr_guidance = (
+                f"~20–30 % error in η_d vs full ratio ({3670:.0f}). "
+                "Suitable for fast parameter-space exploration only."
+            )
+        elif mr < 1836:
+            _mr_guidance = (
+                f"~5–15 % error in η_d vs full ratio ({3670:.0f}). "
+                "Semi-quantitative; use full ratio for validation cases."
+            )
+        else:
+            _mr_guidance = f"Near-physical ratio; η_d errors typically <5 % vs {3670:.0f}."
         log.warning(
-            "Reduced mass ratio m_i/m_e = %.1f requested. "
-            "Electron dynamics are qualitatively correct but quantitatively shifted. "
-            "Output will be flagged mass_ratio_reduced=true. "
-            "Use full physical ratio for publication-quality detachment predictions.",
+            "Reduced mass ratio m_i/m_e = %.1f requested. %s "
+            "Output will be flagged mass_ratio_reduced=true.",
             mr,
+            _mr_guidance,
         )
         # Use the lightest ion mass to compute effective electron mass
         ion_species = [s for s in config.plasma.species if s != "e-"]

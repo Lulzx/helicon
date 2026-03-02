@@ -200,6 +200,69 @@ def test_run_scan_dry_run(base_config):
     assert result.param_names == ["coils.0.I"]
 
 
+def test_run_scan_forces_scan_diagnostic_mode(base_config):
+    """run_scan() auto-switches diagnostics.mode to 'scan' (spec §15.2)."""
+    from unittest.mock import patch
+
+    from helicon.runner.launch import RunResult
+
+    launched_configs = []
+
+    def fake_run(config, *, output_dir, dry_run=False):
+        launched_configs.append(config)
+        return RunResult(
+            output_dir=output_dir,
+            input_file=output_dir / "warpx_input",
+            bfield_file=output_dir / "applied_bfield.h5",
+            success=True,
+            wall_time_seconds=0.0,
+            metadata={},
+        )
+
+    ranges = [ParameterRange("coils.0.I", 800.0, 1200.0, 2)]
+    with (
+        tempfile.TemporaryDirectory() as tmp,
+        patch("helicon.runner.launch.run_simulation", side_effect=fake_run),
+    ):
+        run_scan(base_config, ranges, output_base=tmp)
+
+    assert all(c.diagnostics.mode == "scan" for c in launched_configs)
+
+
+def test_run_scan_respects_explicit_analysis_mode(base_config):
+    """If base config already has mode='scan', it stays 'scan'."""
+    from unittest.mock import patch
+
+    from helicon.config.parser import SimConfig
+    from helicon.runner.launch import RunResult
+
+    data = base_config.model_dump(mode="python")
+    data.setdefault("diagnostics", {})["mode"] = "scan"
+    scan_base = SimConfig.model_validate(data)
+
+    launched_configs = []
+
+    def fake_run(config, *, output_dir, dry_run=False):
+        launched_configs.append(config)
+        return RunResult(
+            output_dir=output_dir,
+            input_file=output_dir / "warpx_input",
+            bfield_file=output_dir / "applied_bfield.h5",
+            success=True,
+            wall_time_seconds=0.0,
+            metadata={},
+        )
+
+    ranges = [ParameterRange("coils.0.I", 800.0, 1200.0, 2)]
+    with (
+        tempfile.TemporaryDirectory() as tmp,
+        patch("helicon.runner.launch.run_simulation", side_effect=fake_run),
+    ):
+        run_scan(scan_base, ranges, output_base=tmp)
+
+    assert all(c.diagnostics.mode == "scan" for c in launched_configs)
+
+
 def test_run_scan_creates_subdirs(base_config):
     ranges = [ParameterRange("coils.0.I", 800.0, 1200.0, 2)]
     with tempfile.TemporaryDirectory() as tmp:

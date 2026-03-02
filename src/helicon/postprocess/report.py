@@ -41,6 +41,8 @@ class RunReport:
     mass_ratio_reduced: bool = False
     # §7.3 validation proximity (populated via config_proximity())
     validation_proximity: dict | None = None
+    # §6.3 / §7.1 energy conservation error from PIC diagnostics
+    energy_conservation_relative_error: float | None = None
 
     def _compute_validation_flags(self) -> dict:
         """Derive spec §6.3 validation_flags from convergence diagnostics.
@@ -62,9 +64,7 @@ class RunReport:
         return {
             "steady_state_reached": steady,
             "particle_statistics_sufficient": sufficient,
-            # Energy conservation error is a PIC diagnostic not yet piped
-            # through postprocess; None until WarpX diagnostic integration.
-            "energy_conservation_error": None,
+            "energy_conservation_error": self.energy_conservation_relative_error,
         }
 
     def to_spec_dict(
@@ -228,7 +228,51 @@ def generate_report(
         _compute_convergence_diagnostics(output_dir)
     )
 
+    # Energy conservation error from WarpX reduced diagnostics (§7.1)
+    report.energy_conservation_relative_error = _compute_energy_conservation(output_dir)
+
     return report
+
+
+def _compute_energy_conservation(output_dir: Path) -> float | None:
+    """Estimate total-energy conservation error from WarpX reduced diagnostics.
+
+    WarpX writes reduced diagnostic text files to
+    ``<output_dir>/diags/reducedfiles/`` with column layout::
+
+        # [0]step() [1]time(s) [2]total(J) ...
+
+    Returns the relative drift ``|E_last - E_first| / |E_first|``, or
+    ``None`` when no energy diagnostics are found.
+    """
+    import numpy as np
+
+    candidate_dirs = [
+        output_dir / "diags" / "reducedfiles",
+        output_dir / "reducedfiles",
+        output_dir / "diags",
+    ]
+
+    for diag_dir in candidate_dirs:
+        if not diag_dir.exists():
+            continue
+        # WarpX names energy files *Energy*.txt
+        for ef in diag_dir.glob("*Energy*.txt"):
+            try:
+                data = np.loadtxt(ef, comments="#")
+                if data.ndim == 1:
+                    data = data.reshape(1, -1)
+                if len(data) < 2 or data.shape[1] < 3:
+                    continue
+                energies = data[:, 2]  # total energy column
+                e0 = energies[0]
+                if abs(e0) < 1e-300:
+                    continue
+                return float(abs(energies[-1] - e0) / abs(e0))
+            except Exception:
+                continue
+
+    return None
 
 
 def _compute_convergence_diagnostics(

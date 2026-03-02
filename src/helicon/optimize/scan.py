@@ -359,7 +359,13 @@ def run_scan(
             continue
 
         point_dir = output_base / f"point_{point.index:04d}"
-        result = run_simulation(point.config, output_dir=point_dir, dry_run=dry_run)
+        # Auto-switch to scan diagnostics mode (§15.2) unless already set
+        scan_config = point.config
+        if scan_config.diagnostics.mode != "scan":
+            data = scan_config.model_dump(mode="python")
+            data.setdefault("diagnostics", {})["mode"] = "scan"
+            scan_config = SimConfig.model_validate(data)
+        result = run_simulation(scan_config, output_dir=point_dir, dry_run=dry_run)
         metrics.append(
             {
                 "output_dir": str(result.output_dir),
