@@ -184,10 +184,13 @@ class TestWarpXMetalDiag:
         diag = WarpXMetalDiag.from_dir(diag_dir)
         assert diag.species == []
 
-    def test_species_parsed_from_warpx_header(self, tmp_path):
+    def test_species_parsed_from_subdirs(self, tmp_path):
         diag_dir = _make_fake_header(tmp_path, step=2)
-        warpx_hdr = diag_dir / "WarpXHeader"
-        warpx_hdr.write_text("electrons 1\npositrons 2\n")
+        # Species are subdirectories with their own Header files
+        for sp in ("electrons", "positrons"):
+            sp_dir = diag_dir / sp
+            sp_dir.mkdir()
+            (sp_dir / "Header").write_text("species header\n")
         diag = WarpXMetalDiag.from_dir(diag_dir)
         assert "electrons" in diag.species
         assert "positrons" in diag.species

@@ -237,16 +237,12 @@ class WarpXMetalDiag:
         digits = "".join(c for c in stem if c.isdigit())
         step = int(digits) if digits else 0
 
-        # Parse WarpXHeader for species
-        warpx_header = diag_dir / "WarpXHeader"
-        species: list[str] = []
-        if warpx_header.exists():
-            for line in warpx_header.read_text().splitlines():
-                if line.startswith("warpx_version"):
-                    break  # stop at build section
-                for sp in ("electrons", "positrons", "ions", "protons"):
-                    if sp in line and sp not in species:
-                        species.append(sp)
+        # Detect species from particle subdirectories (each has its own Header)
+        species: list[str] = [
+            d.name
+            for d in sorted(diag_dir.iterdir())
+            if d.is_dir() and (d / "Header").exists() and d.name != "Level_0"
+        ]
 
         return cls(
             diag_dir=diag_dir,
