@@ -96,6 +96,10 @@ def collect_metadata(config: object | None = None) -> dict:
 
             meta["config_contents"] = yaml.safe_dump(config.model_dump())
 
+            # §14: flag when a non-physical mass ratio is used
+            mr = config.plasma.mass_ratio
+            meta["mass_ratio_reduced"] = mr is not None and mr < 1836.0
+
     return meta
 
 

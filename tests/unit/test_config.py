@@ -10,6 +10,7 @@ import yaml
 from helicon.config.parser import (
     CoilConfig,
     DomainConfig,
+    NeutralsConfig,
     NozzleConfig,
     PlasmaSourceConfig,
     SimConfig,
@@ -153,3 +154,71 @@ class TestValidators:
         with pytest.warns(UserWarning):
             result = validate_config(config)
         assert any("mass ratio" in w.lower() for w in result.warnings)
+
+
+class TestNeutralsConfig:
+    """Tests for NeutralsConfig (spec §2.1)."""
+
+    def test_defaults(self) -> None:
+        cfg = NeutralsConfig(n_neutral_m3=1e17)
+        assert cfg.species == "D"
+        assert cfg.T_neutral_eV == pytest.approx(0.025)
+        assert cfg.cx_cross_section_m2 == pytest.approx(5e-19)
+        assert cfg.ionization_cross_section_m2 is None
+
+    def test_custom_species(self) -> None:
+        cfg = NeutralsConfig(species="Xe", n_neutral_m3=1e16)
+        assert cfg.species == "Xe"
+
+    def test_density_positive(self) -> None:
+        with pytest.raises(ValueError):
+            NeutralsConfig(n_neutral_m3=0.0)
+
+    def test_negative_density_rejected(self) -> None:
+        with pytest.raises(ValueError):
+            NeutralsConfig(n_neutral_m3=-1e17)
+
+    def test_ionization_cs_optional(self) -> None:
+        cfg = NeutralsConfig(n_neutral_m3=1e17, ionization_cross_section_m2=1e-20)
+        assert cfg.ionization_cross_section_m2 == pytest.approx(1e-20)
+
+    def test_ionization_cs_negative_rejected(self) -> None:
+        with pytest.raises(ValueError):
+            NeutralsConfig(n_neutral_m3=1e17, ionization_cross_section_m2=-1e-20)
+
+    def test_ionization_cs_zero_rejected(self) -> None:
+        with pytest.raises(ValueError):
+            NeutralsConfig(n_neutral_m3=1e17, ionization_cross_section_m2=0.0)
+
+    def test_plasma_source_no_neutrals_by_default(self) -> None:
+        ps = PlasmaSourceConfig(n0=1e19, T_i_eV=100, T_e_eV=50, v_injection_ms=50000)
+        assert ps.neutrals is None
+
+    def test_plasma_source_with_neutrals(self) -> None:
+        neutrals = NeutralsConfig(n_neutral_m3=1e17)
+        ps = PlasmaSourceConfig(
+            n0=1e19, T_i_eV=100, T_e_eV=50, v_injection_ms=50000, neutrals=neutrals
+        )
+        assert ps.neutrals is not None
+        assert ps.neutrals.n_neutral_m3 == pytest.approx(1e17)
+
+    def test_sim_config_with_neutrals_roundtrip(self, tmp_path) -> None:
+        """SimConfig with neutrals should serialise and deserialise correctly."""
+        import yaml
+
+        config = SimConfig(
+            nozzle=NozzleConfig(
+                coils=[CoilConfig(z=0.0, r=0.1, I=10000)],
+                domain=DomainConfig(z_min=0.0, z_max=1.0, r_max=0.5),
+            ),
+            plasma=PlasmaSourceConfig(
+                n0=1e19, T_i_eV=100, T_e_eV=50, v_injection_ms=50000,
+                neutrals=NeutralsConfig(n_neutral_m3=1e17, species="H"),
+            ),
+        )
+        path = tmp_path / "cfg.yaml"
+        config.to_yaml(path)
+        loaded = SimConfig.from_yaml(path)
+        assert loaded.plasma.neutrals is not None
+        assert loaded.plasma.neutrals.species == "H"
+        assert loaded.plasma.neutrals.n_neutral_m3 == pytest.approx(1e17)

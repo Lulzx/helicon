@@ -42,11 +42,29 @@ class TestMerinoAhedoCase:
         assert not result.passed
         assert result.case_name == "merino_ahedo_2016"
 
-    def test_reference_data_consistent(self) -> None:
-        """Reference η_d should increase with β (more detachment at higher β)."""
+    def test_reference_eta_increases_with_beta(self) -> None:
+        """Higher β → stronger ion detachment → higher η_d (physical expectation)."""
         betas = sorted(REFERENCE_BETA_ETA.keys())
         etas = [REFERENCE_BETA_ETA[b] for b in betas]
-        assert etas == sorted(etas)
+        # Validate physically: eta must strictly increase with beta
+        for i in range(len(etas) - 1):
+            assert etas[i] < etas[i + 1], (
+                f"η_d({betas[i]}) = {etas[i]} not < η_d({betas[i+1]}) = {etas[i+1]}"
+            )
+
+    def test_reference_eta_in_valid_range(self) -> None:
+        """All reference efficiencies must be in (0, 1]."""
+        for beta, eta in REFERENCE_BETA_ETA.items():
+            assert 0.0 < eta <= 1.0, f"η_d({beta}) = {eta} outside (0, 1]"
+
+    def test_reference_data_used_by_evaluate(self, tmp_path) -> None:
+        """evaluate() uses REFERENCE_BETA_ETA — tolerance must cover all betas."""
+        result = MerinoAhedoCase.evaluate(tmp_path)
+        assert result.case_name == "merino_ahedo_2016"
+        # A relative error tolerance must be defined (used against all betas)
+        assert "eta_d_relative_error" in result.tolerances
+        tol = result.tolerances["eta_d_relative_error"]
+        assert 0.0 < tol <= 1.0  # sensible tolerance (e.g. 10%)
 
 
 class TestMN1DComparisonCase:

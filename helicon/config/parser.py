@@ -53,6 +53,37 @@ class NozzleConfig(BaseModel):
     resolution: ResolutionConfig = ResolutionConfig()
 
 
+class NeutralsConfig(BaseModel):
+    """Optional Monte Carlo background neutral gas (spec §2.1).
+
+    When present, WarpX is configured to include neutral–ion charge-exchange
+    collisions via Monte Carlo Collision (MCC) physics.
+    """
+
+    species: str = Field(
+        default="D",
+        description="Neutral species name (e.g. 'D', 'H', 'Xe').",
+    )
+    n_neutral_m3: Annotated[
+        float,
+        Field(gt=0, description="Background neutral number density [m⁻³]"),
+    ]
+    T_neutral_eV: float = Field(
+        default=0.025,
+        gt=0,
+        description="Neutral temperature (≈ room temperature ≈ 0.025 eV).",
+    )
+    cx_cross_section_m2: float = Field(
+        default=5e-19,
+        gt=0,
+        description="Charge-exchange cross section [m²]. Default: 5×10⁻¹⁹ m² (D–D+).",
+    )
+    ionization_cross_section_m2: Annotated[
+        float | None,
+        Field(default=None, gt=0, description="Electron-impact ionization cross section [m²]. None = disabled."),
+    ] = None
+
+
 class PlasmaSourceConfig(BaseModel):
     """Upstream plasma injection boundary condition."""
 
@@ -70,6 +101,13 @@ class PlasmaSourceConfig(BaseModel):
         description=(
             "Electron treatment: 'kinetic' (default, full PIC) or 'fluid' "
             "(hybrid, faster parameter scans, less accurate electron detachment)."
+        ),
+    )
+    neutrals: NeutralsConfig | None = Field(
+        default=None,
+        description=(
+            "Optional background neutral gas for Monte Carlo charge-exchange "
+            "and ionization collisions (spec §2.1). None = no neutrals."
         ),
     )
 

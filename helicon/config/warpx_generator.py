@@ -213,6 +213,44 @@ def generate_warpx_input(config: SimConfig) -> str:
     if fluid_electrons:
         lines.append("# METADATA: electron_model = fluid")
 
+    # Monte Carlo neutrals (spec §2.1)
+    neutrals = config.plasma.neutrals
+    if neutrals is not None:
+        neutral_name = neutrals.species.replace("+", "_plus").replace("-", "_minus")
+        lines.extend(
+            [
+                "",
+                "################",
+                "# MONTE CARLO NEUTRALS",
+                "################",
+                f"# Background {neutrals.species} neutral gas: Monte Carlo Collision (MCC)",
+                f"particles.species_names += {neutral_name}",
+                f"{neutral_name}.species_type = neutral",
+                f"{neutral_name}.mass = {SPECIES_MASS.get(neutrals.species + '+', 3.34e-27):.10e}",
+                f"{neutral_name}.charge = 0.0",
+                f"{neutral_name}.injection_style = NUniformPerCell",
+                f"{neutral_name}.num_particles_per_cell = 16",
+                f"{neutral_name}.profile = constant",
+                f"{neutral_name}.density = {neutrals.n_neutral_m3:.6e}",
+                f"{neutral_name}.momentum_distribution_type = gaussian",
+                f"{neutral_name}.ux_th = {math.sqrt(neutrals.T_neutral_eV * eV_to_J / SPECIES_MASS.get(neutrals.species + '+', 3.34e-27)):.6e}",
+                f"{neutral_name}.uy_th = {math.sqrt(neutrals.T_neutral_eV * eV_to_J / SPECIES_MASS.get(neutrals.species + '+', 3.34e-27)):.6e}",
+                f"{neutral_name}.uz_th = {math.sqrt(neutrals.T_neutral_eV * eV_to_J / SPECIES_MASS.get(neutrals.species + '+', 3.34e-27)):.6e}",
+                "",
+                "# Charge-exchange collisions",
+                "mcc.species = " + " ".join(s.replace("+", "_plus").replace("-", "_minus") for s in config.plasma.species if "+" in s),
+                f"mcc.neutral_species = {neutral_name}",
+                f"mcc.CX_cross_section = {neutrals.cx_cross_section_m2:.6e}",
+            ]
+        )
+        if neutrals.ionization_cross_section_m2 is not None:
+            lines.extend(
+                [
+                    f"mcc.ionization_cross_section = {neutrals.ionization_cross_section_m2:.6e}",
+                    "mcc.do_ionization = 1",
+                ]
+            )
+
     lines.extend(
         [
             "################",

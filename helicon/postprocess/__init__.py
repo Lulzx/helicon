@@ -9,20 +9,38 @@ from helicon.postprocess.propbench import (
     save_propbench,
     to_propbench,
 )
+from helicon.postprocess.normalize import (
+    PlasmaScales,
+    compute_plasma_scales,
+    normalize_bfield,
+    normalize_density,
+    normalize_length,
+    normalize_pressure,
+    normalize_time,
+    normalize_velocity,
+)
 from helicon.postprocess.pulsed import compute_pulsed_metrics
 from helicon.postprocess.report import generate_report, load_report, save_report
 from helicon.postprocess.thrust import compute_thrust
 
 __all__ = [
+    "PlasmaScales",
     "PropBenchResult",
     "compute_detachment",
     "compute_moments",
+    "compute_plasma_scales",
     "compute_plume_metrics",
     "compute_pulsed_metrics",
     "compute_thrust",
     "generate_report",
     "load_propbench",
     "load_report",
+    "normalize_bfield",
+    "normalize_density",
+    "normalize_length",
+    "normalize_pressure",
+    "normalize_time",
+    "normalize_velocity",
     "save_propbench",
     "save_report",
     "to_propbench",

@@ -37,6 +37,10 @@ class RunReport:
     # Convergence diagnostics (§6.3 results.convergence)
     thrust_relative_change_last_10pct: float | None = None
     particle_count_exit: int | None = None
+    # §14 reproducibility flag
+    mass_ratio_reduced: bool = False
+    # §7.3 validation proximity (populated via config_proximity())
+    validation_proximity: dict | None = None
 
     def to_spec_dict(
         self,
@@ -75,12 +79,30 @@ class RunReport:
                 except AttributeError:
                     plasma_source = None
 
+        # Compute validation proximity if config provided and not already set
+        validation_proximity = self.validation_proximity
+        if validation_proximity is None and config is not None:
+            try:
+                from helicon.validate.proximity import config_proximity
+
+                prox = config_proximity(config)
+                validation_proximity = {
+                    "nearest_case": prox.nearest_case,
+                    "distance": prox.distance,
+                    "in_validated_region": prox.in_validated_region,
+                    "parameter_distances": prox.parameter_distances,
+                    "warning": prox.warning,
+                }
+            except Exception:
+                pass
+
         return {
             "helicon_version": self.helicon_version,
             "config_hash": self.config_hash,
             "timestamp": timestamp,
             "nozzle_type": nozzle_type,
             "plasma_source": plasma_source,
+            "mass_ratio_reduced": self.mass_ratio_reduced,
             "results": {
                 "thrust_N": self.thrust_N,
                 "isp_s": self.isp_s,
@@ -104,6 +126,7 @@ class RunReport:
                 "particle_statistics_sufficient": None,
                 "energy_conservation_error": None,
             },
+            "validation_proximity": validation_proximity,
         }
 
 
@@ -111,12 +134,19 @@ def generate_report(
     output_dir: str | Path,
     *,
     config_hash: str | None = None,
+    config: Any = None,
 ) -> RunReport:
     """Generate a summary report from all available postprocessing results.
 
     Attempts to compute each metric; missing data results in None values.
     """
     output_dir = Path(output_dir)
+
+    # Derive mass_ratio_reduced from config if provided
+    mass_ratio_reduced = False
+    if config is not None and hasattr(config, "plasma"):
+        mr = getattr(config.plasma, "mass_ratio", None)
+        mass_ratio_reduced = mr is not None and mr < 1836.0
 
     report = RunReport(
         helicon_version=helicon.__version__,
@@ -132,6 +162,7 @@ def generate_report(
         beam_efficiency=None,
         thrust_coefficient=None,
         radial_loss_fraction=None,
+        mass_ratio_reduced=mass_ratio_reduced,
     )
 
     # Thrust

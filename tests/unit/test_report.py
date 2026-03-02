@@ -8,6 +8,26 @@ from pathlib import Path
 from helicon.postprocess.report import RunReport, generate_report, load_report, save_report
 
 
+def _make_report(**kwargs) -> RunReport:
+    defaults = dict(
+        helicon_version="0.4.0",
+        config_hash=None,
+        thrust_N=None,
+        isp_s=None,
+        exhaust_velocity_ms=None,
+        mass_flow_rate_kgs=None,
+        detachment_momentum=None,
+        detachment_particle=None,
+        detachment_energy=None,
+        plume_half_angle_deg=None,
+        beam_efficiency=None,
+        thrust_coefficient=None,
+        radial_loss_fraction=None,
+    )
+    defaults.update(kwargs)
+    return RunReport(**defaults)
+
+
 class TestRunReport:
     """Tests for RunReport dataclass."""
 
@@ -125,12 +145,13 @@ class TestGenerateReport:
     """Tests for generate_report (graceful failure with no data)."""
 
     def test_empty_dir(self, tmp_path: Path) -> None:
-        """Should return a report with all None metrics for empty dir."""
+        """All metrics should be None when no simulation output exists."""
         report = generate_report(tmp_path)
-        assert isinstance(report, RunReport)
         assert report.thrust_N is None
+        assert report.isp_s is None
         assert report.detachment_momentum is None
         assert report.plume_half_angle_deg is None
+        assert report.beam_efficiency is None
 
     def test_version_populated(self, tmp_path: Path) -> None:
         report = generate_report(tmp_path)
@@ -140,3 +161,112 @@ class TestGenerateReport:
     def test_config_hash_forwarded(self, tmp_path: Path) -> None:
         report = generate_report(tmp_path, config_hash="abc123")
         assert report.config_hash == "abc123"
+
+
+class TestMassRatioReduced:
+    """Tests for mass_ratio_reduced flag (spec §14)."""
+
+    def test_default_false(self) -> None:
+        report = _make_report()
+        assert report.mass_ratio_reduced is False
+
+    def test_set_true(self) -> None:
+        report = _make_report(mass_ratio_reduced=True)
+        assert report.mass_ratio_reduced is True
+
+    def test_in_spec_dict(self) -> None:
+        report = _make_report(mass_ratio_reduced=True)
+        d = report.to_spec_dict()
+        assert d["mass_ratio_reduced"] is True
+
+    def test_false_in_spec_dict(self) -> None:
+        report = _make_report(mass_ratio_reduced=False)
+        d = report.to_spec_dict()
+        assert d["mass_ratio_reduced"] is False
+
+    def test_generate_report_with_reduced_ratio_config(self, tmp_path: Path) -> None:
+        from helicon.config.parser import (
+            CoilConfig,
+            DomainConfig,
+            NozzleConfig,
+            PlasmaSourceConfig,
+            SimConfig,
+        )
+
+        config = SimConfig(
+            nozzle=NozzleConfig(
+                coils=[CoilConfig(z=0.0, r=0.1, I=10000)],
+                domain=DomainConfig(z_min=0.0, z_max=1.0, r_max=0.5),
+            ),
+            plasma=PlasmaSourceConfig(
+                n0=1e19, T_i_eV=100.0, T_e_eV=50.0,
+                v_injection_ms=50000.0, mass_ratio=100.0,
+            ),
+        )
+        report = generate_report(tmp_path, config=config)
+        assert report.mass_ratio_reduced is True
+
+    def test_generate_report_full_ratio_not_flagged(self, tmp_path: Path) -> None:
+        from helicon.config.parser import (
+            CoilConfig,
+            DomainConfig,
+            NozzleConfig,
+            PlasmaSourceConfig,
+            SimConfig,
+        )
+
+        config = SimConfig(
+            nozzle=NozzleConfig(
+                coils=[CoilConfig(z=0.0, r=0.1, I=10000)],
+                domain=DomainConfig(z_min=0.0, z_max=1.0, r_max=0.5),
+            ),
+            plasma=PlasmaSourceConfig(
+                n0=1e19, T_i_eV=100.0, T_e_eV=50.0,
+                v_injection_ms=50000.0, mass_ratio=None,
+            ),
+        )
+        report = generate_report(tmp_path, config=config)
+        assert report.mass_ratio_reduced is False
+
+
+class TestValidationProximityInReport:
+    """Tests for validation_proximity in spec §6.3 output (spec §7.3)."""
+
+    def test_present_in_spec_dict_with_config(self) -> None:
+        from helicon.config.parser import (
+            CoilConfig,
+            DomainConfig,
+            NozzleConfig,
+            PlasmaSourceConfig,
+            SimConfig,
+        )
+
+        config = SimConfig(
+            nozzle=NozzleConfig(
+                coils=[CoilConfig(z=0.0, r=0.1, I=10000)],
+                domain=DomainConfig(z_min=0.0, z_max=1.0, r_max=0.5),
+            ),
+            plasma=PlasmaSourceConfig(
+                n0=1e18, T_i_eV=100.0, T_e_eV=50.0, v_injection_ms=50000.0,
+            ),
+        )
+        report = _make_report()
+        d = report.to_spec_dict(config=config)
+        assert "validation_proximity" in d
+        prox = d["validation_proximity"]
+        assert prox is not None
+        assert "nearest_case" in prox
+        assert "distance" in prox
+        assert "in_validated_region" in prox
+
+    def test_none_without_config(self) -> None:
+        report = _make_report()
+        d = report.to_spec_dict()
+        # Without config, validation_proximity should be None
+        assert d["validation_proximity"] is None
+
+    def test_persists_if_already_set(self) -> None:
+        prox_data = {"nearest_case": "vasimr", "distance": 0.5, "in_validated_region": True, "parameter_distances": {}, "warning": None}
+        report = _make_report(validation_proximity=prox_data)
+        d = report.to_spec_dict()
+        assert d["validation_proximity"]["nearest_case"] == "vasimr"
