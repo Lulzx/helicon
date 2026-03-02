@@ -1186,5 +1186,183 @@ def schema_cmd(output_path: str | None, indent: int) -> None:
         click.echo(text)
 
 
+# ---------------------------------------------------------------------------
+# helicon sensitivity — Sobol variance-based sensitivity analysis
+# ---------------------------------------------------------------------------
+
+
+@main.command("sensitivity")
+@click.option(
+    "--preset",
+    type=click.Choice(["sunbird", "highpower"]),
+    default="sunbird",
+    show_default=True,
+    help="Baseline coil preset to perturb",
+)
+@click.option(
+    "--n-samples",
+    default=64,
+    show_default=True,
+    type=int,
+    help="Saltelli base sample count N (total evals: N×(k+2))",
+)
+@click.option("--json", "output_json", is_flag=True, help="Output machine-readable JSON")
+@click.option("--output", "output_path", default=None, type=click.Path())
+def sensitivity_cmd(
+    preset: str, n_samples: int, output_json: bool, output_path: str | None
+) -> None:
+    """Run Sobol sensitivity analysis on nozzle design parameters."""
+    import numpy as np
+
+    from helicon.fields.biot_savart import Coil
+    from helicon.optimize.analytical import screen_geometry
+    from helicon.optimize.sensitivity import SobolResult, compute_sobol
+
+    # Baseline coil parameters by preset
+    _PRESETS = {
+        "sunbird": {"r": 0.075, "I": 25_000, "z_max": 1.20, "z_min": -0.10},
+        "highpower": {"r": 0.15, "I": 80_000, "z_max": 2.00, "z_min": -0.25},
+    }
+    base = _PRESETS[preset]
+
+    # Vary r (±30%), I (±40%), z_max (±25%) around baseline
+    param_names = ["coil_r_m", "coil_I_kA", "z_max_m"]
+    bounds = [
+        [base["r"] * 0.70, base["r"] * 1.30],
+        [base["I"] * 0.60, base["I"] * 1.40],
+        [base["z_max"] * 0.75, base["z_max"] * 1.25],
+    ]
+
+    def _objective(X: np.ndarray) -> np.ndarray:
+        out = np.empty(len(X))
+        for i, row in enumerate(X):
+            r_, I_, zm_ = float(row[0]), float(row[1]), float(row[2])
+            coil = Coil(z=0.0, r=r_, I=I_)
+            result = screen_geometry(
+                [coil], z_min=base["z_min"], z_max=zm_, n_pts=80, backend="numpy"
+            )
+            out[i] = result.thrust_efficiency
+        return out
+
+    sobol: SobolResult = compute_sobol(
+        _objective, n_samples=n_samples, bounds=bounds, param_names=param_names
+    )
+
+    if output_json:
+        import json as _json
+
+        data = {
+            "preset": preset,
+            "n_samples": n_samples,
+            "param_names": sobol.param_names,
+            "S1": sobol.S1.tolist(),
+            "ST": sobol.ST.tolist(),
+        }
+        text = _json.dumps(data, indent=2)
+        if output_path:
+            with open(output_path, "w") as fh:
+                fh.write(text + "\n")
+            click.echo(f"Sensitivity results written to {output_path}")
+        else:
+            click.echo(text)
+    else:
+        click.echo(f"Preset: {preset}  (n_samples={n_samples})")
+        click.echo(sobol.summary())
+        if output_path:
+            with open(output_path, "w") as fh:
+                fh.write(sobol.summary() + "\n")
+
+
+# ---------------------------------------------------------------------------
+# helicon provenance — design audit trail
+# ---------------------------------------------------------------------------
+
+
+@main.group("provenance")
+@click.option(
+    "--db",
+    "db_path",
+    default="results/provenance.jsonl",
+    show_default=True,
+    type=click.Path(),
+    help="Path to the provenance JSONL file",
+)
+@click.pass_context
+def provenance_group(ctx: click.Context, db_path: str) -> None:
+    """Browse and query the design provenance audit trail."""
+    ctx.ensure_object(dict)
+    ctx.obj["db_path"] = db_path
+
+
+@provenance_group.command("list")
+@click.option("--tail", default=10, show_default=True, type=int, help="Show last N records")
+@click.pass_context
+def provenance_list(ctx: click.Context, tail: int) -> None:
+    """List the most recent provenance records."""
+    from helicon.provenance import ProvenanceDB
+
+    db = ProvenanceDB(ctx.obj["db_path"])
+    records = db.all_records()
+    shown = records[-tail:] if len(records) > tail else records
+    click.echo(f"Showing {len(shown)} of {len(records)} record(s):")
+    for r in shown:
+        click.echo(
+            f"  [{r.fidelity_tier}] {r.record_id[:8]}…  {r.source:<24}"
+            f"  {r.timestamp[:19]}"
+        )
+
+
+@provenance_group.command("show")
+@click.argument("record_id")
+@click.pass_context
+def provenance_show(ctx: click.Context, record_id: str) -> None:
+    """Show full details of a provenance record by its ID (or prefix)."""
+    from helicon.provenance import ProvenanceDB
+
+    db = ProvenanceDB(ctx.obj["db_path"])
+    # Support prefix matching
+    match = None
+    for r in db.all_records():
+        if r.record_id.startswith(record_id):
+            match = r
+            break
+    if match is None:
+        click.echo(f"Record not found: {record_id}", err=True)
+        sys.exit(1)
+    click.echo(f"ID:      {match.record_id}")
+    click.echo(f"Source:  {match.source}")
+    click.echo(f"Tier:    {match.fidelity_tier}")
+    click.echo(f"Time:    {match.timestamp}")
+    click.echo(f"Parents: {match.parent_ids or 'none'}")
+    click.echo(f"Notes:   {match.notes or '—'}")
+    click.echo("Metrics:")
+    for k, v in match.metrics.items():
+        click.echo(f"  {k}: {v}")
+
+
+@provenance_group.command("lineage")
+@click.argument("record_id")
+@click.pass_context
+def provenance_lineage(ctx: click.Context, record_id: str) -> None:
+    """Show the full ancestor chain for a record."""
+    from helicon.provenance import ProvenanceDB
+
+    db = ProvenanceDB(ctx.obj["db_path"])
+    # Resolve prefix
+    full_id = record_id
+    for r in db.all_records():
+        if r.record_id.startswith(record_id):
+            full_id = r.record_id
+            break
+    chain = db.lineage(full_id)
+    if not chain:
+        click.echo(f"No lineage found for: {record_id}", err=True)
+        sys.exit(1)
+    click.echo(f"Lineage chain ({len(chain)} node(s)):")
+    for i, r in enumerate(chain):
+        prefix = "  " * i + ("└─" if i > 0 else "  ")
+        click.echo(f"{prefix} [{r.fidelity_tier}] {r.source}  {r.record_id[:8]}…")
+
+
 if __name__ == "__main__":
     main()
