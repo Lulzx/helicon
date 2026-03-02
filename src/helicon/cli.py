@@ -1365,23 +1365,31 @@ def provenance_lineage(ctx: click.Context, record_id: str) -> None:
 
 
 # ---------------------------------------------------------------------------
-# helicon detach — real-time detachment onset assessment
+# helicon detach — real-time detachment analysis group
 # ---------------------------------------------------------------------------
 
 _SPECIES_CHOICES = click.Choice(["H+", "He+", "N+", "Ar+", "Kr+", "Xe+"])
 
 
-@main.command("detach")
+@main.group("detach")
+def detach_group() -> None:
+    """Magnetic nozzle detachment analysis (v2.5 novel contributions)."""
+
+
+# -- detach assess -----------------------------------------------------------
+
+@detach_group.command("assess")
 @click.option("--n", "n_m3", type=float, required=True, help="Plasma density [m^-3]")
 @click.option("--Te", "Te_eV", type=float, required=True, help="Electron temperature [eV]")
 @click.option("--Ti", "Ti_eV", type=float, required=True, help="Ion temperature [eV]")
 @click.option("--B", "B_T", type=float, required=True, help="Magnetic field [T]")
-@click.option("--dBdz", "dBdz", type=float, default=-1.0, show_default=True, help="B gradient [T/m]")  # noqa: E501
+@click.option("--dBdz", "dBdz", type=float, default=-1.0, show_default=True,
+              help="B gradient [T/m]")
 @click.option("--vz", "vz_ms", type=float, required=True, help="Axial bulk velocity [m/s]")
 @click.option("--species", type=_SPECIES_CHOICES, default="H+", show_default=True)
 @click.option("--json", "output_json", is_flag=True, help="Machine-readable JSON output")
 @click.option("--control", is_flag=True, help="Output control recommendation dict")
-def detach_cmd(
+def detach_assess_cmd(
     n_m3: float,
     Te_eV: float,
     Ti_eV: float,
@@ -1392,17 +1400,16 @@ def detach_cmd(
     output_json: bool,
     control: bool,
 ) -> None:
-    """Assess magnetic nozzle detachment onset from local plasma parameters."""
+    """Assess detachment onset from local plasma parameters.
+
+    Exit codes: 0 = attached, 1 = imminent, 2 = detached.
+    """
     from helicon.detach import DetachmentOnsetModel, PlasmaState
     from helicon.detach.invariants import species_mass
 
     state = PlasmaState(
-        n_m3=n_m3,
-        Te_eV=Te_eV,
-        Ti_eV=Ti_eV,
-        B_T=B_T,
-        dBdz_T_per_m=dBdz,
-        vz_ms=vz_ms,
+        n_m3=n_m3, Te_eV=Te_eV, Ti_eV=Ti_eV,
+        B_T=B_T, dBdz_T_per_m=dBdz, vz_ms=vz_ms,
         mass_amu=species_mass(species),
     )
     model = DetachmentOnsetModel()
@@ -1420,6 +1427,302 @@ def detach_cmd(
             sys.exit(2)
         if ds.is_imminent:
             sys.exit(1)
+
+
+# -- detach calibrate --------------------------------------------------------
+
+@detach_group.command("calibrate")
+@click.option("--n-samples", default=500, show_default=True,
+              help="Synthetic training samples.")
+@click.option("--seed", default=0, show_default=True, help="Random seed.")
+@click.option("--sharpness", default=10.0, show_default=True,
+              help="Logistic decision boundary sharpness.")
+@click.option("--output", "output_path", type=click.Path(), default=None,
+              help="Save calibration result to JSON file.")
+@click.option("--json", "output_json", is_flag=True, help="Print JSON summary.")
+def detach_calibrate_cmd(
+    n_samples: int,
+    seed: int,
+    sharpness: float,
+    output_path: str | None,
+    output_json: bool,
+) -> None:
+    """Calibrate detachment model weights via binary cross-entropy.
+
+    Generates physics-motivated synthetic data (oracle labels from the
+    Merino-Ahedo 2011 criterion + 5 % label noise), fits SLSQP-optimised
+    weights subject to the simplex constraint w_A + w_β + w_Λ = 1.
+    """
+    from helicon.detach.calibration import DetachmentCalibrator
+
+    if not output_json:
+        click.echo(f"Generating {n_samples} synthetic training samples (seed={seed})…")
+    records = DetachmentCalibrator.generate_synthetic_data(n_samples=n_samples, seed=seed)
+
+    cal = DetachmentCalibrator(sharpness=sharpness)
+    if not output_json:
+        click.echo("Fitting weights (SLSQP + simplex constraint)…")
+    result = cal.fit(records)
+
+    if output_json:
+        click.echo(json.dumps(result.to_model_kwargs() | {
+            "n_samples": result.n_samples,
+            "log_loss": result.log_loss,
+            "accuracy": result.accuracy,
+        }, indent=2))
+    else:
+        click.echo(result.summary())
+
+    if output_path:
+        import pathlib
+        pathlib.Path(output_path).write_text(
+            json.dumps(result.to_model_kwargs(), indent=2)
+        )
+        click.echo(f"Saved to {output_path}")
+
+
+# -- detach invert ------------------------------------------------------------
+
+@detach_group.command("invert")
+@click.option("--F", "F_N", type=float, required=True, help="Measured thrust [N]")
+@click.option("--mdot", type=float, required=True, help="Mass flow rate [kg/s]")
+@click.option("--B", "B_T", type=float, required=True, help="Throat B-field [T]")
+@click.option("--area", type=float, required=True, help="Throat area [m^2]")
+@click.option("--mirror-ratio", default=5.0, show_default=True,
+              help="Mirror ratio R_B = B_throat/B_exit")
+@click.option("--species", type=_SPECIES_CHOICES, default="H+", show_default=True)
+@click.option("--Te", "Te_eV", type=float, default=50.0, show_default=True,
+              help="Nominal electron temperature [eV]")
+@click.option("--dBdz", "dBdz", type=float, default=-2.0, show_default=True,
+              help="Axial B gradient at throat [T/m]")
+@click.option("--json", "output_json", is_flag=True, help="Machine-readable JSON output")
+def detach_invert_cmd(
+    F_N: float,
+    mdot: float,
+    B_T: float,
+    area: float,
+    mirror_ratio: float,
+    species: str,
+    Te_eV: float,
+    dBdz: float,
+    output_json: bool,
+) -> None:
+    """Infer plasma state from thrust observables (no diagnostics needed).
+
+    Closed-form reconstruction: M_A = [F/(ṁ η_T B)] √(μ₀ ṁ mᵢ/A).
+    """
+    from helicon.detach.invariants import species_mass
+    from helicon.detach.inverse import ThrustInverter, ThrustObservation
+
+    obs = ThrustObservation(
+        F_thrust_N=F_N,
+        m_dot_kg_s=mdot,
+        B_throat_T=B_T,
+        A_throat_m2=area,
+        mass_amu=species_mass(species),
+        Te_eV_nominal=Te_eV,
+        dBdz_T_per_m=dBdz,
+    )
+    inv = ThrustInverter(mirror_ratio=mirror_ratio)
+    state = inv.invert(obs)
+
+    if output_json:
+        click.echo(json.dumps({
+            "n_m3": state.n_m3,
+            "vz_ms": state.vz_ms,
+            "Ti_eV_est": state.Ti_eV_est,
+            "alfven_mach": state.alfven_mach,
+            "detachment_score": state.detachment_score,
+            "confidence": state.confidence,
+            "residual": state.residual,
+        }, indent=2))
+    else:
+        click.echo(f"  density        n = {state.n_m3:.3e} m⁻³")
+        click.echo(f"  exhaust vel    vz = {state.vz_ms:.3e} m/s")
+        click.echo(f"  Alfvén Mach    M_A = {state.alfven_mach:.3f}")
+        click.echo(f"  detach score   S = {state.detachment_score:.3f}")
+        click.echo(f"  confidence     = {state.confidence:.2%}")
+
+
+# -- detach simulate ----------------------------------------------------------
+
+@detach_group.command("simulate")
+@click.option("--n", "n_m3", type=float, required=True, help="Plasma density [m^-3]")
+@click.option("--Te", "Te_eV", type=float, required=True, help="Electron temperature [eV]")
+@click.option("--Ti", "Ti_eV", type=float, required=True, help="Ion temperature [eV]")
+@click.option("--B", "B_T", type=float, required=True, help="Magnetic field [T]")
+@click.option("--dBdz", "dBdz", type=float, default=-1.0, show_default=True,
+              help="B gradient [T/m]")
+@click.option("--vz", "vz_ms", type=float, required=True, help="Axial bulk velocity [m/s]")
+@click.option("--species", type=_SPECIES_CHOICES, default="H+", show_default=True)
+@click.option("--setpoint", default=0.35, show_default=True,
+              help="Target detachment score S* ∈ (0,1)")
+@click.option("--steps", default=20, show_default=True, help="Number of control timesteps")
+@click.option("--dt", "dt_s", default=0.01, show_default=True, help="Timestep [s]")
+@click.option("--decay-rate", default=1.0, show_default=True,
+              help="Lyapunov decay rate α [1/s]")
+@click.option("--json", "output_json", is_flag=True, help="Output full JSON trace")
+def detach_simulate_cmd(
+    n_m3: float,
+    Te_eV: float,
+    Ti_eV: float,
+    B_T: float,
+    dBdz: float,
+    vz_ms: float,
+    species: str,
+    setpoint: float,
+    steps: int,
+    dt_s: float,
+    decay_rate: float,
+    output_json: bool,
+) -> None:
+    """Simulate Lyapunov-stable closed-loop detachment score control.
+
+    Runs the feedback controller for STEPS timesteps and shows convergence
+    of the detachment score S toward the target setpoint S*.
+
+    Stability proof: V = (S−S*)²/2, dV/dt = −2αV < 0 (exponential decay).
+    """
+    from helicon.detach import LyapunovController, PlasmaState
+    from helicon.detach.invariants import species_mass
+
+    state = PlasmaState(
+        n_m3=n_m3, Te_eV=Te_eV, Ti_eV=Ti_eV,
+        B_T=B_T, dBdz_T_per_m=dBdz, vz_ms=vz_ms,
+        mass_amu=species_mass(species),
+    )
+    ctrl = LyapunovController(setpoint=setpoint, decay_rate=decay_rate)
+    updates = ctrl.simulate(state, n_steps=steps, dt_s=dt_s)
+
+    if output_json:
+        trace = [
+            {"step": i + 1, "score": u.score, "error": u.error,
+             "V": u.lyapunov_V, "dV_dt": u.lyapunov_dV_dt,
+             "delta_I_A": u.delta_I_coil_A, "I_coil_A": u.new_I_coil_A}
+            for i, u in enumerate(updates)
+        ]
+        click.echo(json.dumps({"setpoint": setpoint, "trace": trace}, indent=2))
+    else:
+        cert = ctrl.stability_certificate(state)
+        click.echo(
+            f"  Lyapunov controller  S* = {setpoint:.2f}  "
+            f"α = {decay_rate:.2f} s⁻¹  τ = {cert['convergence_time_s']:.2f} s"
+        )
+        click.echo(f"  {'step':>4}  {'score':>7}  {'error':>8}  {'V':>10}  {'ΔI [A]':>10}")
+        click.echo("  " + "-" * 46)
+        for i, u in enumerate(updates):
+            click.echo(
+                f"  {i + 1:>4}  {u.score:>7.4f}  {u.error:>+8.4f}"
+                f"  {u.lyapunov_V:>10.2e}  {u.delta_I_coil_A:>+10.1f}"
+            )
+        click.echo(f"\n  Stable: {cert['is_stable']}  "
+                   f"grad_S_B = {cert['grad_S_B']:.3e} T⁻¹")
+
+
+# -- detach report ------------------------------------------------------------
+
+@detach_group.command("report")
+@click.option("--n", "n_m3", type=float, required=True, help="Plasma density [m^-3]")
+@click.option("--Te", "Te_eV", type=float, required=True, help="Electron temperature [eV]")
+@click.option("--Ti", "Ti_eV", type=float, required=True, help="Ion temperature [eV]")
+@click.option("--B", "B_T", type=float, required=True, help="Magnetic field [T]")
+@click.option("--dBdz", "dBdz", type=float, default=-1.0, show_default=True,
+              help="B gradient [T/m]")
+@click.option("--vz", "vz_ms", type=float, required=True, help="Axial bulk velocity [m/s]")
+@click.option("--species", type=_SPECIES_CHOICES, default="H+", show_default=True)
+@click.option("--coupling", default=0.30, show_default=True,
+              help="Sheath coupling factor ξ ∈ [0,1]")
+@click.option("--json", "output_json", is_flag=True, help="Machine-readable JSON output")
+def detach_report_cmd(
+    n_m3: float,
+    Te_eV: float,
+    Ti_eV: float,
+    B_T: float,
+    dBdz: float,
+    vz_ms: float,
+    species: str,
+    coupling: float,
+    output_json: bool,
+) -> None:
+    """Full combined diagnostic: MHD + FLR kinetic + sheath + Lyapunov cert.
+
+    Reports four layers of analysis in one call:
+
+    \b
+    1. MHD assessment (M_A, β_e, Λᵢ, score)
+    2. FLR kinetic correction (Northrop 2nd-order Λ_FLR, kinetic M_kAW)
+    3. Sheath coupling correction (Debye length, ε_ES, corrected score)
+    4. Lyapunov stability certificate (V, dV/dt, convergence time)
+    """
+    from helicon.detach import (
+        DetachmentOnsetModel,
+        LyapunovController,
+        PlasmaState,
+        apply_sheath_correction,
+    )
+    from helicon.detach.invariants import species_mass
+    from helicon.detach.kinetic import alfven_mach_kinetic, ion_magnetization_flr
+
+    mass = species_mass(species)
+    state = PlasmaState(
+        n_m3=n_m3, Te_eV=Te_eV, Ti_eV=Ti_eV,
+        B_T=B_T, dBdz_T_per_m=dBdz, vz_ms=vz_ms,
+        mass_amu=mass,
+    )
+
+    # 1. MHD
+    model = DetachmentOnsetModel()
+    ds = model.assess(state)
+
+    # 2. Kinetic FLR
+    lambda_flr = ion_magnetization_flr(Ti_eV, B_T, dBdz, mass)
+    m_kaw = alfven_mach_kinetic(vz_ms, B_T, n_m3, mass, Ti_eV, dBdz)
+
+    # 3. Sheath
+    sheath = apply_sheath_correction(
+        score_raw=ds.detachment_score,
+        n_m3=n_m3, Te_eV=Te_eV, Ti_eV=Ti_eV,
+        B_T=B_T, dBdz_T_per_m=dBdz, mass_amu=mass,
+        coupling_factor=coupling,
+    )
+
+    # 4. Lyapunov
+    ctrl = LyapunovController(model=model)
+    cert = ctrl.stability_certificate(state)
+
+    if output_json:
+        click.echo(json.dumps({
+            "mhd": ds.to_dict(),
+            "kinetic": {
+                "lambda_i_flr": lambda_flr if lambda_flr != float("inf") else "inf",
+                "alfven_mach_kinetic": m_kaw,
+            },
+            "sheath": {
+                "debye_length_m": sheath.debye_length_m,
+                "sheath_potential_V": sheath.sheath_potential_V,
+                "epsilon_ES": sheath.epsilon_ES,
+                "score_corrected": sheath.score_corrected,
+                "correction_fraction": sheath.correction_fraction,
+            },
+            "lyapunov": cert,
+        }, indent=2))
+    else:
+        click.echo("── MHD Assessment ─────────────────────────────────────────")
+        click.echo(ds.summary())
+        click.echo("\n── Kinetic FLR Corrections ─────────────────────────────────")
+        lf = f"{lambda_flr:.4f}" if lambda_flr != float("inf") else "inf"
+        click.echo(f"  Λᵢ_FLR (Northrop 2nd-order) = {lf}")
+        click.echo(f"  M_kAW  (kinetic Alfvén)      = {m_kaw:.4f}")
+        click.echo("\n── Sheath Coupling Correction ──────────────────────────────")
+        click.echo(f"  Debye length  λ_D = {sheath.debye_length_m:.3e} m")
+        click.echo(f"  Sheath potential Φ_s = {sheath.sheath_potential_V:.2f} V")
+        click.echo(f"  ε_ES (electric/mirror) = {sheath.epsilon_ES:.4f}")
+        click.echo(f"  Score: {sheath.score_raw:.4f} → {sheath.score_corrected:.4f} "
+                   f"(−{sheath.correction_fraction:.1%})")
+        click.echo("\n── Lyapunov Stability Certificate ──────────────────────────")
+        click.echo(f"  V = {cert['V']:.4e}   dV/dt = {cert['dV_dt']:.4e}")
+        click.echo(f"  Stable: {cert['is_stable']}   "
+                   f"τ_conv = {cert['convergence_time_s']:.3f} s")
 
 
 if __name__ == "__main__":

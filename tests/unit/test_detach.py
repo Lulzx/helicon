@@ -438,7 +438,7 @@ def test_control_recommendation_increase_B_when_detached():
 # ---------------------------------------------------------------------------
 
 _ATTACHED_ARGS = [
-    "detach",
+    "detach", "assess",
     "--n", "1e18",
     "--Te", "50",
     "--Ti", "50",
@@ -448,7 +448,7 @@ _ATTACHED_ARGS = [
 ]
 
 _DETACHED_ARGS = [
-    "detach",
+    "detach", "assess",
     "--n", "1e18",
     "--Te", "50",
     "--Ti", "50",

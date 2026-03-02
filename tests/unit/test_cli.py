@@ -34,7 +34,7 @@ def test_version():
     runner = CliRunner()
     result = runner.invoke(main, ["--version"])
     assert result.exit_code == 0
-    assert "2.5.0" in result.output
+    assert "2.6.0" in result.output
 
 
 def test_run_dry_run_with_config():
