@@ -255,6 +255,33 @@ class WarpXMetalDiag:
             species=species,
         )
 
+    def read_fields(self) -> dict[str, Any]:
+        """Read all field arrays from the AMReX FAB binary.
+
+        Returns a dict mapping field name → ``numpy.ndarray`` of shape
+        ``(nx, ny)`` in x-major order (Fortran layout within each component).
+        Requires ``numpy``.
+        """
+        import numpy as np
+
+        fab_path = self.diag_dir / "Level_0" / "Cell_D_00000"
+        if not fab_path.exists():
+            return {}
+
+        data = fab_path.read_bytes()
+        nl = data.index(b"\n")
+        raw = np.frombuffer(data[nl + 1 :], dtype="<f4")
+
+        if not self.n_cells or len(self.n_cells) < 2:
+            return {}
+        nx, ny = self.n_cells[0], self.n_cells[1]
+
+        fields = {}
+        for i, name in enumerate(self.field_vars):
+            block = raw[i * nx * ny : (i + 1) * nx * ny]
+            fields[name] = block.reshape(nx, ny, order="F")
+        return fields
+
     def summary(self) -> str:
         cells = " × ".join(str(n) for n in self.n_cells)
         lo = ", ".join(f"{v:.3e}" for v in self.domain_lo)

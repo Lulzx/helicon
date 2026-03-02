@@ -123,8 +123,15 @@ def run_simulation(
         )
 
     # Step 4: Launch WarpX
-    # Try Metal backend first (Apple Silicon native GPU via SYCL/AdaptiveCpp)
-    if hardware.has_warpx_metal:
+    # Try Metal backend first (Apple Silicon native GPU via SYCL/AdaptiveCpp).
+    # The warpx-metal build is warpx.2d (2D Cartesian, single precision).
+    # Skip if the inputs declare RZ geometry or openPMD diagnostics.
+    _inputs_text = input_path.read_text()
+    _metal_compatible = (
+        "geometry.dims = RZ" not in _inputs_text
+        and "format = openpmd" not in _inputs_text
+    )
+    if hardware.has_warpx_metal and _metal_compatible:
         from helicon.runner.metal_runner import detect_warpx_metal, run_warpx_metal
 
         metal_info = detect_warpx_metal()
