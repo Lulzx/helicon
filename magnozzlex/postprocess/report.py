@@ -7,8 +7,9 @@ optionally generates summary CSV for parameter scans.
 from __future__ import annotations
 
 import json
-from dataclasses import asdict, dataclass
+from dataclasses import asdict, dataclass, field
 from pathlib import Path
+from typing import Any
 
 import magnozzlex
 
@@ -30,6 +31,78 @@ class RunReport:
     beam_efficiency: float | None
     thrust_coefficient: float | None
     radial_loss_fraction: float | None
+    # Optional spec §6.3 fields
+    nozzle_type: str | None = None
+    plasma_source: dict | None = None
+
+    def to_spec_dict(
+        self,
+        *,
+        config: Any = None,
+        timestamp: str | None = None,
+    ) -> dict:
+        """Return a spec §6.3 compliant nested dictionary.
+
+        Parameters
+        ----------
+        config : SimConfig, optional
+            Original simulation configuration; used to populate
+            ``nozzle_type`` and ``plasma_source`` when not already set.
+        timestamp : str, optional
+            ISO-8601 timestamp string.  Defaults to the current UTC time.
+
+        Returns
+        -------
+        dict
+        """
+        import datetime
+
+        if timestamp is None:
+            timestamp = (
+                datetime.datetime.now(datetime.timezone.utc)
+                .strftime("%Y-%m-%dT%H:%M:%SZ")
+            )
+
+        # Resolve nozzle_type
+        nozzle_type: str | None = self.nozzle_type
+        plasma_source: dict | None = self.plasma_source
+        if config is not None:
+            if nozzle_type is None and hasattr(config, "nozzle"):
+                nozzle_type = getattr(config.nozzle, "type", None)
+            if plasma_source is None and hasattr(config, "plasma"):
+                try:
+                    plasma_source = config.plasma.model_dump(mode="python")
+                except AttributeError:
+                    plasma_source = None
+
+        return {
+            "magnozzlex_version": self.magnozzlex_version,
+            "config_hash": self.config_hash,
+            "timestamp": timestamp,
+            "nozzle_type": nozzle_type,
+            "plasma_source": plasma_source,
+            "results": {
+                "thrust_N": self.thrust_N,
+                "isp_s": self.isp_s,
+                "detachment_efficiency": {
+                    "momentum_based": self.detachment_momentum,
+                    "particle_based": self.detachment_particle,
+                    "energy_based": self.detachment_energy,
+                },
+                "plume_half_angle_deg": self.plume_half_angle_deg,
+                "beam_efficiency": self.beam_efficiency,
+                "radial_loss_fraction": self.radial_loss_fraction,
+                "convergence": {
+                    "thrust_relative_change_last_10pct": None,
+                    "particle_count_exit": None,
+                },
+            },
+            "validation_flags": {
+                "steady_state_reached": None,
+                "particle_statistics_sufficient": None,
+                "energy_conservation_error": None,
+            },
+        }
 
 
 def generate_report(
@@ -97,11 +170,11 @@ def generate_report(
     return report
 
 
-def save_report(report: RunReport, path: str | Path) -> None:
-    """Save a report to JSON."""
+def save_report(report: RunReport, path: str | Path, *, config: Any = None) -> None:
+    """Save a report to JSON using the spec §6.3 nested format."""
     path = Path(path)
     path.parent.mkdir(parents=True, exist_ok=True)
-    data = asdict(report)
+    data = report.to_spec_dict(config=config)
     path.write_text(json.dumps(data, indent=2, default=str))
 
 

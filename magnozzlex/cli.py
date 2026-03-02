@@ -31,12 +31,19 @@ def main() -> None:
 @click.option("--output", "output_dir", type=click.Path(), help="Output directory")
 @click.option("--dry-run", is_flag=True, help="Generate inputs without running WarpX")
 @click.option("--validate-config", "validate_only", is_flag=True, help="Only validate config")
+@click.option(
+    "--gpu",
+    type=click.Choice(["auto", "cuda", "cpu"]),
+    default="auto",
+    help="GPU backend selection (auto-detected if not specified)",
+)
 def run(
     config_path: str | None,
     preset: str | None,
     output_dir: str | None,
     dry_run: bool,
     validate_only: bool,
+    gpu: str,
 ) -> None:
     """Run a magnetic nozzle simulation."""
     from magnozzlex.config.parser import SimConfig
@@ -76,7 +83,7 @@ def run(
     # Run
     from magnozzlex.runner.launch import run_simulation
 
-    click.echo("Starting simulation...")
+    click.echo(f"Starting simulation... (gpu={gpu})")
     run_result = run_simulation(
         config,
         output_dir=output_dir,
@@ -98,13 +105,13 @@ def run(
 @click.option(
     "--metrics",
     default="thrust",
-    help="Comma-separated metrics: thrust,detachment,plume,report",
+    help="Comma-separated metrics: thrust,detachment,plume,pulsed,report",
 )
 @click.option("--output", "output_file", type=click.Path(), help="Output JSON file")
 def postprocess(input_dir: str, metrics: str, output_file: str | None) -> None:
     """Extract propulsion metrics from WarpX output.
 
-    Available metrics: thrust, detachment, plume, report
+    Available metrics: thrust, detachment, plume, pulsed, report
     """
     metric_list = [m.strip() for m in metrics.split(",")]
 
@@ -160,6 +167,21 @@ def postprocess(input_dir: str, metrics: str, output_file: str | None) -> None:
             }
             click.echo(f"  Half-angle:     {plume.half_angle_deg:.1f}°")
             click.echo(f"  Beam efficiency: {plume.beam_efficiency:.3f}")
+        except FileNotFoundError as exc:
+            click.echo(f"  Error: {exc}", err=True)
+
+    if "pulsed" in metric_list:
+        from magnozzlex.postprocess.pulsed import compute_pulsed_metrics
+
+        click.echo("Computing pulsed metrics...")
+        try:
+            pulsed = compute_pulsed_metrics(input_dir)
+            results["pulsed"] = {
+                "impulse_Ns": pulsed.impulse_Ns,
+                "energy_J": pulsed.energy_J,
+                "isp_s": pulsed.isp_s,
+            }
+            click.echo(f"  Impulse bit: {pulsed.impulse_Ns:.4f} N·s")
         except FileNotFoundError as exc:
             click.echo(f"  Error: {exc}", err=True)
 
@@ -289,6 +311,140 @@ def scan(
         click.echo(
             f"  Prescreened: {result.n_screened}/{n_points} filtered by mirror ratio < {min_mirror_ratio}"
         )
+    click.echo(f"Output: {output_dir}/")
+
+
+@main.command()
+@click.option("--config", "config_path", required=True, type=click.Path(exists=True))
+@click.option("--vary", "vary_specs", multiple=True, required=True, metavar="PATH:LOW:HIGH:N")
+@click.option("--objective", default="thrust_N", help="Objective to maximize")
+@click.option("--n-iterations", default=20, show_default=True, type=int)
+@click.option("--output", "output_dir", default="optimize_results", type=click.Path())
+@click.option("--dry-run", is_flag=True)
+def optimize(
+    config_path: str,
+    vary_specs: tuple[str, ...],
+    objective: str,
+    n_iterations: int,
+    output_dir: str,
+    dry_run: bool,
+) -> None:
+    """Run Bayesian optimization over coil/plasma parameters."""
+    from magnozzlex.config.parser import SimConfig
+    from magnozzlex.optimize.scan import ParameterRange, run_scan
+
+    config = SimConfig.from_yaml(config_path)
+
+    try:
+        ranges = [ParameterRange.from_string(s) for s in vary_specs]
+    except ValueError as exc:
+        click.echo(f"Error parsing --vary: {exc}", err=True)
+        sys.exit(1)
+
+    # Override n per range to distribute n_iterations via LHC
+    for r in ranges:
+        r.n = max(1, n_iterations // len(ranges))
+
+    click.echo(
+        f"Optimize: {n_iterations} iterations, method=lhc, objective={objective}"
+    )
+    for r in ranges:
+        click.echo(f"  {r.path}: [{r.low}, {r.high}] n={r.n}")
+
+    result = run_scan(
+        config,
+        ranges,
+        output_base=output_dir,
+        method="lhc",
+        dry_run=dry_run,
+        seed=0,
+    )
+
+    # Extract best point by objective
+    best_metric = None
+    best_value = None
+    for m in result.metrics:
+        val = m.get(objective)
+        if val is not None:
+            if best_value is None or val > best_value:
+                best_value = val
+                best_metric = m
+
+    n_ok = sum(1 for m in result.metrics if m.get("success"))
+    click.echo(f"Done: {n_ok}/{len(result.metrics)} points succeeded.")
+    if best_metric is not None:
+        click.echo(f"Best {objective}: {best_value}")
+        click.echo(f"  Parameters: {best_metric}")
+    else:
+        click.echo(f"No points returned a value for objective '{objective}'.")
+    click.echo(f"Output: {output_dir}/")
+
+
+@main.command()
+@click.option("--config", "config_path", required=True, type=click.Path(exists=True))
+@click.option("--preset", type=str, help="Built-in preset")
+@click.option(
+    "--resolutions",
+    default="128x64,256x128,512x256",
+    help="Comma-separated nzxnr resolution pairs",
+)
+@click.option("--output", "output_dir", default="convergence", type=click.Path())
+@click.option("--dry-run", is_flag=True)
+def convergence(
+    config_path: str,
+    preset: str | None,
+    resolutions: str,
+    output_dir: str,
+    dry_run: bool,
+) -> None:
+    """Run a grid convergence study."""
+    from magnozzlex.config.parser import SimConfig
+    from magnozzlex.runner.convergence import run_convergence_study
+
+    config = SimConfig.from_yaml(config_path)
+
+    # Parse resolutions string into list of (nz, nr) tuples
+    res_list: list[tuple[int, int]] = []
+    for token in resolutions.split(","):
+        token = token.strip()
+        parts = token.lower().split("x")
+        if len(parts) != 2:
+            click.echo(
+                f"Error: could not parse resolution '{token}' (expected NZxNR format)",
+                err=True,
+            )
+            sys.exit(1)
+        try:
+            nz, nr = int(parts[0]), int(parts[1])
+        except ValueError:
+            click.echo(
+                f"Error: non-integer values in resolution '{token}'", err=True
+            )
+            sys.exit(1)
+        res_list.append((nz, nr))
+
+    click.echo(f"Convergence study: {len(res_list)} resolution levels")
+    for nz, nr in res_list:
+        click.echo(f"  nz={nz}, nr={nr}")
+
+    result = run_convergence_study(
+        config,
+        res_list,
+        output_base=output_dir,
+        dry_run=dry_run,
+    )
+
+    click.echo(f"Levels run: {len(result.levels)}")
+    for lv in result.levels:
+        status = "ok" if lv.success else "FAILED"
+        thrust_str = f", thrust={lv.thrust_N:.4f} N" if lv.thrust_N is not None else ""
+        click.echo(f"  nz={lv.nz} nr={lv.nr} [{status}]{thrust_str}")
+
+    if result.convergence_order is not None:
+        click.echo(f"Convergence order: {result.convergence_order:.2f}")
+    if result.extrapolated_thrust_N is not None:
+        click.echo(f"Extrapolated thrust: {result.extrapolated_thrust_N:.4f} N")
+    click.echo(f"Converged: {result.converged}")
     click.echo(f"Output: {output_dir}/")
 
 

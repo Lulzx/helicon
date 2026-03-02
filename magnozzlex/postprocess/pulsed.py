@@ -37,6 +37,10 @@ class PulsedResult:
     mean_impulse_bit_Ns: float
     n_pulses: int
     repetition_rate_Hz: float | None
+    # Convenience aliases / additional metrics (§3b)
+    impulse_Ns: float = 0.0
+    energy_J: float | None = None
+    isp_s: float | None = None
 
 
 def compute_pulsed_metrics(
@@ -106,6 +110,9 @@ def compute_pulsed_metrics(
             mean_impulse_bit_Ns=0.0,
             n_pulses=0,
             repetition_rate_Hz=None,
+            impulse_Ns=0.0,
+            energy_J=None,
+            isp_s=None,
         )
 
     times_arr = np.array(times)
@@ -162,6 +169,9 @@ def compute_pulsed_metrics(
         mean_impulse_bit_Ns=mean_impulse,
         n_pulses=len(pulses),
         repetition_rate_Hz=rep_rate,
+        impulse_Ns=total_impulse,
+        energy_J=None,
+        isp_s=None,
     )
 
 

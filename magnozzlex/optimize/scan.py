@@ -70,6 +70,75 @@ class ScanResult:
     param_names: list[str]
     base_config: SimConfig
     n_screened: int = 0
+    objectives: list[str] | None = None
+
+    def plot_pareto(
+        self,
+        *,
+        x_key: str = "thrust_N",
+        y_key: str | None = None,
+        ax=None,
+    ) -> tuple:
+        """Plot the Pareto front for this scan result.
+
+        Extracts metric values for *x_key* and *y_key* from
+        :attr:`metrics`, builds a cost matrix (negated for maximization),
+        computes the Pareto front and calls :meth:`ParetoResult.plot`.
+
+        Parameters
+        ----------
+        x_key : str
+            Metric key to use for the x-axis (default ``"thrust_N"``).
+        y_key : str, optional
+            Metric key to use for the y-axis.  Defaults to the second
+            objective in :attr:`objectives` if available, else
+            ``"beam_efficiency"``.
+        ax : matplotlib Axes, optional
+            Axes to draw on.  A new figure is created if *None*.
+
+        Returns
+        -------
+        fig, ax
+            Matplotlib figure and axes objects.
+
+        Raises
+        ------
+        ImportError
+            If matplotlib is not installed (skipped gracefully — returns
+            ``(None, None)``).
+        """
+        try:
+            import matplotlib  # noqa: F401
+        except ImportError:
+            return (None, None)
+
+        from magnozzlex.optimize.pareto import pareto_front
+
+        # Determine y_key
+        if y_key is None:
+            if self.objectives and len(self.objectives) >= 2:
+                y_key = self.objectives[1]
+            else:
+                y_key = "beam_efficiency"
+
+        # Extract values; skip points where either metric is missing
+        x_vals: list[float] = []
+        y_vals: list[float] = []
+        for m in self.metrics:
+            xv = m.get(x_key)
+            yv = m.get(y_key)
+            if xv is not None and yv is not None:
+                x_vals.append(float(xv))
+                y_vals.append(float(yv))
+
+        if not x_vals:
+            return (None, None)
+
+        # Negate for maximization convention (pareto_front uses minimization)
+        costs = np.column_stack([-np.asarray(x_vals), -np.asarray(y_vals)])
+        result = pareto_front(costs)
+
+        return result.plot(labels=(x_key, y_key), ax=ax)
 
 
 def _set_nested(data: dict, path: str, value: float) -> dict:

@@ -39,9 +39,16 @@ def collect_metadata(config: object | None = None) -> dict:
     # Git SHA of magnozzlex installation
     meta["magnozzlex_git_sha"] = _get_git_sha()
 
+    # WarpX version and git SHA
+    meta["warpx_version"] = _get_warpx_version()
+    meta["warpx_git_sha"] = None
+
     # Dependency versions
     for pkg in ["numpy", "scipy", "pydantic", "h5py"]:
         meta[f"{pkg}_version"] = _get_version(pkg)
+
+    # Torch version
+    meta["torch_version"] = _get_version("torch")
 
     # MLX info
     try:
@@ -68,13 +75,26 @@ def collect_metadata(config: object | None = None) -> dict:
         except (FileNotFoundError, subprocess.TimeoutExpired):
             pass
 
-    # Config hash
+    # Metal version (macOS Darwin only)
+    meta["metal_version"] = _get_metal_version()
+
+    # CUDA version
+    meta["cuda_version"] = _get_cuda_version()
+
+    # GPU model
+    meta["gpu_model"] = _get_gpu_model()
+
+    # Config hash and contents
     if config is not None:
         from magnozzlex.config.parser import SimConfig
 
         if isinstance(config, SimConfig):
             json_bytes = config.model_dump_json().encode()
             meta["config_hash"] = hashlib.sha256(json_bytes).hexdigest()
+
+            import yaml
+
+            meta["config_contents"] = yaml.safe_dump(config.model_dump())
 
     return meta
 
@@ -108,3 +128,89 @@ def _get_version(package: str) -> str | None:
         return version(package)
     except Exception:
         return None
+
+
+def _get_warpx_version() -> str | None:
+    """Try to get the WarpX version via importlib.metadata, then pywarpx.__version__."""
+    try:
+        from importlib.metadata import version
+
+        return version("warpx")
+    except Exception:
+        pass
+    try:
+        import pywarpx
+
+        return pywarpx.__version__
+    except Exception:
+        return None
+
+
+def _get_metal_version() -> str | None:
+    """Get Metal version on macOS Darwin; return None on other platforms."""
+    import subprocess
+
+    if platform.system() != "Darwin":
+        return None
+
+    # Try system_profiler for "Metal Feature Set:" line
+    try:
+        result = subprocess.run(
+            ["system_profiler", "SPMetalDataType"],
+            capture_output=True,
+            text=True,
+            timeout=10,
+        )
+        if result.returncode == 0:
+            for line in result.stdout.splitlines():
+                if "Metal Feature Set:" in line:
+                    return line.strip()
+    except (FileNotFoundError, subprocess.TimeoutExpired):
+        pass
+
+    # Fallback: sysctl hw.targettype
+    try:
+        result = subprocess.run(
+            ["sysctl", "-n", "hw.targettype"],
+            capture_output=True,
+            text=True,
+            timeout=5,
+        )
+        if result.returncode == 0 and result.stdout.strip():
+            return result.stdout.strip()
+    except (FileNotFoundError, subprocess.TimeoutExpired):
+        pass
+
+    return None
+
+
+def _get_cuda_version() -> str | None:
+    """Get CUDA version via torch.version.cuda if torch is available."""
+    try:
+        import torch
+
+        return torch.version.cuda
+    except Exception:
+        return None
+
+
+def _get_gpu_model() -> str | None:
+    """Get GPU model name on Linux via nvidia-smi; returns None on other platforms or on failure."""
+    import subprocess
+
+    if platform.system() != "Linux":
+        return None
+
+    try:
+        result = subprocess.run(
+            ["nvidia-smi", "--query-gpu=name", "--format=csv,noheader"],
+            capture_output=True,
+            text=True,
+            timeout=10,
+        )
+        if result.returncode == 0 and result.stdout.strip():
+            return result.stdout.strip().splitlines()[0]
+    except (FileNotFoundError, subprocess.TimeoutExpired):
+        pass
+
+    return None

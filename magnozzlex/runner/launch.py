@@ -92,6 +92,21 @@ def run_simulation(
     # Flag non-physical configurations for downstream citation guards
     meta["mass_ratio_reduced"] = config.plasma.mass_ratio is not None
     meta["electron_model"] = config.plasma.electron_model
+
+    # Validation proximity
+    try:
+        from magnozzlex.validate.proximity import config_proximity
+
+        prox = config_proximity(config)
+        meta["validation_proximity"] = {
+            "nearest_case": prox.nearest_case,
+            "distance": prox.distance,
+            "in_validated_region": prox.in_validated_region,
+            "warning": prox.warning,
+        }
+    except Exception:
+        meta["validation_proximity"] = None
+
     meta_path = out / "run_metadata.json"
     meta_path.write_text(json.dumps(meta, indent=2, default=str))
 

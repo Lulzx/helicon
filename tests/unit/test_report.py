@@ -73,10 +73,10 @@ class TestSaveLoadReport:
         save_report(report, path)
 
         loaded = load_report(path)
-        assert loaded["thrust_N"] == 2.5
-        assert loaded["isp_s"] == 4000.0
+        assert loaded["results"]["thrust_N"] == 2.5
+        assert loaded["results"]["isp_s"] == 4000.0
         assert loaded["config_hash"] == "test_hash"
-        assert loaded["detachment_momentum"] == 0.80
+        assert loaded["results"]["detachment_efficiency"]["momentum_based"] == 0.80
 
     def test_creates_parent_dirs(self, tmp_path: Path) -> None:
         report = RunReport(
@@ -118,7 +118,7 @@ class TestSaveLoadReport:
         save_report(report, path)
         data = json.loads(path.read_text())
         assert "magnozzlex_version" in data
-        assert "thrust_N" in data
+        assert "thrust_N" in data["results"]
 
 
 class TestGenerateReport:
