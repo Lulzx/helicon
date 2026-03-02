@@ -832,5 +832,277 @@ def export_cad(config_path: str, output_path: str, fmt: str) -> None:
     click.echo(f"Exported {len(config.nozzle.coils)} coil(s) to: {result}")
 
 
+# ---------------------------------------------------------------------------
+# helicon array — multi-thruster array
+# ---------------------------------------------------------------------------
+
+
+_DATA_TYPE_CHOICE = click.Choice(["experimental", "simulation", "analytical"])
+
+
+@main.command("array")
+@click.option("--n", "n_thrusters", type=int, default=2, show_default=True, help="Number of thrusters")  # noqa: E501
+@click.option("--sep", "separation_m", type=float, default=0.5, show_default=True, help="Centre-to-centre separation [m]")  # noqa: E501
+@click.option("--thrust", "thrust_n", type=float, multiple=True, help="Per-thruster thrust [N]")  # noqa: E501
+@click.option("--isp", "isp_s", type=float, multiple=True, help="Per-thruster Isp [s]")
+@click.option("--angle", "half_angle_deg", type=float, multiple=True, help="Plume half-angle [deg]")  # noqa: E501
+@click.option("--ref-z", "reference_z_m", type=float, default=1.0, show_default=True, help="Evaluation plane [m]")  # noqa: E501
+def array_cmd(
+    n_thrusters: int,
+    separation_m: float,
+    thrust_n: tuple[float, ...],
+    isp_s: tuple[float, ...],
+    half_angle_deg: tuple[float, ...],
+    reference_z_m: float,
+) -> None:
+    """Compute combined performance of a multi-thruster array."""
+    from helicon.multithruster import ArrayConfig, ThrusterArray
+
+    thrust = list(thrust_n) if thrust_n else [0.1] * n_thrusters
+    isp = list(isp_s) if isp_s else [3000.0] * n_thrusters
+    angles = list(half_angle_deg) if half_angle_deg else [15.0] * n_thrusters
+
+    # Pad or truncate to n_thrusters
+    thrust = (thrust * n_thrusters)[:n_thrusters]
+    isp = (isp * n_thrusters)[:n_thrusters]
+    angles = (angles * n_thrusters)[:n_thrusters]
+
+    cfg = ArrayConfig(
+        n_thrusters=n_thrusters,
+        separation_m=separation_m,
+        thrust_N=thrust,
+        isp_s=isp,
+        plume_half_angle_deg=angles,
+        reference_z_m=reference_z_m,
+    )
+    result = ThrusterArray(cfg).compute()
+
+    click.echo(f"Array: {n_thrusters} thrusters, separation={separation_m}m")
+    click.echo(f"  Nominal thrust:      {result.nominal_thrust_N*1e3:.2f} mN")
+    click.echo(f"  Effective thrust:    {result.total_thrust_N*1e3:.2f} mN")
+    click.echo(f"  Interaction penalty: {result.interaction_penalty*100:.1f}%")
+    click.echo(f"  Effective Isp:       {result.effective_isp_s:.0f} s")
+    click.echo(f"  Mass flow rate:      {result.total_mass_flow_kgs*1e6:.3f} mg/s")
+    for pr in result.pair_interactions:
+        click.echo(
+            f"  Pair ({pr.i},{pr.j}): sep={pr.separation_m:.2f}m  "
+            f"overlap={pr.overlap_factor:.3f}  penalty={pr.thrust_penalty_fraction*100:.1f}%"
+        )
+
+
+# ---------------------------------------------------------------------------
+# helicon plugins — list registered plugins
+# ---------------------------------------------------------------------------
+
+
+@main.command("plugins")
+@click.option("--namespace", "namespace", type=str, default=None, help="Filter to a namespace")
+def plugins_cmd(namespace: str | None) -> None:
+    """List registered plugins in the default registry."""
+    from helicon.plugins import list_plugins
+
+    listing = list_plugins(namespace)
+    if not listing:
+        click.echo("No plugins registered.")
+        return
+    for ns, names in sorted(listing.items()):
+        if names:
+            click.echo(f"  {ns}:")
+            for name in sorted(names):
+                click.echo(f"    - {name}")
+
+
+# ---------------------------------------------------------------------------
+# helicon valdb — validation database operations
+# ---------------------------------------------------------------------------
+
+
+@main.group("valdb")
+@click.option("--db", "db_path", type=click.Path(), default="~/.helicon/valdb", show_default=True)  # noqa: E501
+@click.pass_context
+def valdb_group(ctx: click.Context, db_path: str) -> None:
+    """Manage the collaborative validation database."""
+    ctx.ensure_object(dict)
+    ctx.obj["db_path"] = db_path
+
+
+@valdb_group.command("add")
+@click.option("--case-id", required=True)
+@click.option("--source", required=True)
+@click.option("--contributor", required=True)
+@click.option("--type", "data_type", required=True, type=_DATA_TYPE_CHOICE)
+@click.option("--tags", default="", help="Comma-separated tags")
+@click.option("--notes", default="")
+@click.pass_context
+def valdb_add(
+    ctx: click.Context,
+    case_id: str,
+    source: str,
+    contributor: str,
+    data_type: str,
+    tags: str,
+    notes: str,
+) -> None:
+    """Add a record to the validation database."""
+    from helicon.valdb import ValidationDatabase, ValidationRecord
+
+    db = ValidationDatabase(ctx.obj["db_path"])
+    record = ValidationRecord(
+        case_id=case_id,
+        source=source,
+        contributor=contributor,
+        data_type=data_type,  # type: ignore[arg-type]
+        tags=[t.strip() for t in tags.split(",") if t.strip()],
+        notes=notes,
+    )
+    db.add(record)
+    click.echo(f"Added record {record.record_id} to {db._path}")
+
+
+@valdb_group.command("query")
+@click.option("--case-id", default=None)
+@click.option("--contributor", default=None)
+@click.option("--type", "data_type", default=None, type=_DATA_TYPE_CHOICE)
+@click.option("--tag", "tags", multiple=True)
+@click.pass_context
+def valdb_query(
+    ctx: click.Context,
+    case_id: str | None,
+    contributor: str | None,
+    data_type: str | None,
+    tags: tuple[str, ...],
+) -> None:
+    """Query the validation database."""
+    from helicon.valdb import ValidationDatabase
+
+    db = ValidationDatabase(ctx.obj["db_path"])
+    results = db.query(
+        case_id=case_id,
+        contributor=contributor,
+        data_type=data_type,
+        tags=list(tags) if tags else None,
+    )
+    click.echo(f"Found {len(results)} record(s):")
+    for r in results:
+        click.echo(
+            f"  [{r.data_type:12s}] {r.case_id}"
+            f"  contributor={r.contributor}  tags={r.tags}"
+        )
+
+
+@valdb_group.command("export")
+@click.option("--output", "output_path", required=True, type=click.Path())
+@click.option("--format", "fmt", type=click.Choice(["json", "csv"]), default="json", show_default=True)  # noqa: E501
+@click.pass_context
+def valdb_export(ctx: click.Context, output_path: str, fmt: str) -> None:
+    """Export the validation database."""
+    from helicon.valdb import ValidationDatabase
+
+    db = ValidationDatabase(ctx.obj["db_path"])
+    if fmt == "json":
+        db.export_json(output_path)
+    else:
+        db.export_csv(output_path)
+    click.echo(f"Exported {len(db)} record(s) to {output_path}")
+
+
+@valdb_group.command("stats")
+@click.pass_context
+def valdb_stats(ctx: click.Context) -> None:
+    """Show summary statistics for the validation database."""
+    from helicon.valdb import ValidationDatabase
+
+    db = ValidationDatabase(ctx.obj["db_path"])
+    records = db.query()
+    click.echo(f"Total records: {len(records)}")
+    by_type: dict[str, int] = {}
+    by_contributor: dict[str, int] = {}
+    for r in records:
+        by_type[r.data_type] = by_type.get(r.data_type, 0) + 1
+        by_contributor[r.contributor] = by_contributor.get(r.contributor, 0) + 1
+    click.echo("By type:")
+    for t, n in sorted(by_type.items()):
+        click.echo(f"  {t}: {n}")
+    click.echo("By contributor:")
+    for c, n in sorted(by_contributor.items()):
+        click.echo(f"  {c}: {n}")
+
+
+# ---------------------------------------------------------------------------
+# helicon regression — annual validation regression suite
+# ---------------------------------------------------------------------------
+
+
+@main.group("regression")
+def regression_group() -> None:
+    """Manage the annual validation regression suite."""
+
+
+@regression_group.command("save-baseline")
+@click.option("--output", "baseline_path", default="results/baseline.json", show_default=True, type=click.Path())  # noqa: E501
+def regression_save_baseline(baseline_path: str) -> None:
+    """Save current validation results as the regression baseline."""
+    from helicon.validate import run_validation, save_baseline
+
+    click.echo("Running validation suite to capture baseline...")
+    report = run_validation(run_simulations=False)
+    save_baseline(report.results, baseline_path)
+    click.echo(f"Baseline saved: {baseline_path}  ({report.n_total} cases)")
+
+
+@regression_group.command("run")
+@click.option("--baseline", "baseline_path", default="results/baseline.json", show_default=True, type=click.Path(exists=True))  # noqa: E501
+@click.option("--output", "output_dir", default="results/regression", show_default=True, type=click.Path())  # noqa: E501
+@click.option("--case", "cases", multiple=True, help="Limit to specific case names")
+def regression_run(baseline_path: str, output_dir: str, cases: tuple[str, ...]) -> None:
+    """Run regression comparison against the saved baseline."""
+    from helicon.validate import RegressionSuite
+
+    suite = RegressionSuite(baseline_path, output_dir=output_dir)
+    report = suite.run(
+        run_simulations=False,
+        cases=list(cases) if cases else None,
+    )
+    status = "CLEAN" if report.all_passed else f"{report.n_regressions} REGRESSION(S)"
+    click.echo(f"Regression: {status}")
+    click.echo(f"  Fixed:     {report.n_fixed}")
+    click.echo(f"  Unchanged: {report.n_unchanged}")
+    click.echo(f"  Report:    {output_dir}/regression_report.md")
+    if not report.all_passed:
+        sys.exit(1)
+
+
+# ---------------------------------------------------------------------------
+# helicon perf — Apple Silicon performance profiler
+# ---------------------------------------------------------------------------
+
+
+@main.command("perf")
+@click.option(
+    "--json",
+    "output_json",
+    is_flag=True,
+    help="Output machine-readable JSON instead of formatted text",
+)
+@click.option(
+    "--no-bandwidth",
+    "skip_bandwidth",
+    is_flag=True,
+    help="Skip memory bandwidth probe (faster startup)",
+)
+def perf_cmd(output_json: bool, skip_bandwidth: bool) -> None:
+    """Profile Apple Silicon hardware and print WarpX/MLX tuning recommendations."""
+    from helicon.perf import AppleSiliconProfiler
+
+    profiler = AppleSiliconProfiler(measure_bandwidth=not skip_bandwidth)
+    profile = profiler.profile()
+
+    if output_json:
+        click.echo(json.dumps(profile.to_dict(), indent=2))
+    else:
+        click.echo(profile.summary())
+        click.echo(profile.recommendations())
+
+
 if __name__ == "__main__":
     main()

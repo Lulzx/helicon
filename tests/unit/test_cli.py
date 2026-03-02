@@ -80,3 +80,89 @@ def test_run_both_config_and_preset():
         config_path = _write_config(tmpdir)
         result = runner.invoke(main, ["run", "--config", config_path, "--preset", "sunbird"])
         assert result.exit_code != 0
+
+
+# ---------------------------------------------------------------------------
+# v2.1 commands
+# ---------------------------------------------------------------------------
+
+
+def test_array_cmd_defaults():
+    runner = CliRunner()
+    result = runner.invoke(main, ["array", "--n", "2"])
+    assert result.exit_code == 0
+    assert "thrust" in result.output.lower() or "Thrust" in result.output
+
+
+def test_array_cmd_close():
+    """Close thrusters should show a non-zero penalty."""
+    runner = CliRunner()
+    result = runner.invoke(
+        main,
+        ["array", "--n", "2", "--sep", "0.05", "--angle", "30.0", "--ref-z", "1.0"],
+    )
+    assert result.exit_code == 0
+    assert "%" in result.output  # interaction penalty displayed
+
+
+def test_plugins_cmd_empty():
+    runner = CliRunner()
+    result = runner.invoke(main, ["plugins"])
+    assert result.exit_code == 0
+
+
+def test_valdb_stats_empty(tmp_path):
+    runner = CliRunner()
+    result = runner.invoke(main, ["valdb", "--db", str(tmp_path), "stats"])
+    assert result.exit_code == 0
+    assert "0" in result.output
+
+
+def test_valdb_add_and_query(tmp_path):
+    runner = CliRunner()
+    result = runner.invoke(
+        main,
+        [
+            "valdb", "--db", str(tmp_path), "add",
+            "--case-id", "test_case",
+            "--source", "unit test",
+            "--contributor", "tester",
+            "--type", "simulation",
+        ],
+    )
+    assert result.exit_code == 0
+
+    result2 = runner.invoke(main, ["valdb", "--db", str(tmp_path), "query"])
+    assert result2.exit_code == 0
+    assert "test_case" in result2.output
+
+
+def test_valdb_export_json(tmp_path):
+    runner = CliRunner()
+    out = str(tmp_path / "out.json")
+    runner.invoke(
+        main,
+        [
+            "valdb", "--db", str(tmp_path), "add",
+            "--case-id", "c1", "--source", "s", "--contributor", "me", "--type", "analytical",
+        ],
+    )
+    result = runner.invoke(main, ["valdb", "--db", str(tmp_path), "export", "--output", out])
+    assert result.exit_code == 0
+    assert (tmp_path / "out.json").exists()
+
+
+def test_perf_cmd():
+    runner = CliRunner()
+    result = runner.invoke(main, ["perf", "--no-bandwidth"])
+    assert result.exit_code == 0
+    assert "Chip" in result.output or "chip" in result.output.lower()
+
+
+def test_perf_cmd_json():
+    runner = CliRunner()
+    result = runner.invoke(main, ["perf", "--no-bandwidth", "--json"])
+    assert result.exit_code == 0
+    data = __import__("json").loads(result.output)
+    assert "chip_model" in data
+    assert "openmp" in data
