@@ -1,0 +1,42 @@
+# Sunbird nozzle — 3D Cartesian simulation
+# Two asymmetrically placed coils to justify full 3D geometry
+
+nozzle:
+  type: converging_diverging
+  coils:
+    # Primary throat coil (on-axis)
+    - z: 0.0
+      r: 0.12
+      I: 95000.0
+    # Secondary coil — slightly offset in z (asymmetric strength)
+    - z: 0.08
+      r: 0.10
+      I: 47000.0
+  domain:
+    z_min: -0.3
+    z_max: 2.0
+    r_max: 0.6
+  resolution:
+    nz: 64
+    nr: 32
+    geometry: "3d"
+    np_phi: 32
+
+plasma:
+  n0: 1.0e18
+  T_i_eV: 100.0
+  T_e_eV: 100.0
+  v_injection_ms: 50000.0
+  electron_model: kinetic
+  species:
+    - "H+"
+    - "e-"
+
+timesteps: 20000
+dt_multiplier: 0.95
+output_dir: results/sunbird_3d
+
+diagnostics:
+  mode: analysis
+  field_dump_interval: 500
+  particle_dump_interval: 5000
