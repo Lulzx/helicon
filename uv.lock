@@ -694,6 +694,7 @@ dev = [
     { name = "pytest" },
     { name = "ruff" },
     { name = "scikit-learn" },
+    { name = "tqdm" },
 ]
 
 [package.metadata]
@@ -725,6 +726,7 @@ dev = [
     { name = "pytest", specifier = ">=8.0" },
     { name = "ruff", specifier = ">=0.9" },
     { name = "scikit-learn", specifier = ">=1.5" },
+    { name = "tqdm", specifier = ">=4.67.3" },
 ]
 
 [[package]]
