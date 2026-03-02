@@ -5,7 +5,7 @@ from __future__ import annotations
 import contextlib
 from dataclasses import dataclass
 
-__version__ = "2.3.0"
+__version__ = "2.4.0"
 
 
 # ---------------------------------------------------------------------------
@@ -38,6 +38,10 @@ def __getattr__(name: str):
         import helicon.widgets as _widgets_mod
 
         return _widgets_mod
+    if name == "detach":
+        import helicon.detach as _detach_mod
+
+        return _detach_mod
     raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
 
 

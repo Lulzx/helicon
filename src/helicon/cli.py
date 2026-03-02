@@ -1364,5 +1364,63 @@ def provenance_lineage(ctx: click.Context, record_id: str) -> None:
         click.echo(f"{prefix} [{r.fidelity_tier}] {r.source}  {r.record_id[:8]}…")
 
 
+# ---------------------------------------------------------------------------
+# helicon detach — real-time detachment onset assessment
+# ---------------------------------------------------------------------------
+
+_SPECIES_CHOICES = click.Choice(["H+", "He+", "N+", "Ar+", "Kr+", "Xe+"])
+
+
+@main.command("detach")
+@click.option("--n", "n_m3", type=float, required=True, help="Plasma density [m^-3]")
+@click.option("--Te", "Te_eV", type=float, required=True, help="Electron temperature [eV]")
+@click.option("--Ti", "Ti_eV", type=float, required=True, help="Ion temperature [eV]")
+@click.option("--B", "B_T", type=float, required=True, help="Magnetic field [T]")
+@click.option("--dBdz", "dBdz", type=float, default=-1.0, show_default=True, help="B gradient [T/m]")  # noqa: E501
+@click.option("--vz", "vz_ms", type=float, required=True, help="Axial bulk velocity [m/s]")
+@click.option("--species", type=_SPECIES_CHOICES, default="H+", show_default=True)
+@click.option("--json", "output_json", is_flag=True, help="Machine-readable JSON output")
+@click.option("--control", is_flag=True, help="Output control recommendation dict")
+def detach_cmd(
+    n_m3: float,
+    Te_eV: float,
+    Ti_eV: float,
+    B_T: float,
+    dBdz: float,
+    vz_ms: float,
+    species: str,
+    output_json: bool,
+    control: bool,
+) -> None:
+    """Assess magnetic nozzle detachment onset from local plasma parameters."""
+    from helicon.detach import DetachmentOnsetModel, PlasmaState
+    from helicon.detach.invariants import species_mass
+
+    state = PlasmaState(
+        n_m3=n_m3,
+        Te_eV=Te_eV,
+        Ti_eV=Ti_eV,
+        B_T=B_T,
+        dBdz_T_per_m=dBdz,
+        vz_ms=vz_ms,
+        mass_amu=species_mass(species),
+    )
+    model = DetachmentOnsetModel()
+
+    if control:
+        rec = model.control_recommendation(state)
+        click.echo(json.dumps(rec, indent=2))
+    elif output_json:
+        ds = model.assess(state)
+        click.echo(json.dumps(ds.to_dict(), indent=2))
+    else:
+        ds = model.assess(state)
+        click.echo(ds.summary())
+        if ds.is_detached:
+            sys.exit(2)
+        if ds.is_imminent:
+            sys.exit(1)
+
+
 if __name__ == "__main__":
     main()
