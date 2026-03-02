@@ -29,6 +29,10 @@ class HardwareInfo:
     mlx_version: str | None = None
     has_pywarpx: bool = False
     warpx_version: str | None = None
+    has_warpx_metal: bool = False
+    warpx_metal_exe_2d: str | None = None
+    warpx_metal_exe_3d: str | None = None
+    warpx_metal_root: str | None = None
     recommended_backend: str = "cpu"
     omp_num_threads: int = 1
 
@@ -48,6 +52,8 @@ class HardwareInfo:
             lines.append(f"MLX: {self.mlx_version or 'available'}")
         if self.has_pywarpx:
             lines.append(f"WarpX: {self.warpx_version or 'available'}")
+        if self.has_warpx_metal:
+            lines.append(f"WarpX Metal: {self.warpx_metal_root or 'detected'}")
         lines.append(f"Recommended backend: {self.recommended_backend}")
         lines.append(f"OMP threads: {self.omp_num_threads}")
         return "\n".join(lines)
@@ -118,11 +124,26 @@ def detect_hardware() -> HardwareInfo:
     except ImportError:
         pass
 
+    # warpx-metal detection (Apple Silicon native Metal GPU backend)
+    if info.is_apple_silicon:
+        try:
+            from helicon.runner.metal_runner import detect_warpx_metal
+            metal = detect_warpx_metal()
+            if metal.valid:
+                info.has_warpx_metal = True
+                info.warpx_metal_root = str(metal.root)
+                info.warpx_metal_exe_2d = str(metal.exe_2d) if metal.exe_2d else None
+                info.warpx_metal_exe_3d = str(metal.exe_3d) if metal.exe_3d else None
+        except Exception:
+            pass
+
     # Recommended backend
     if info.has_nvidia_gpu:
         info.recommended_backend = "cuda"
+    elif info.has_warpx_metal:
+        info.recommended_backend = "metal"  # Apple Silicon GPU via SYCL/Metal
     elif info.is_apple_silicon:
-        info.recommended_backend = "omp"  # WarpX is CPU-only on macOS
+        info.recommended_backend = "omp"  # Metal build not found
     else:
         info.recommended_backend = "omp"
 

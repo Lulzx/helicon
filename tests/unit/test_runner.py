@@ -30,7 +30,7 @@ def test_detect_hardware():
     hw = detect_hardware()
     assert hw.cpu_count >= 1
     assert hw.platform in ("darwin", "linux", "windows")
-    assert hw.recommended_backend in ("omp", "cuda")
+    assert hw.recommended_backend in ("omp", "cuda", "metal")
 
 
 def test_dry_run_creates_files():

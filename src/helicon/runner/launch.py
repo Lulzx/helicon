@@ -123,6 +123,35 @@ def run_simulation(
         )
 
     # Step 4: Launch WarpX
+    # Try Metal backend first (Apple Silicon native GPU via SYCL/AdaptiveCpp)
+    if hardware.has_warpx_metal:
+        from helicon.runner.metal_runner import detect_warpx_metal, run_warpx_metal
+
+        metal_info = detect_warpx_metal()
+        if metal_info.valid and metal_info.exe_2d is not None:
+            os.environ["OMP_NUM_THREADS"] = str(hardware.omp_num_threads)
+            metal_result = run_warpx_metal(
+                metal_info=metal_info,
+                output_dir=out,
+                inputs_content=input_path.read_text(),
+                timeout_s=3600 * 24,
+            )
+            wall = time.monotonic() - t0
+            meta["wall_time_seconds"] = wall
+            meta["backend"] = "metal"
+            meta["warpx_returncode"] = metal_result.exit_code
+            if not metal_result.success and metal_result.error:
+                meta["error"] = metal_result.error
+            meta_path.write_text(json.dumps(meta, indent=2, default=str))
+            return RunResult(
+                output_dir=out,
+                input_file=input_path,
+                bfield_file=bfield_path,
+                success=metal_result.success,
+                wall_time_seconds=wall,
+                metadata=meta,
+            )
+
     if not hardware.has_pywarpx:
         msg = (
             "pywarpx is not installed. Install WarpX with Python bindings to "

@@ -65,6 +65,10 @@ class DoctorReport:
         Whether the ``warpx`` binary was found in ``PATH``.
     warpx_path : str | None
         Full path to warpx binary if found.
+    warpx_metal_found : bool
+        Whether the warpx-metal Apple Silicon build was found.
+    warpx_metal_path : str | None
+        Root directory of the warpx-metal build if found.
     """
 
     python_version: str
@@ -72,6 +76,8 @@ class DoctorReport:
     checks: list[DepCheck] = field(default_factory=list)
     warpx_found: bool = False
     warpx_path: str | None = None
+    warpx_metal_found: bool = False
+    warpx_metal_path: str | None = None
 
     @property
     def all_required_ok(self) -> bool:
@@ -100,6 +106,11 @@ class DoctorReport:
             "  FOUND  " + (self.warpx_path or "")
             if self.warpx_found
             else "  NOT FOUND — install WarpX separately",
+            "",
+            "WarpX Metal (Apple Silicon GPU):",
+            "  FOUND  " + (self.warpx_metal_path or "")
+            if self.warpx_metal_found
+            else "  NOT FOUND — build warpx-metal for Apple GPU acceleration",
             "=" * 58,
             "Overall: " + ("HEALTHY" if self.healthy else "ISSUES FOUND"),
         ]
@@ -112,6 +123,8 @@ class DoctorReport:
             "healthy": self.healthy,
             "warpx_found": self.warpx_found,
             "warpx_path": self.warpx_path,
+            "warpx_metal_found": self.warpx_metal_found,
+            "warpx_metal_path": self.warpx_metal_path,
             "checks": [
                 {
                     "name": c.name,
@@ -179,10 +192,25 @@ def check_environment() -> DoctorReport:
 
     warpx_path = shutil.which("warpx") or shutil.which("warpx.RZ") or shutil.which("warpx.3d")
 
+    # warpx-metal detection (Apple Silicon native GPU build)
+    warpx_metal_found = False
+    warpx_metal_path: str | None = None
+    try:
+        from helicon.runner.metal_runner import detect_warpx_metal
+
+        metal = detect_warpx_metal()
+        if metal.valid:
+            warpx_metal_found = True
+            warpx_metal_path = str(metal.root)
+    except Exception:
+        pass
+
     return DoctorReport(
         python_version=py_ver,
         python_ok=py_ok,
         checks=checks,
         warpx_found=warpx_path is not None,
         warpx_path=warpx_path,
+        warpx_metal_found=warpx_metal_found,
+        warpx_metal_path=warpx_metal_path,
     )
