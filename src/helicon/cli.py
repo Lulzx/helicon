@@ -476,5 +476,46 @@ def convergence(
     click.echo(f"Output: {output_dir}/")
 
 
+@main.command()
+@click.option(
+    "--repeat",
+    default=3,
+    type=int,
+    show_default=True,
+    help="Number of timing repetitions per benchmark.",
+)
+@click.option(
+    "--output",
+    "output_path",
+    type=click.Path(),
+    default=None,
+    help="Write results as JSON to this path.",
+)
+def benchmark(repeat: int, output_path: str | None) -> None:
+    """Run the Helicon MLX-vs-NumPy benchmark suite."""
+
+    from helicon.benchmark import run_benchmarks
+
+    click.echo("Running benchmarks…")
+    suite = run_benchmarks()
+    click.echo(suite.summary())
+
+    if output_path:
+        import json
+        from pathlib import Path
+
+        data = [
+            {
+                "name": r.name,
+                "numpy_ms": r.numpy_ms,
+                "mlx_ms": r.mlx_ms,
+                "speedup": r.speedup,
+            }
+            for r in suite.results
+        ]
+        Path(output_path).write_text(json.dumps(data, indent=2))
+        click.echo(f"Results written to: {output_path}")
+
+
 if __name__ == "__main__":
     main()

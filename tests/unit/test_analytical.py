@@ -2,12 +2,21 @@
 
 import math
 
+import numpy as np
+import pytest
+
+from helicon.fields.biot_savart import HAS_MLX
 from helicon.optimize.analytical import (
     NozzleScreeningResult,
     divergence_half_angle,
+    divergence_half_angle_batch,
+    thrust_coefficient_batch,
     thrust_coefficient_paraxial,
     thrust_efficiency,
+    thrust_efficiency_batch,
 )
+
+skip_no_mlx = pytest.mark.skipif(not HAS_MLX, reason="MLX not installed")
 
 
 class TestThrustEfficiency:
@@ -150,3 +159,81 @@ class TestScreenGeometry:
         r_low = screen_geometry(coils_low, z_min=-0.5, z_max=2.0, n_pts=50).mirror_ratio
         r_high = screen_geometry(coils_high, z_min=-0.5, z_max=2.0, n_pts=50).mirror_ratio
         assert r_high > r_low
+
+
+class TestBatchFunctions:
+    """Tests for batch-vectorized analytical functions."""
+
+    def test_efficiency_batch_matches_scalar(self) -> None:
+        R_B = np.array([1.0, 2.0, 5.0, 10.0, 100.0])
+        batch = thrust_efficiency_batch(R_B, backend="numpy")
+        scalar = np.array([thrust_efficiency(r) for r in R_B])
+        np.testing.assert_allclose(batch, scalar, rtol=1e-8)
+
+    def test_coefficient_batch_matches_scalar(self) -> None:
+        R_B = np.array([1.5, 3.0, 7.0])
+        batch = thrust_coefficient_batch(R_B, backend="numpy")
+        scalar = np.array([thrust_coefficient_paraxial(r) for r in R_B])
+        np.testing.assert_allclose(batch, scalar, rtol=1e-6)
+
+    def test_divergence_batch_matches_scalar(self) -> None:
+        R_B = np.array([1.0, 2.0, 4.0, 16.0, float("inf")])
+        batch = divergence_half_angle_batch(R_B, backend="numpy")
+        scalar = np.array([divergence_half_angle(r) for r in R_B])
+        np.testing.assert_allclose(batch, scalar, atol=1e-6)
+
+    @skip_no_mlx
+    def test_batch_efficiency_mlx_matches_numpy(self) -> None:
+        R_B = np.linspace(1.5, 50.0, 100)
+        eta_np = thrust_efficiency_batch(R_B, backend="numpy")
+        eta_mlx = thrust_efficiency_batch(R_B, backend="mlx")
+        np.testing.assert_allclose(eta_mlx, eta_np, rtol=0.01)
+
+    @skip_no_mlx
+    def test_batch_coefficient_mlx_matches_numpy(self) -> None:
+        R_B = np.linspace(2.0, 30.0, 50)
+        ct_np = thrust_coefficient_batch(R_B, backend="numpy")
+        ct_mlx = thrust_coefficient_batch(R_B, backend="mlx")
+        np.testing.assert_allclose(ct_mlx, ct_np, rtol=0.01)
+
+    @skip_no_mlx
+    def test_batch_divergence_mlx_matches_numpy(self) -> None:
+        R_B = np.linspace(1.5, 50.0, 80)
+        d_np = divergence_half_angle_batch(R_B, backend="numpy")
+        d_mlx = divergence_half_angle_batch(R_B, backend="mlx")
+        np.testing.assert_allclose(d_mlx, d_np, atol=0.1)  # degrees
+
+
+@skip_no_mlx
+class TestBreizmanArefievDifferentiable:
+    """Tests for the differentiable end-to-end MLX analytical model."""
+
+    def test_breizman_arefiev_ct_runs(self) -> None:
+        import mlx.core as mx
+
+        from helicon.optimize.analytical import breizman_arefiev_ct_mlx
+
+        coil_params = mx.array([[0.0, 0.1, 50_000.0]], dtype=mx.float32)
+        z_eval = mx.linspace(-0.5, 1.5, 40)
+        ct = breizman_arefiev_ct_mlx(coil_params, z_eval, n_phi=32)
+        mx.eval(ct)
+        assert float(ct) >= 0.0
+
+    def test_breizman_arefiev_differentiable(self) -> None:
+        """mx.grad() should work on the differentiable C_T model."""
+        import mlx.core as mx
+
+        from helicon.optimize.analytical import breizman_arefiev_ct_mlx
+
+        coil_params = mx.array([[0.0, 0.1, 50_000.0]], dtype=mx.float32)
+        z_eval = mx.linspace(-0.5, 1.5, 40)
+
+        def model(cp):
+            return breizman_arefiev_ct_mlx(cp, z_eval, n_phi=32)
+
+        grad_fn = mx.grad(model)
+        grads = grad_fn(coil_params)
+        mx.eval(grads)
+        assert grads.shape == coil_params.shape
+        # Gradient w.r.t. current should be non-zero (C_T depends on mirror ratio)
+        assert float(mx.abs(grads).sum()) > 0.0

@@ -8,12 +8,15 @@ import h5py
 import numpy as np
 import pytest
 
+from helicon.fields.biot_savart import HAS_MLX
 from helicon.postprocess.plume import (
     PlumeResult,
     compute_electron_magnetization,
     compute_plume_metrics,
     compute_pressure_anisotropy,
 )
+
+skip_no_mlx = pytest.mark.skipif(not HAS_MLX, reason="MLX not installed")
 
 
 def _write_plume_snapshot(
@@ -155,3 +158,47 @@ class TestPressureAnisotropy:
         A = compute_pressure_anisotropy(P_perp, P_par)
         assert np.all(A < 0)
         assert np.allclose(A, -0.5)  # 50/100 - 1 = -0.5
+
+
+@skip_no_mlx
+class TestPlumeMLX:
+    """MLX backend paths for plume metrics."""
+
+    def test_plume_mlx_matches_numpy(self, plume_output: Path) -> None:
+        result_np = compute_plume_metrics(plume_output, backend="numpy")
+        result_mlx = compute_plume_metrics(plume_output, backend="mlx")
+        assert (
+            abs(result_np.divergence_half_angle_deg - result_mlx.divergence_half_angle_deg)
+            < 1.0
+        )
+        assert abs(result_np.beam_efficiency - result_mlx.beam_efficiency) < 0.02
+        assert abs(result_np.thrust_coefficient - result_mlx.thrust_coefficient) < 0.02
+
+    def test_magnetization_mlx_matches_numpy(self) -> None:
+        rng = np.random.default_rng(0)
+        nr, nz = 32, 64
+        Br = rng.uniform(-0.01, 0.01, (nr, nz)).astype(np.float32)
+        Bz = rng.uniform(0.01, 1.0, (nr, nz)).astype(np.float32)
+        n_e = rng.uniform(1e17, 1e19, (nr, nz)).astype(np.float32)
+
+        omega_np = compute_electron_magnetization(Br, Bz, n_e, T_e_eV=500.0, backend="numpy")
+        omega_mlx = compute_electron_magnetization(Br, Bz, n_e, T_e_eV=500.0, backend="mlx")
+
+        assert omega_mlx.shape == omega_np.shape
+        # Exclude inf values; check finite values match within 2%
+        finite = np.isfinite(omega_np) & np.isfinite(omega_mlx)
+        if np.any(finite):
+            denom = np.abs(omega_np[finite]) + 1e-30
+            rel = np.abs(omega_mlx[finite] - omega_np[finite]) / denom
+            assert np.all(rel < 0.02)
+
+    def test_anisotropy_mlx_matches_numpy(self) -> None:
+        rng = np.random.default_rng(3)
+        P_perp = np.abs(rng.standard_normal((16, 16))).astype(np.float32) * 100.0
+        P_par = np.abs(rng.standard_normal((16, 16))).astype(np.float32) * 100.0 + 1.0
+
+        A_np = compute_pressure_anisotropy(P_perp, P_par, backend="numpy")
+        A_mlx = compute_pressure_anisotropy(P_perp, P_par, backend="mlx")
+
+        assert A_mlx.shape == A_np.shape
+        assert np.allclose(A_mlx, A_np, rtol=0.01)

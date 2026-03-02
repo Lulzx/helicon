@@ -17,6 +17,8 @@ from typing import Any
 
 import numpy as np
 
+from helicon._mlx_utils import HAS_MLX, resolve_backend, to_mx, to_np
+
 
 @dataclass
 class DetachmentResult:
@@ -44,6 +46,56 @@ class DetachmentResult:
         return "\n".join(lines)
 
 
+def _classify_reduce_mlx(
+    z_pos: np.ndarray,
+    r_pos: np.ndarray,
+    pz: np.ndarray,
+    weights: np.ndarray,
+    species_mass: float,
+    z_inject: float,
+    z_exit: float,
+    r_max: float,
+) -> tuple[float, float, float, int, int, int]:
+    """Classify particles and compute efficiency sums on Metal GPU via MLX.
+
+    Returns
+    -------
+    pz_exit, ke_directed, total_pz_inject :
+        Momentum and energy sums for efficiency computation.
+    n_downstream, n_radial, n_reflected :
+        Integer particle counts.
+    """
+    if not HAS_MLX:
+        raise ImportError("MLX required for _classify_reduce_mlx")
+    import mlx.core as mx
+
+    z_mx = to_mx(z_pos)
+    r_mx = to_mx(r_pos)
+    pz_mx = to_mx(pz)
+    w_mx = to_mx(weights)
+
+    downstream = z_mx >= float(z_exit)
+    radial = r_mx >= float(r_max)
+    reflected = z_mx <= float(z_inject)
+
+    n_downstream = int(to_np(mx.sum(w_mx * downstream.astype(mx.float32))))
+    n_radial = int(to_np(mx.sum(w_mx * (radial & ~downstream).astype(mx.float32))))
+    n_reflected = int(
+        to_np(mx.sum(w_mx * (reflected & ~downstream & ~radial).astype(mx.float32)))
+    )
+
+    # pz at exit plane
+    down_f = downstream.astype(mx.float32)
+    pz_exit = float(to_np(mx.sum(w_mx * pz_mx * down_f)))
+
+    vz_mx = pz_mx / float(species_mass)
+    ke_directed = float(
+        to_np(mx.sum(w_mx * down_f * 0.5 * float(species_mass) * vz_mx * vz_mx))
+    )
+
+    return pz_exit, ke_directed, n_downstream, n_radial, n_reflected
+
+
 def compute_detachment(
     output_dir: str | Path,
     *,
@@ -52,6 +104,7 @@ def compute_detachment(
     z_inject: float | None = None,
     z_exit: float | None = None,
     r_max: float | None = None,
+    backend: str = "auto",
 ) -> DetachmentResult:
     """Compute detachment efficiency from openPMD particle data.
 
@@ -72,7 +125,10 @@ def compute_detachment(
         Exit plane z-coordinate [m].
     r_max : float, optional
         Radial domain boundary [m].
+    backend : ``"auto"`` | ``"mlx"`` | ``"numpy"``
+        Compute backend for particle classification and efficiency sums.
     """
+    use_mlx = resolve_backend(backend) == "mlx"
     output_dir = Path(output_dir)
     h5_files = sorted(output_dir.glob("**/*.h5"))
     if len(h5_files) < 2:
@@ -111,24 +167,42 @@ def compute_detachment(
     if r_max is None:
         r_max = r_pos.max() * 0.95
 
-    downstream = z_pos >= z_exit
-    radial_loss = r_pos >= r_max
-    reflected = z_pos <= z_inject
+    if use_mlx:
+        pz_exit, ke_directed, n_downstream, n_radial, n_reflected_count = (
+            _classify_reduce_mlx(
+                z_pos,
+                r_pos,
+                momenta_final,
+                weights_final,
+                species_mass,
+                z_inject,
+                z_exit,
+                r_max,
+            )
+        )
+    else:
+        downstream = z_pos >= z_exit
+        radial_loss = r_pos >= r_max
+        reflected = z_pos <= z_inject
 
-    n_downstream = int(np.sum(weights_final[downstream]))
-    n_radial = int(np.sum(weights_final[radial_loss & ~downstream]))
-    n_reflected_count = int(np.sum(weights_final[reflected & ~downstream & ~radial_loss]))
+        n_downstream = int(np.sum(weights_final[downstream]))
+        n_radial = int(np.sum(weights_final[radial_loss & ~downstream]))
+        n_reflected_count = int(
+            np.sum(weights_final[reflected & ~downstream & ~radial_loss])
+        )
 
-    # 1. Momentum-based: p_z at exit / p_z injected
-    pz_exit = np.sum(weights_final[downstream] * momenta_final[downstream])
+        pz_exit = float(np.sum(weights_final[downstream] * momenta_final[downstream]))
+        vz_down = momenta_final[downstream] / species_mass
+        ke_directed = float(
+            0.5 * species_mass * np.sum(weights_final[downstream] * vz_down**2)
+        )
+
     eta_momentum = float(pz_exit / pz_inject_total) if pz_inject_total > 0 else 0.0
 
     # 2. Particle-based: N_downstream / N_injected
     eta_particle = float(n_downstream / n_inject) if n_inject > 0 else 0.0
 
     # 3. Energy-based: KE_directed_exit / KE_injected
-    vz_down = momenta_final[downstream] / species_mass
-    ke_directed = 0.5 * species_mass * np.sum(weights_final[downstream] * vz_down**2)
     eta_energy = float(ke_directed / ke_inject_total) if ke_inject_total > 0 else 0.0
 
     return DetachmentResult(

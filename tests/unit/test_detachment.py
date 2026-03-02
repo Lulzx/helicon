@@ -12,7 +12,14 @@ import h5py
 import numpy as np
 import pytest
 
-from helicon.postprocess.detachment import DetachmentResult, compute_detachment
+from helicon.fields.biot_savart import HAS_MLX
+from helicon.postprocess.detachment import (
+    DetachmentResult,
+    _classify_reduce_mlx,
+    compute_detachment,
+)
+
+skip_no_mlx = pytest.mark.skipif(not HAS_MLX, reason="MLX not installed")
 
 
 def _write_synthetic_snapshot(
@@ -136,3 +143,43 @@ class TestDetachment:
 
         result = compute_detachment(out)
         assert result.particle_based > 0.5
+
+
+@skip_no_mlx
+class TestDetachmentMLXMatchesNumpy:
+    """MLX classify/reduce path must agree with NumPy."""
+
+    def test_classify_reduce_mlx_matches_numpy(self) -> None:
+        rng = np.random.default_rng(42)
+        N = 5_000
+        z_pos = rng.uniform(0.0, 2.0, N)
+        r_pos = rng.uniform(0.0, 0.3, N)
+        pz = rng.normal(1e-20, 3e-21, N)
+        weights = np.ones(N)
+        mass = 3.3435837724e-27
+        z_inject, z_exit, r_max = 0.1, 1.9, 0.28
+
+        pz_exit_mlx, ke_mlx, n_dn_mlx, n_rad_mlx, n_ref_mlx = _classify_reduce_mlx(
+            z_pos, r_pos, pz, weights, mass, z_inject, z_exit, r_max
+        )
+
+        downstream = z_pos >= z_exit
+        radial = r_pos >= r_max
+        reflected = z_pos <= z_inject
+        n_dn_np = int(np.sum(weights[downstream]))
+        n_rad_np = int(np.sum(weights[radial & ~downstream]))
+        n_ref_np = int(np.sum(weights[reflected & ~downstream & ~radial]))
+        pz_exit_np = float(np.sum(weights[downstream] * pz[downstream]))
+        vz_down = pz[downstream] / mass
+        ke_np = float(0.5 * mass * np.sum(weights[downstream] * vz_down**2))
+
+        assert n_dn_mlx == n_dn_np
+        assert n_rad_mlx == n_rad_np
+        assert n_ref_mlx == n_ref_np
+        assert abs(pz_exit_mlx - pz_exit_np) / max(abs(pz_exit_np), 1e-50) < 0.01
+        assert abs(ke_mlx - ke_np) / max(abs(ke_np), 1e-50) < 0.01
+
+    def test_compute_detachment_mlx_backend(self, synthetic_output: Path) -> None:
+        result_np = compute_detachment(synthetic_output, backend="numpy")
+        result_mlx = compute_detachment(synthetic_output, backend="mlx")
+        assert abs(result_np.particle_based - result_mlx.particle_based) < 0.05

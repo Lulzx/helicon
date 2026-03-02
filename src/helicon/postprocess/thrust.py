@@ -11,6 +11,8 @@ from pathlib import Path
 
 import numpy as np
 
+from helicon._mlx_utils import HAS_MLX, resolve_backend, to_mx, to_np
+
 EV_TO_J = 1.602176634e-19
 
 
@@ -26,11 +28,46 @@ class ThrustResult:
     n_particles_counted: int
 
 
+def _thrust_reduce_mlx(
+    wt: np.ndarray,
+    mass: float,
+    vz: np.ndarray,
+) -> tuple[float, float]:
+    """Compute thrust and mass-flow-rate sums on Metal GPU via MLX.
+
+    Parameters
+    ----------
+    wt : ndarray
+        Macro-particle weights.
+    mass : float
+        Species mass [kg].
+    vz : ndarray
+        Axial velocities [m/s].
+
+    Returns
+    -------
+    momentum_flux : float
+        Sum of w·m·vz² (thrust contribution) [N].
+    mass_flow : float
+        Sum of w·m·|vz| (mass flow rate contribution) [kg/s].
+    """
+    if not HAS_MLX:
+        raise ImportError("MLX required for _thrust_reduce_mlx")
+    import mlx.core as mx
+
+    wt_mx = to_mx(wt)
+    vz_mx = to_mx(vz)
+    momentum_flux = float(to_np(mx.sum(wt_mx * float(mass) * vz_mx * vz_mx)))
+    mass_flow = float(to_np(mx.sum(wt_mx * float(mass) * mx.abs(vz_mx))))
+    return momentum_flux, mass_flow
+
+
 def compute_thrust(
     output_dir: str | Path,
     *,
     exit_plane_z: float | None = None,
     species_masses: dict[str, float] | None = None,
+    backend: str = "auto",
 ) -> ThrustResult:
     """Compute thrust from WarpX openPMD output.
 
@@ -46,7 +83,10 @@ def compute_thrust(
         boundary (inferred from data).
     species_masses : dict, optional
         Species name -> mass [kg] mapping. Defaults to standard values.
+    backend : ``"auto"`` | ``"mlx"`` | ``"numpy"``
+        Compute backend for momentum flux reduction.
     """
+    use_mlx = resolve_backend(backend) == "mlx"
     output_dir = Path(output_dir)
 
     # Default species masses
@@ -128,8 +168,13 @@ def compute_thrust(
             wt = w[near_exit]
 
             # Momentum flux: sum(w * m * vz^2) is force (thrust)
-            total_momentum_z += np.sum(wt * mass * vz**2)
-            total_mass_flow += np.sum(wt * mass * np.abs(vz))
+            if use_mlx and len(wt) > 0:
+                mf, mflow = _thrust_reduce_mlx(wt, mass, vz)
+                total_momentum_z += mf
+                total_mass_flow += mflow
+            else:
+                total_momentum_z += np.sum(wt * mass * vz**2)
+                total_mass_flow += np.sum(wt * mass * np.abs(vz))
             total_particles += int(np.sum(near_exit))
 
     g0 = 9.80665  # standard gravity

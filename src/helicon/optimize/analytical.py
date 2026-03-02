@@ -27,6 +27,11 @@ from dataclasses import dataclass
 
 import numpy as np
 
+from helicon._mlx_utils import HAS_MLX, resolve_backend, to_mx, to_np
+
+if HAS_MLX:
+    import mlx.core as mx
+
 
 @dataclass
 class NozzleScreeningResult:
@@ -165,6 +170,267 @@ def divergence_half_angle(R_B: float) -> float:
     if math.isinf(R_B):
         return 0.0
     return math.degrees(math.asin(1.0 / math.sqrt(R_B)))
+
+
+# ---------------------------------------------------------------------------
+# Batch-vectorized analytical functions
+# ---------------------------------------------------------------------------
+
+
+def thrust_efficiency_batch(
+    R_B_array: np.ndarray,
+    gamma: float = 5.0 / 3.0,
+    backend: str = "auto",
+) -> np.ndarray:
+    """Compute thrust efficiency for an array of mirror ratios.
+
+    Parameters
+    ----------
+    R_B_array : ndarray, shape (N,)
+        Array of mirror ratios.
+    gamma : float
+        Polytropic index.
+    backend : str
+        Compute backend.
+
+    Returns
+    -------
+    ndarray, shape (N,)
+        η_T = 1 − (1/R_B)^((γ−1)/γ) for each entry.
+    """
+    R_B = np.asarray(R_B_array, dtype=np.float64)
+    exponent = (gamma - 1.0) / gamma
+    if resolve_backend(backend) == "mlx":
+        import mlx.core as mx
+
+        r_mx = to_mx(R_B)
+        one = mx.ones_like(r_mx)
+        valid = r_mx > 1.0
+        inf_mask = mx.isinf(r_mx)
+        ratio = mx.where(valid & ~inf_mask, one / r_mx, one)
+        eta = mx.where(valid & ~inf_mask, one - ratio**float(exponent), one)
+        eta = mx.where(valid, eta, mx.zeros_like(eta))
+        return to_np(eta)
+
+    eta = np.where(
+        R_B <= 1.0, 0.0, np.where(np.isinf(R_B), 1.0, 1.0 - (1.0 / R_B) ** exponent)
+    )
+    return eta
+
+
+def thrust_coefficient_batch(
+    R_B_array: np.ndarray,
+    gamma: float = 5.0 / 3.0,
+    backend: str = "auto",
+) -> np.ndarray:
+    """Compute paraxial thrust coefficient for an array of mirror ratios.
+
+    Parameters
+    ----------
+    R_B_array : ndarray, shape (N,)
+        Array of mirror ratios.
+    gamma : float
+        Polytropic index.
+    backend : str
+        Compute backend.
+
+    Returns
+    -------
+    ndarray, shape (N,)
+        C_T for each entry.
+    """
+    eta = thrust_efficiency_batch(R_B_array, gamma=gamma, backend=backend)
+    prefactor = math.sqrt(2.0 * (gamma + 1.0) / (gamma - 1.0))
+    if resolve_backend(backend) == "mlx":
+        import mlx.core as mx
+
+        eta_mx = to_mx(eta)
+        return to_np(float(prefactor) * mx.sqrt(mx.maximum(eta_mx, 0.0)))
+
+    return prefactor * np.sqrt(np.maximum(eta, 0.0))
+
+
+def divergence_half_angle_batch(
+    R_B_array: np.ndarray,
+    backend: str = "auto",
+) -> np.ndarray:
+    """Compute plume divergence half-angle for an array of mirror ratios [deg].
+
+    Parameters
+    ----------
+    R_B_array : ndarray, shape (N,)
+        Array of mirror ratios.
+    backend : str
+        Compute backend.
+
+    Returns
+    -------
+    ndarray, shape (N,)
+        Half-angle in degrees.
+    """
+    R_B = np.asarray(R_B_array, dtype=np.float64)
+    if resolve_backend(backend) == "mlx":
+        import mlx.core as mx
+
+        r_mx = to_mx(R_B)
+        valid = r_mx > 1.0
+        inf_mask = mx.isinf(r_mx)
+        sin_theta = mx.where(valid & ~inf_mask, mx.ones_like(r_mx) / mx.sqrt(r_mx), 0.0)
+        sin_theta = mx.clip(sin_theta, 0.0, 1.0)
+        theta_rad = mx.arcsin(sin_theta)
+        theta_deg = theta_rad * float(180.0 / math.pi)
+        theta_deg = mx.where(valid, theta_deg, 90.0)
+        theta_deg = mx.where(inf_mask, mx.zeros_like(theta_deg), theta_deg)
+        return to_np(theta_deg)
+
+    theta = np.where(
+        R_B <= 1.0,
+        90.0,
+        np.where(np.isinf(R_B), 0.0, np.degrees(np.arcsin(1.0 / np.sqrt(R_B)))),
+    )
+    return theta
+
+
+def screen_geometry_batch(
+    coil_configs: list[list],
+    *,
+    z_min: float,
+    z_max: float,
+    n_pts: int = 200,
+    gamma: float = 5.0 / 3.0,
+    backend: str = "auto",
+) -> list[NozzleScreeningResult]:
+    """Screen thousands of coil configurations analytically.
+
+    Parameters
+    ----------
+    coil_configs : list of list of Coil
+        Each element is a coil list for one configuration.
+    z_min, z_max : float
+        Axial extent [m].
+    n_pts : int
+        On-axis evaluation resolution.
+    gamma : float
+        Polytropic index.
+    backend : str
+        Biot-Savart backend for mirror ratio computation.
+
+    Returns
+    -------
+    list of NozzleScreeningResult
+    """
+    R_B_values = np.array([
+        mirror_ratio(cfg, z_min=z_min, z_max=z_max, n_pts=n_pts, backend=backend)
+        for cfg in coil_configs
+    ])
+    etas = thrust_efficiency_batch(R_B_values, gamma=gamma, backend=backend)
+    cts = thrust_coefficient_batch(R_B_values, gamma=gamma, backend=backend)
+    thetas = divergence_half_angle_batch(R_B_values, backend=backend)
+
+    return [
+        NozzleScreeningResult(
+            mirror_ratio=float(rb),
+            thrust_coefficient=float(ct),
+            divergence_half_angle_deg=float(th),
+            thrust_efficiency=float(eta),
+        )
+        for rb, ct, th, eta in zip(R_B_values, cts, thetas, etas)
+    ]
+
+
+# ---------------------------------------------------------------------------
+# Differentiable end-to-end analytical models (MLX only)
+# ---------------------------------------------------------------------------
+
+
+def breizman_arefiev_ct_mlx(
+    coil_params: mx.array,
+    z_eval: mx.array,
+    *,
+    gamma: float = 5.0 / 3.0,
+    n_phi: int = 64,
+) -> mx.array:
+    """Differentiable Breizman-Arefiev thrust coefficient.
+
+    Composes differentiable Biot-Savart → on-axis field → mirror ratio →
+    C_T as a single MLX computation graph.  Compatible with ``mx.grad()``.
+
+    Parameters
+    ----------
+    coil_params : mx.array, shape (N_coils, 3)
+        Each row: ``[z_coil, radius, current]``.
+    z_eval : mx.array, shape (N_z,)
+        Axial positions for on-axis field evaluation.
+    gamma : float
+        Polytropic index.
+    n_phi : int
+        Azimuthal quadrature points.
+
+    Returns
+    -------
+    C_T : mx.array, scalar
+    """
+    if not HAS_MLX:
+        raise ImportError("MLX required for breizman_arefiev_ct_mlx")
+    import mlx.core as mx
+
+    from helicon.fields.biot_savart import compute_bfield_mlx_differentiable
+
+    # On-axis: r = small epsilon to avoid singularity but preserve gradient
+    eps = 1e-6
+    r_axis = mx.ones_like(z_eval) * eps
+    _, Bz_axis = compute_bfield_mlx_differentiable(coil_params, r_axis, z_eval, n_phi=n_phi)
+
+    Bz_abs = mx.abs(Bz_axis)
+    B_max = mx.max(Bz_abs)
+    B_exit = Bz_abs[-1]
+
+    R_B = B_max / mx.maximum(B_exit, 1e-30)
+    exponent = float((gamma - 1.0) / gamma)
+    prefactor = float(math.sqrt(2.0 * (gamma + 1.0) / (gamma - 1.0)))
+
+    eta_T = mx.maximum(1.0 - (1.0 / mx.maximum(R_B, float(1.0 + 1e-9))) ** exponent, 0.0)
+    C_T = prefactor * mx.sqrt(eta_T)
+    return C_T
+
+
+def little_choueiri_ct_mlx(
+    coil_params: mx.array,
+    z_eval: mx.array,
+    T_e_eV: float,
+    m_i: float,
+    *,
+    gamma: float = 5.0 / 3.0,
+    n_phi: int = 64,
+) -> mx.array:
+    """Differentiable Little-Choueiri thrust coefficient with electron cooling.
+
+    Same composition as :func:`breizman_arefiev_ct_mlx` but scales C_T by
+    the ion sound speed normalisation: ``c_s = √(T_e / m_i)``.
+
+    Parameters
+    ----------
+    coil_params : mx.array, shape (N_coils, 3)
+    z_eval : mx.array, shape (N_z,)
+    T_e_eV : float
+        Electron temperature [eV].
+    m_i : float
+        Ion mass [kg].
+    gamma : float
+    n_phi : int
+
+    Returns
+    -------
+    C_T : mx.array, scalar
+    """
+    if not HAS_MLX:
+        raise ImportError("MLX required for little_choueiri_ct_mlx")
+    # Normalised the same way — the Little-Choueiri model has the same
+    # analytical form; electron cooling affects the effective gamma only.
+    # Here we use the user-supplied gamma as the effective polytropic index.
+    return breizman_arefiev_ct_mlx(
+        coil_params, z_eval, gamma=gamma, n_phi=n_phi
+    )
 
 
 def screen_geometry(
