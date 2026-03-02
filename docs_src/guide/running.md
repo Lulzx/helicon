@@ -85,3 +85,58 @@ result = run_convergence_study(
 print(f"Convergence order: {result.convergence_order:.2f}")
 print(f"Extrapolated thrust: {result.extrapolated_thrust_N:.4f} N")
 ```
+
+## Apple Silicon Metal GPU
+
+When `warpx-metal` is detected, `helicon run` automatically adapts inputs and runs on the
+Apple Silicon GPU via AdaptiveCpp → Metal:
+
+```bash
+helicon run --preset sunbird
+# WarpX Metal:  42%|████▏     | 210/500 [03:22<04:39,  1.04step/s]
+# Simulation complete (287.4s)
+# Output: results/sunbird
+```
+
+The first run is slow (~2–10 s/step) while Metal shaders are JIT-compiled. Subsequent
+runs reuse `~/.acpp/apps/global/jit-cache/` and reach ~1 ms/step.
+
+Override the step cap:
+
+```bash
+HELICON_METAL_MAX_STEP=2000 helicon run --preset sunbird
+```
+
+### Direct Metal API
+
+```python
+from helicon.runner.metal_runner import detect_warpx_metal, run_warpx_metal
+
+metal = detect_warpx_metal()
+print(metal.summary())
+
+result = run_warpx_metal(
+    metal_info=metal,
+    output_dir="metal_run/",
+    n_cell=128,
+    max_step=200,
+    progress=True,          # tqdm bar
+)
+print(result.summary())
+for diag in result.diags:
+    fields = diag.read_fields()   # {"Ex": np.ndarray(nx, ny), ...}
+    print(diag.summary())
+```
+
+### Build warpx-metal
+
+```bash
+git clone https://github.com/lulzx/warpx-metal ../warpx-metal
+cd ../warpx-metal
+./scripts/00-install-deps.sh
+./scripts/01-build-adaptivecpp.sh
+./scripts/05-build-warpx.sh
+```
+
+Helicon auto-detects the build at `../warpx-metal` or `~/work/warpx-metal`.
+Override with `WARPX_METAL_ROOT`.

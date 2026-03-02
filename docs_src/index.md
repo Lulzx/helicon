@@ -8,6 +8,8 @@ Helicon wraps and extends [WarpX](https://ecp-warpx.github.io/) with:
 - Post-processing pipelines that extract thrust, Isp, detachment efficiency, and plume divergence from PIC output
 - Parameter scan and optimization infrastructure (Bayesian, gradient-based via MLX, Sobol sensitivity)
 - Validation cases against published analytical solutions and experimental data (VASIMR VX-200, Merino-Ahedo)
+- Native Apple Silicon GPU execution via [warpx-metal](https://github.com/lulzx/warpx-metal) (SYCL → AdaptiveCpp → Metal)
+- Detachment analysis suite: MHD onset, kinetic FLR corrections, sheath coupling, Lyapunov controller
 
 ## Quick Install
 
@@ -20,6 +22,26 @@ pip install helicon[optimize]
 ```
 
 ## Quick Start
+
+### Metal GPU simulation (Apple Silicon)
+
+```bash
+helicon run --preset sunbird
+# WarpX Metal:  42%|████▏     | 210/500 [03:22<04:39,  1.04step/s]
+# Simulation complete (287.4s)
+```
+
+### Detachment analysis
+
+```bash
+helicon detach report --n 1e18 --Te 30 --Ti 15 --B 0.05 --dBdz -1.0 --vz 40000
+```
+
+### Environment check
+
+```bash
+helicon doctor
+```
 
 ```python
 from helicon.fields.biot_savart import Coil, Grid, compute_bfield
@@ -57,7 +79,7 @@ See [CITATION.cff](https://github.com/lulzx/helicon/blob/main/CITATION.cff) or c
 ```bibtex
 @software{helicon,
   title = {Helicon: GPU-Accelerated Magnetic Nozzle Simulation Toolkit},
-  version = {0.4.0},
+  version = {2.7.0},
   license = {MIT},
 }
 ```

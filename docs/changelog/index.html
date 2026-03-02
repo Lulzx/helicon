@@ -1277,6 +1277,56 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
+  <a href="#v270-2026-03" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        v2.7.0 (2026-03)
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="v2.7.0 (2026-03)">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#new-features" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        New Features
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#bug-fixes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Bug Fixes
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ci-tooling" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        CI / tooling
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#v040-2026-03" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -1289,7 +1339,7 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#new-features" class="md-nav__link">
+  <a href="#new-features_1" class="md-nav__link">
     <span class="md-ellipsis">
       
         New Features
@@ -1328,7 +1378,7 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#new-features_1" class="md-nav__link">
+  <a href="#new-features_2" class="md-nav__link">
     <span class="md-ellipsis">
       
         New Features
@@ -1356,7 +1406,7 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#new-features_2" class="md-nav__link">
+  <a href="#new-features_3" class="md-nav__link">
     <span class="md-ellipsis">
       
         New Features
@@ -1434,6 +1484,56 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
+  <a href="#v270-2026-03" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        v2.7.0 (2026-03)
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="v2.7.0 (2026-03)">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#new-features" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        New Features
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#bug-fixes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Bug Fixes
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ci-tooling" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        CI / tooling
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#v040-2026-03" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -1446,7 +1546,7 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#new-features" class="md-nav__link">
+  <a href="#new-features_1" class="md-nav__link">
     <span class="md-ellipsis">
       
         New Features
@@ -1485,7 +1585,7 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#new-features_1" class="md-nav__link">
+  <a href="#new-features_2" class="md-nav__link">
     <span class="md-ellipsis">
       
         New Features
@@ -1513,7 +1613,7 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#new-features_2" class="md-nav__link">
+  <a href="#new-features_3" class="md-nav__link">
     <span class="md-ellipsis">
       
         New Features
@@ -1577,8 +1677,43 @@
 
 
 <h1 id="changelog">Changelog</h1>
-<h2 id="v040-2026-03">v0.4.0 (2026-03)</h2>
+<h2 id="v270-2026-03">v2.7.0 (2026-03)</h2>
 <h3 id="new-features">New Features</h3>
+<p><strong>Apple Silicon Metal GPU backend (warpx-metal)</strong>
+- <code>runner/metal_runner.py</code>: Native Metal GPU runner integrating <a href="https://github.com/lulzx/warpx-metal">warpx-metal</a> — discovers the build, generates/adapts WarpX inputs, launches the SYCL/Metal 2D executable, and parses AMReX plotfile diagnostics
+- <code>WarpXMetalInfo</code>, <code>WarpXMetalDiag</code>, <code>MetalRunResult</code> dataclasses with <code>.summary()</code> methods
+- <code>find_diag_dirs()</code>: discovers and sorts all AMReX <code>diag*/</code> snapshots under an output directory
+- <code>WarpXMetalDiag.read_fields()</code>: assembles multi-box AMReX FAB tiles into full-domain NumPy arrays (handles 512×256 domains split into 8 tiles via <code>Cell_H</code> + <code>Cell_D_00000</code>)
+- <code>generate_metal_inputs()</code>: generates validated 2D pair-plasma input files for standalone Metal runs
+- <code>run_warpx_metal()</code>: launches the <code>warpx.2d.NOMPI.SYCL.SP.PSP.EB</code> executable with live tqdm progress bar (streams stdout line-by-line, parses <code>STEP N ends</code>)</p>
+<p><strong><code>_adapt_inputs_for_metal()</code></strong> in <code>runner/launch.py</code> — transparent RZ→2D Cartesian adapter:
+- <code>geometry.dims = RZ</code> → <code>geometry.dims = 2</code>, <code>coord_sys = 1</code> → <code>0</code>
+- Removes openPMD format specifiers (Metal build has no openPMD)
+- Maps RZ field names (<code>Br/Er/jr/Bt/Et/jt</code>) → Cartesian (<code>Bx/Ex/jx/By/Ey/jy</code>)
+- Forces periodic boundaries (PML kernels trigger AdaptiveCpp Metal JIT <code>t_badref_</code> bug)
+- Reduces <code>num_particles_per_cell</code> to 2×2; caps <code>max_step</code> at 500 (override: <code>HELICON_METAL_MAX_STEP</code>)
+- Domain symmetrisation: <code>(z, r≥0)</code> → <code>(z, x∈[-r_max, r_max])</code>
+- Injects required fields missing from pywarpx-style inputs (<code>algo.particle_shape</code>, etc.)</p>
+<p><strong>Hardware &amp; CLI improvements</strong>
+- <code>hardware_config.py</code>: <code>HardwareInfo</code> now reports <code>has_warpx_metal</code>, <code>warpx_metal_exe_2d</code>, <code>recommended_backend = "metal"</code> on Apple Silicon with build detected
+- <code>doctor.py</code>: <code>DoctorReport</code> gains <code>warpx_metal_found</code> / <code>warpx_metal_path</code>; <code>helicon doctor</code> prints a Metal section
+- <code>run_simulation()</code> auto-selects Metal backend before pywarpx; shows live tqdm bar
+- CLI <code>helicon run</code> failure now prints backend, returncode, error string, and log path</p>
+<h3 id="bug-fixes">Bug Fixes</h3>
+<ul>
+<li><code>WarpXMetalDiag.species</code>: now scans particle subdirectories (not WarpXHeader text)</li>
+<li><code>WarpXMetalDiag.n_cells</code>: AMReX box formula corrected (<code>hi − lo + 1</code> per dimension)</li>
+<li><code>WarpXMetalDiag.read_fields()</code>: multi-box FAB assembly via <code>Cell_H</code> byte offsets — fixes <code>ValueError: buffer size must be a multiple of element size</code></li>
+<li><code>run_warpx_metal()</code>: resolves <code>output_dir</code> to absolute path (was passing relative path → SIGABRT)</li>
+<li><code>perf/profiler.py</code>: replaced <code>psutil</code> with <code>/proc/meminfo</code> → <code>os.sysconf</code> fallback (Linux CI)</li>
+</ul>
+<h3 id="ci-tooling">CI / tooling</h3>
+<ul>
+<li>Added <code>ruff format --check</code> to CI; formatted all source files</li>
+</ul>
+<hr />
+<h2 id="v040-2026-03">v0.4.0 (2026-03)</h2>
+<h3 id="new-features_1">New Features</h3>
 <p><strong>Optimization &amp; Constraints (v0.3 completion)</strong>
 - <code>optimize/constraints.py</code>: Engineering constraint evaluation for coil optimization — mass budget, resistive power, peak B at conductor, MLX-differentiable penalty wrapper
 - <code>optimize/pareto.py</code>: Multi-objective Pareto front with hypervolume indicator
@@ -1610,7 +1745,7 @@
 </ul>
 <hr />
 <h2 id="v030-2026-02">v0.3.0 (2026-02)</h2>
-<h3 id="new-features_1">New Features</h3>
+<h3 id="new-features_2">New Features</h3>
 <ul>
 <li><code>optimize/scan.py</code>: Grid and Latin Hypercube parameter scans</li>
 <li><code>optimize/surrogate.py</code>: GP surrogate with Bayesian optimizer (Expected Improvement)</li>
@@ -1621,7 +1756,7 @@
 </ul>
 <hr />
 <h2 id="v020-2026-01">v0.2.0 (2026-01)</h2>
-<h3 id="new-features_2">New Features</h3>
+<h3 id="new-features_3">New Features</h3>
 <ul>
 <li><code>postprocess/detachment.py</code>: Three-definition detachment efficiency</li>
 <li><code>postprocess/plume.py</code>: Plume divergence angle and beam efficiency</li>

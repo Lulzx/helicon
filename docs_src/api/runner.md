@@ -47,3 +47,21 @@ Simulation launch, hardware detection, batch submission, checkpoints, and conver
 ::: helicon.runner.convergence.ConvergenceResult
 
 ::: helicon.runner.convergence.run_convergence_study
+
+## Metal GPU Runner
+
+::: helicon.runner.metal_runner.WarpXMetalInfo
+
+::: helicon.runner.metal_runner.WarpXMetalDiag
+
+::: helicon.runner.metal_runner.MetalRunResult
+
+::: helicon.runner.metal_runner.detect_warpx_metal
+
+::: helicon.runner.metal_runner.find_warpx_metal_root
+
+::: helicon.runner.metal_runner.find_diag_dirs
+
+::: helicon.runner.metal_runner.generate_metal_inputs
+
+::: helicon.runner.metal_runner.run_warpx_metal

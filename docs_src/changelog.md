@@ -1,5 +1,45 @@
 # Changelog
 
+## v2.7.0 (2026-03)
+
+### New Features
+
+**Apple Silicon Metal GPU backend (warpx-metal)**
+- `runner/metal_runner.py`: Native Metal GPU runner integrating [warpx-metal](https://github.com/lulzx/warpx-metal) — discovers the build, generates/adapts WarpX inputs, launches the SYCL/Metal 2D executable, and parses AMReX plotfile diagnostics
+- `WarpXMetalInfo`, `WarpXMetalDiag`, `MetalRunResult` dataclasses with `.summary()` methods
+- `find_diag_dirs()`: discovers and sorts all AMReX `diag*/` snapshots under an output directory
+- `WarpXMetalDiag.read_fields()`: assembles multi-box AMReX FAB tiles into full-domain NumPy arrays (handles 512×256 domains split into 8 tiles via `Cell_H` + `Cell_D_00000`)
+- `generate_metal_inputs()`: generates validated 2D pair-plasma input files for standalone Metal runs
+- `run_warpx_metal()`: launches the `warpx.2d.NOMPI.SYCL.SP.PSP.EB` executable with live tqdm progress bar (streams stdout line-by-line, parses `STEP N ends`)
+
+**`_adapt_inputs_for_metal()`** in `runner/launch.py` — transparent RZ→2D Cartesian adapter:
+- `geometry.dims = RZ` → `geometry.dims = 2`, `coord_sys = 1` → `0`
+- Removes openPMD format specifiers (Metal build has no openPMD)
+- Maps RZ field names (`Br/Er/jr/Bt/Et/jt`) → Cartesian (`Bx/Ex/jx/By/Ey/jy`)
+- Forces periodic boundaries (PML kernels trigger AdaptiveCpp Metal JIT `t_badref_` bug)
+- Reduces `num_particles_per_cell` to 2×2; caps `max_step` at 500 (override: `HELICON_METAL_MAX_STEP`)
+- Domain symmetrisation: `(z, r≥0)` → `(z, x∈[-r_max, r_max])`
+- Injects required fields missing from pywarpx-style inputs (`algo.particle_shape`, etc.)
+
+**Hardware & CLI improvements**
+- `hardware_config.py`: `HardwareInfo` now reports `has_warpx_metal`, `warpx_metal_exe_2d`, `recommended_backend = "metal"` on Apple Silicon with build detected
+- `doctor.py`: `DoctorReport` gains `warpx_metal_found` / `warpx_metal_path`; `helicon doctor` prints a Metal section
+- `run_simulation()` auto-selects Metal backend before pywarpx; shows live tqdm bar
+- CLI `helicon run` failure now prints backend, returncode, error string, and log path
+
+### Bug Fixes
+- `WarpXMetalDiag.species`: now scans particle subdirectories (not WarpXHeader text)
+- `WarpXMetalDiag.n_cells`: AMReX box formula corrected (`hi − lo + 1` per dimension)
+- `WarpXMetalDiag.read_fields()`: multi-box FAB assembly via `Cell_H` byte offsets — fixes `ValueError: buffer size must be a multiple of element size`
+- `run_warpx_metal()`: resolves `output_dir` to absolute path (was passing relative path → SIGABRT)
+- `perf/profiler.py`: replaced `psutil` with `/proc/meminfo` → `os.sysconf` fallback (Linux CI)
+
+### CI / tooling
+- Added `ruff format --check` to CI; formatted all source files
+
+---
+
+
 ## v0.4.0 (2026-03)
 
 ### New Features

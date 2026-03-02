@@ -507,6 +507,45 @@
     </span>
   </a>
   
+    <nav class="md-nav" aria-label="Quick Start">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#metal-gpu-simulation-apple-silicon" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Metal GPU simulation (Apple Silicon)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#detachment-analysis" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Detachment analysis
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#environment-check" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Environment check
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
 </li>
       
         <li class="md-nav__item">
@@ -1374,6 +1413,45 @@
     </span>
   </a>
   
+    <nav class="md-nav" aria-label="Quick Start">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#metal-gpu-simulation-apple-silicon" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Metal GPU simulation (Apple Silicon)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#detachment-analysis" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Detachment analysis
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#environment-check" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Environment check
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
 </li>
       
         <li class="md-nav__item">
@@ -1426,6 +1504,8 @@
 <li>Post-processing pipelines that extract thrust, Isp, detachment efficiency, and plume divergence from PIC output</li>
 <li>Parameter scan and optimization infrastructure (Bayesian, gradient-based via MLX, Sobol sensitivity)</li>
 <li>Validation cases against published analytical solutions and experimental data (VASIMR VX-200, Merino-Ahedo)</li>
+<li>Native Apple Silicon GPU execution via <a href="https://github.com/lulzx/warpx-metal">warpx-metal</a> (SYCL → AdaptiveCpp → Metal)</li>
+<li>Detachment analysis suite: MHD onset, kinetic FLR corrections, sheath coupling, Lyapunov controller</li>
 </ul>
 <h2 id="quick-install">Quick Install</h2>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>pip<span class="w"> </span>install<span class="w"> </span>helicon
@@ -1435,14 +1515,25 @@
 <a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a>pip<span class="w"> </span>install<span class="w"> </span>helicon<span class="o">[</span>optimize<span class="o">]</span>
 </code></pre></div>
 <h2 id="quick-start">Quick Start</h2>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">helicon.fields.biot_savart</span><span class="w"> </span><span class="kn">import</span> <span class="n">Coil</span><span class="p">,</span> <span class="n">Grid</span><span class="p">,</span> <span class="n">compute_bfield</span>
-<a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a><span class="kn">from</span><span class="w"> </span><span class="nn">helicon.optimize.analytical</span><span class="w"> </span><span class="kn">import</span> <span class="n">screen_geometry</span>
-<a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a>
-<a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a><span class="n">coils</span> <span class="o">=</span> <span class="p">[</span><span class="n">Coil</span><span class="p">(</span><span class="n">z</span><span class="o">=</span><span class="mf">0.0</span><span class="p">,</span> <span class="n">r</span><span class="o">=</span><span class="mf">0.12</span><span class="p">,</span> <span class="n">I</span><span class="o">=</span><span class="mf">50000.0</span><span class="p">)]</span>
-<a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a><span class="n">result</span> <span class="o">=</span> <span class="n">screen_geometry</span><span class="p">(</span><span class="n">coils</span><span class="p">,</span> <span class="n">z_min</span><span class="o">=-</span><span class="mf">0.3</span><span class="p">,</span> <span class="n">z_max</span><span class="o">=</span><span class="mf">2.0</span><span class="p">)</span>
-<a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a><span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Mirror ratio R_B = </span><span class="si">{</span><span class="n">result</span><span class="o">.</span><span class="n">mirror_ratio</span><span class="si">:</span><span class="s2">.2f</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
-<a id="__codelineno-1-7" name="__codelineno-1-7" href="#__codelineno-1-7"></a><span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Thrust efficiency η_T = </span><span class="si">{</span><span class="n">result</span><span class="o">.</span><span class="n">thrust_efficiency</span><span class="si">:</span><span class="s2">.3f</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
-<a id="__codelineno-1-8" name="__codelineno-1-8" href="#__codelineno-1-8"></a><span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Plume half-angle θ = </span><span class="si">{</span><span class="n">result</span><span class="o">.</span><span class="n">divergence_half_angle_deg</span><span class="si">:</span><span class="s2">.1f</span><span class="si">}</span><span class="s2">°&quot;</span><span class="p">)</span>
+<h3 id="metal-gpu-simulation-apple-silicon">Metal GPU simulation (Apple Silicon)</h3>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>helicon<span class="w"> </span>run<span class="w"> </span>--preset<span class="w"> </span>sunbird
+<a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a><span class="c1"># WarpX Metal:  42%|████▏     | 210/500 [03:22&lt;04:39,  1.04step/s]</span>
+<a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a><span class="c1"># Simulation complete (287.4s)</span>
+</code></pre></div>
+<h3 id="detachment-analysis">Detachment analysis</h3>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>helicon<span class="w"> </span>detach<span class="w"> </span>report<span class="w"> </span>--n<span class="w"> </span>1e18<span class="w"> </span>--Te<span class="w"> </span><span class="m">30</span><span class="w"> </span>--Ti<span class="w"> </span><span class="m">15</span><span class="w"> </span>--B<span class="w"> </span><span class="m">0</span>.05<span class="w"> </span>--dBdz<span class="w"> </span>-1.0<span class="w"> </span>--vz<span class="w"> </span><span class="m">40000</span>
+</code></pre></div>
+<h3 id="environment-check">Environment check</h3>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a>helicon<span class="w"> </span>doctor
+</code></pre></div>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">helicon.fields.biot_savart</span><span class="w"> </span><span class="kn">import</span> <span class="n">Coil</span><span class="p">,</span> <span class="n">Grid</span><span class="p">,</span> <span class="n">compute_bfield</span>
+<a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a><span class="kn">from</span><span class="w"> </span><span class="nn">helicon.optimize.analytical</span><span class="w"> </span><span class="kn">import</span> <span class="n">screen_geometry</span>
+<a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a>
+<a id="__codelineno-4-4" name="__codelineno-4-4" href="#__codelineno-4-4"></a><span class="n">coils</span> <span class="o">=</span> <span class="p">[</span><span class="n">Coil</span><span class="p">(</span><span class="n">z</span><span class="o">=</span><span class="mf">0.0</span><span class="p">,</span> <span class="n">r</span><span class="o">=</span><span class="mf">0.12</span><span class="p">,</span> <span class="n">I</span><span class="o">=</span><span class="mf">50000.0</span><span class="p">)]</span>
+<a id="__codelineno-4-5" name="__codelineno-4-5" href="#__codelineno-4-5"></a><span class="n">result</span> <span class="o">=</span> <span class="n">screen_geometry</span><span class="p">(</span><span class="n">coils</span><span class="p">,</span> <span class="n">z_min</span><span class="o">=-</span><span class="mf">0.3</span><span class="p">,</span> <span class="n">z_max</span><span class="o">=</span><span class="mf">2.0</span><span class="p">)</span>
+<a id="__codelineno-4-6" name="__codelineno-4-6" href="#__codelineno-4-6"></a><span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Mirror ratio R_B = </span><span class="si">{</span><span class="n">result</span><span class="o">.</span><span class="n">mirror_ratio</span><span class="si">:</span><span class="s2">.2f</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+<a id="__codelineno-4-7" name="__codelineno-4-7" href="#__codelineno-4-7"></a><span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Thrust efficiency η_T = </span><span class="si">{</span><span class="n">result</span><span class="o">.</span><span class="n">thrust_efficiency</span><span class="si">:</span><span class="s2">.3f</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+<a id="__codelineno-4-8" name="__codelineno-4-8" href="#__codelineno-4-8"></a><span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Plume half-angle θ = </span><span class="si">{</span><span class="n">result</span><span class="o">.</span><span class="n">divergence_half_angle_deg</span><span class="si">:</span><span class="s2">.1f</span><span class="si">}</span><span class="s2">°&quot;</span><span class="p">)</span>
 </code></pre></div>
 <h2 id="why-helicon">Why Helicon?</h2>
 <p><strong>The unsolved problem:</strong> Plasma detachment in magnetic nozzles is where fusion thrust is won or lost.
@@ -1479,11 +1570,11 @@ whether direct-fusion-drive missions to Mars are 90 days or 9 months.</p>
 validation-first.</p>
 <h2 id="citing-helicon">Citing Helicon</h2>
 <p>See <a href="https://github.com/lulzx/helicon/blob/main/CITATION.cff">CITATION.cff</a> or cite as:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="nc">@software</span><span class="p">{</span><span class="nl">helicon</span><span class="p">,</span>
-<a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a><span class="w">  </span><span class="na">title</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="s">{Helicon: GPU-Accelerated Magnetic Nozzle Simulation Toolkit}</span><span class="p">,</span>
-<a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a><span class="w">  </span><span class="na">version</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="s">{0.4.0}</span><span class="p">,</span>
-<a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a><span class="w">  </span><span class="na">license</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="s">{MIT}</span><span class="p">,</span>
-<a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a><span class="p">}</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="nc">@software</span><span class="p">{</span><span class="nl">helicon</span><span class="p">,</span>
+<a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a><span class="w">  </span><span class="na">title</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="s">{Helicon: GPU-Accelerated Magnetic Nozzle Simulation Toolkit}</span><span class="p">,</span>
+<a id="__codelineno-5-3" name="__codelineno-5-3" href="#__codelineno-5-3"></a><span class="w">  </span><span class="na">version</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="s">{2.7.0}</span><span class="p">,</span>
+<a id="__codelineno-5-4" name="__codelineno-5-4" href="#__codelineno-5-4"></a><span class="w">  </span><span class="na">license</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="s">{MIT}</span><span class="p">,</span>
+<a id="__codelineno-5-5" name="__codelineno-5-5" href="#__codelineno-5-5"></a><span class="p">}</span>
 </code></pre></div>
 
 

@@ -739,6 +739,45 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#apple-silicon-metal-gpu" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Apple Silicon Metal GPU
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Apple Silicon Metal GPU">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#direct-metal-api" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Direct Metal API
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#build-warpx-metal" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Build warpx-metal
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
     </ul>
   
 </nav>
@@ -1427,6 +1466,45 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#apple-silicon-metal-gpu" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Apple Silicon Metal GPU
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Apple Silicon Metal GPU">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#direct-metal-api" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Direct Metal API
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#build-warpx-metal" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Build warpx-metal
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
     </ul>
   
 </nav>
@@ -1511,6 +1589,46 @@
 <a id="__codelineno-6-9" name="__codelineno-6-9" href="#__codelineno-6-9"></a><span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Convergence order: </span><span class="si">{</span><span class="n">result</span><span class="o">.</span><span class="n">convergence_order</span><span class="si">:</span><span class="s2">.2f</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
 <a id="__codelineno-6-10" name="__codelineno-6-10" href="#__codelineno-6-10"></a><span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Extrapolated thrust: </span><span class="si">{</span><span class="n">result</span><span class="o">.</span><span class="n">extrapolated_thrust_N</span><span class="si">:</span><span class="s2">.4f</span><span class="si">}</span><span class="s2"> N&quot;</span><span class="p">)</span>
 </code></pre></div>
+<h2 id="apple-silicon-metal-gpu">Apple Silicon Metal GPU</h2>
+<p>When <code>warpx-metal</code> is detected, <code>helicon run</code> automatically adapts inputs and runs on the
+Apple Silicon GPU via AdaptiveCpp → Metal:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a>helicon<span class="w"> </span>run<span class="w"> </span>--preset<span class="w"> </span>sunbird
+<a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a><span class="c1"># WarpX Metal:  42%|████▏     | 210/500 [03:22&lt;04:39,  1.04step/s]</span>
+<a id="__codelineno-7-3" name="__codelineno-7-3" href="#__codelineno-7-3"></a><span class="c1"># Simulation complete (287.4s)</span>
+<a id="__codelineno-7-4" name="__codelineno-7-4" href="#__codelineno-7-4"></a><span class="c1"># Output: results/sunbird</span>
+</code></pre></div>
+<p>The first run is slow (~2–10 s/step) while Metal shaders are JIT-compiled. Subsequent
+runs reuse <code>~/.acpp/apps/global/jit-cache/</code> and reach ~1 ms/step.</p>
+<p>Override the step cap:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a><span class="nv">HELICON_METAL_MAX_STEP</span><span class="o">=</span><span class="m">2000</span><span class="w"> </span>helicon<span class="w"> </span>run<span class="w"> </span>--preset<span class="w"> </span>sunbird
+</code></pre></div>
+<h3 id="direct-metal-api">Direct Metal API</h3>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">helicon.runner.metal_runner</span><span class="w"> </span><span class="kn">import</span> <span class="n">detect_warpx_metal</span><span class="p">,</span> <span class="n">run_warpx_metal</span>
+<a id="__codelineno-9-2" name="__codelineno-9-2" href="#__codelineno-9-2"></a>
+<a id="__codelineno-9-3" name="__codelineno-9-3" href="#__codelineno-9-3"></a><span class="n">metal</span> <span class="o">=</span> <span class="n">detect_warpx_metal</span><span class="p">()</span>
+<a id="__codelineno-9-4" name="__codelineno-9-4" href="#__codelineno-9-4"></a><span class="nb">print</span><span class="p">(</span><span class="n">metal</span><span class="o">.</span><span class="n">summary</span><span class="p">())</span>
+<a id="__codelineno-9-5" name="__codelineno-9-5" href="#__codelineno-9-5"></a>
+<a id="__codelineno-9-6" name="__codelineno-9-6" href="#__codelineno-9-6"></a><span class="n">result</span> <span class="o">=</span> <span class="n">run_warpx_metal</span><span class="p">(</span>
+<a id="__codelineno-9-7" name="__codelineno-9-7" href="#__codelineno-9-7"></a>    <span class="n">metal_info</span><span class="o">=</span><span class="n">metal</span><span class="p">,</span>
+<a id="__codelineno-9-8" name="__codelineno-9-8" href="#__codelineno-9-8"></a>    <span class="n">output_dir</span><span class="o">=</span><span class="s2">&quot;metal_run/&quot;</span><span class="p">,</span>
+<a id="__codelineno-9-9" name="__codelineno-9-9" href="#__codelineno-9-9"></a>    <span class="n">n_cell</span><span class="o">=</span><span class="mi">128</span><span class="p">,</span>
+<a id="__codelineno-9-10" name="__codelineno-9-10" href="#__codelineno-9-10"></a>    <span class="n">max_step</span><span class="o">=</span><span class="mi">200</span><span class="p">,</span>
+<a id="__codelineno-9-11" name="__codelineno-9-11" href="#__codelineno-9-11"></a>    <span class="n">progress</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>          <span class="c1"># tqdm bar</span>
+<a id="__codelineno-9-12" name="__codelineno-9-12" href="#__codelineno-9-12"></a><span class="p">)</span>
+<a id="__codelineno-9-13" name="__codelineno-9-13" href="#__codelineno-9-13"></a><span class="nb">print</span><span class="p">(</span><span class="n">result</span><span class="o">.</span><span class="n">summary</span><span class="p">())</span>
+<a id="__codelineno-9-14" name="__codelineno-9-14" href="#__codelineno-9-14"></a><span class="k">for</span> <span class="n">diag</span> <span class="ow">in</span> <span class="n">result</span><span class="o">.</span><span class="n">diags</span><span class="p">:</span>
+<a id="__codelineno-9-15" name="__codelineno-9-15" href="#__codelineno-9-15"></a>    <span class="n">fields</span> <span class="o">=</span> <span class="n">diag</span><span class="o">.</span><span class="n">read_fields</span><span class="p">()</span>   <span class="c1"># {&quot;Ex&quot;: np.ndarray(nx, ny), ...}</span>
+<a id="__codelineno-9-16" name="__codelineno-9-16" href="#__codelineno-9-16"></a>    <span class="nb">print</span><span class="p">(</span><span class="n">diag</span><span class="o">.</span><span class="n">summary</span><span class="p">())</span>
+</code></pre></div>
+<h3 id="build-warpx-metal">Build warpx-metal</h3>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-10-1" name="__codelineno-10-1" href="#__codelineno-10-1"></a>git<span class="w"> </span>clone<span class="w"> </span>https://github.com/lulzx/warpx-metal<span class="w"> </span>../warpx-metal
+<a id="__codelineno-10-2" name="__codelineno-10-2" href="#__codelineno-10-2"></a><span class="nb">cd</span><span class="w"> </span>../warpx-metal
+<a id="__codelineno-10-3" name="__codelineno-10-3" href="#__codelineno-10-3"></a>./scripts/00-install-deps.sh
+<a id="__codelineno-10-4" name="__codelineno-10-4" href="#__codelineno-10-4"></a>./scripts/01-build-adaptivecpp.sh
+<a id="__codelineno-10-5" name="__codelineno-10-5" href="#__codelineno-10-5"></a>./scripts/05-build-warpx.sh
+</code></pre></div>
+<p>Helicon auto-detects the build at <code>../warpx-metal</code> or <code>~/work/warpx-metal</code>.
+Override with <code>WARPX_METAL_ROOT</code>.</p>
 
 
 
