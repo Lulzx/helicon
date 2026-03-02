@@ -1,22 +1,22 @@
-"""Tests for magnozzlex.postprocess.propbench module."""
+"""Tests for helicon.postprocess.propbench module."""
 
 from __future__ import annotations
 
 import json
 from pathlib import Path
 
-from magnozzlex.postprocess.propbench import (
+from helicon.postprocess.propbench import (
     PropBenchResult,
     load_propbench,
     save_propbench,
     to_propbench,
 )
-from magnozzlex.postprocess.report import RunReport
+from helicon.postprocess.report import RunReport
 
 
 def _make_run_report(**overrides) -> RunReport:
     defaults = dict(
-        magnozzlex_version="0.2.0",
+        helicon_version="0.2.0",
         config_hash=None,
         thrust_N=None,
         isp_s=None,
@@ -38,7 +38,7 @@ class TestPropBenchResult:
     def test_defaults(self) -> None:
         result = PropBenchResult()
         assert result.propbench_version == "0.1"
-        assert result.code_name == "MagNozzleX"
+        assert result.code_name == "Helicon"
         assert result.mass_ratio_reduced is False
         assert result.electron_model == "kinetic"
         assert result.species == []
@@ -60,7 +60,7 @@ class TestToPropBench:
         assert pb.code_version == "0.2.0"
         assert pb.thrust_N is None
         assert pb.isp_s is None
-        assert pb.code_name == "MagNozzleX"
+        assert pb.code_name == "Helicon"
         assert pb.propbench_version == "0.1"
 
     def test_from_run_report_with_values(self) -> None:
@@ -93,7 +93,7 @@ class TestSaveLoadPropBench:
         save_propbench(result, path)
         data = json.loads(path.read_text())
         assert data["propbench_version"] == "0.1"
-        assert data["code_name"] == "MagNozzleX"
+        assert data["code_name"] == "Helicon"
         assert data["thrust_N"] == 1.5
 
     def test_roundtrip(self, tmp_path: Path) -> None:
@@ -125,9 +125,9 @@ class TestSaveLoadPropBench:
         assert "propbench_version" in data
         assert data["propbench_version"] == "0.1"
 
-    def test_code_name_is_magnozzlex(self, tmp_path: Path) -> None:
+    def test_code_name_is_helicon(self, tmp_path: Path) -> None:
         result = PropBenchResult()
         path = tmp_path / "codename.json"
         save_propbench(result, path)
         data = json.loads(path.read_text())
-        assert data["code_name"] == "MagNozzleX"
+        assert data["code_name"] == "Helicon"

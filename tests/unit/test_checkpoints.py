@@ -1,11 +1,11 @@
-"""Tests for magnozzlex.runner.checkpoints module."""
+"""Tests for helicon.runner.checkpoints module."""
 
 from __future__ import annotations
 
 import tempfile
 from pathlib import Path
 
-from magnozzlex.runner.checkpoints import (
+from helicon.runner.checkpoints import (
     checkpoint_exists,
     cleanup_checkpoints,
     find_checkpoints,

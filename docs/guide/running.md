@@ -3,16 +3,16 @@
 ## Single Run
 
 ```bash
-magnozzlex run --preset dfd --output results/dfd
-magnozzlex run --config my_nozzle.yaml --output results/my_run
-magnozzlex run --config my_nozzle.yaml --dry-run  # generate inputs only
+helicon run --preset dfd --output results/dfd
+helicon run --config my_nozzle.yaml --output results/my_run
+helicon run --config my_nozzle.yaml --dry-run  # generate inputs only
 ```
 
 Via Python API:
 
 ```python
-from magnozzlex.runner.launch import run_simulation
-from magnozzlex.config.parser import SimConfig
+from helicon.runner.launch import run_simulation
+from helicon.config.parser import SimConfig
 
 config = SimConfig.from_preset("dfd")
 result = run_simulation(config, output_dir="results/dfd", dry_run=True)
@@ -20,10 +20,10 @@ result = run_simulation(config, output_dir="results/dfd", dry_run=True)
 
 ## Hardware Detection
 
-MagNozzleX auto-detects hardware and configures WarpX accordingly:
+Helicon auto-detects hardware and configures WarpX accordingly:
 
 ```python
-from magnozzlex.runner.hardware_config import detect_hardware
+from helicon.runner.hardware_config import detect_hardware
 
 hw = detect_hardware()
 print(hw.summary())
@@ -38,7 +38,7 @@ print(hw.summary())
 For parameter scans, submit multiple runs in parallel:
 
 ```python
-from magnozzlex.runner.batch import run_local_batch, BatchConfig
+from helicon.runner.batch import run_local_batch, BatchConfig
 
 configs = [...]  # list of SimConfig from a parameter scan
 result = run_local_batch(configs, output_base="scan_results/", n_workers=4, dry_run=True)
@@ -48,7 +48,7 @@ print(f"{result.n_completed}/{len(configs)} completed")
 For SLURM clusters:
 
 ```python
-from magnozzlex.runner.batch import submit_batch, BatchConfig
+from helicon.runner.batch import submit_batch, BatchConfig
 
 batch = BatchConfig(
     backend="slurm",
@@ -63,7 +63,7 @@ submit_batch(configs, batch, output_base="scan_results/")
 ## Checkpoint Restart
 
 ```python
-from magnozzlex.runner.checkpoints import find_latest_checkpoint, get_restart_flag
+from helicon.runner.checkpoints import find_latest_checkpoint, get_restart_flag
 
 ckpt = find_latest_checkpoint("results/dfd")
 if ckpt:
@@ -74,7 +74,7 @@ if ckpt:
 ## Grid Convergence
 
 ```python
-from magnozzlex.runner.convergence import run_convergence_study
+from helicon.runner.convergence import run_convergence_study
 
 result = run_convergence_study(
     config,

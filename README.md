@@ -1,8 +1,8 @@
-# MagNozzleX
+# Helicon
 
 GPU-Accelerated Magnetic Nozzle Simulation & Detachment Analysis Toolkit for Fusion Propulsion.
 
-MagNozzleX wraps [WarpX](https://github.com/ECP-WarpX/WarpX) with curated configurations, post-processing pipelines, and optimization infrastructure for magnetic nozzle research.
+Helicon wraps [WarpX](https://github.com/ECP-WarpX/WarpX) with curated configurations, post-processing pipelines, and optimization infrastructure for magnetic nozzle research.
 
 ## Installation
 
@@ -24,7 +24,7 @@ Requires Python 3.11+. For WarpX simulation execution, install [WarpX with pywar
 ### Compute applied B-field from coil geometry
 
 ```python
-from magnozzlex.fields import Coil, Grid, compute_bfield
+from helicon.fields import Coil, Grid, compute_bfield
 
 coils = [
     Coil(z=0.0, r=0.15, I=50000),
@@ -40,13 +40,13 @@ bfield.save("applied_bfield.h5")
 
 ```bash
 # Generate WarpX input (dry run, no WarpX required)
-magnozzlex run --preset sunbird --dry-run
+helicon run --preset sunbird --dry-run
 
 # Run simulation (requires WarpX)
-magnozzlex run --preset sunbird --output results/
+helicon run --preset sunbird --output results/
 
 # Post-process output
-magnozzlex postprocess --input results/ --metrics thrust
+helicon postprocess --input results/ --metrics thrust
 ```
 
 ### Use a custom configuration
@@ -76,16 +76,16 @@ plasma:
 ```
 
 ```bash
-magnozzlex run --config my_nozzle.yaml
+helicon run --config my_nozzle.yaml
 ```
 
 ## Architecture
 
-- **magnozzlex.config** — YAML parsing, Pydantic validation, WarpX input generation
-- **magnozzlex.fields** — Biot-Savart solver (MLX + NumPy backends)
-- **magnozzlex.runner** — WarpX orchestration, hardware detection
-- **magnozzlex.postprocess** — Thrust, Isp, moment computation from openPMD output
-- **magnozzlex.validate** — Automated validation against analytic solutions
+- **helicon.config** — YAML parsing, Pydantic validation, WarpX input generation
+- **helicon.fields** — Biot-Savart solver (MLX + NumPy backends)
+- **helicon.runner** — WarpX orchestration, hardware detection
+- **helicon.postprocess** — Thrust, Isp, moment computation from openPMD output
+- **helicon.validate** — Automated validation against analytic solutions
 
 ## Backends
 
@@ -98,7 +98,7 @@ magnozzlex run --config my_nozzle.yaml
 
 ```bash
 uv run pytest tests/ -v
-ruff check magnozzlex/ tests/
+ruff check helicon/ tests/
 ty check
 ```
 

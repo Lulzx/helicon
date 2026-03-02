@@ -24,7 +24,7 @@ def main():
 
     results = json.loads(Path(args.report_json).read_text())
 
-    from magnozzlex.validate.report import save_validation_plots
+    from helicon.validate.report import save_validation_plots
 
     paths = save_validation_plots(results, args.output)
     for p in paths:

@@ -46,7 +46,7 @@
 - `optimize/sensitivity.py`: Sobol sensitivity analysis (Saltelli 2010)
 - `optimize/objectives.py`: MLX-differentiable coil optimization objectives
 - `fields/import_external.py`: FEMM `.ans` and CSV B-field import
-- CLI: `magnozzlex scan` command
+- CLI: `helicon scan` command
 
 ---
 
@@ -71,4 +71,4 @@
 - `runner/launch.py`: WarpX simulation execution
 - `postprocess/thrust.py`: Momentum flux thrust computation
 - Validation cases: free expansion, guiding center orbit
-- CLI: `magnozzlex run`, `magnozzlex postprocess`, `magnozzlex validate`
+- CLI: `helicon run`, `helicon postprocess`, `helicon validate`

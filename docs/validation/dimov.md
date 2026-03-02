@@ -19,13 +19,13 @@ governs the transition:
 - $\Omega_e \tau_e \sim 1$: resistive regime, partial slippage
 - $\Omega_e \tau_e \ll 1$: demagnetized, poor confinement
 
-This case validates that MagNozzleX correctly identifies the transition density
+This case validates that Helicon correctly identifies the transition density
 where $\Omega_e \tau_e \approx 1$ and shows the expected detachment behavior.
 
 ## Configuration
 
 ```python
-from magnozzlex.validate.cases.resistive_dimov import ResistiveDimovCase
+from helicon.validate.cases.resistive_dimov import ResistiveDimovCase
 case = ResistiveDimovCase()
 config = case.get_config()
 ```
@@ -51,7 +51,7 @@ at $n \approx 10^{21}$ m⁻³.
 ## Running
 
 ```bash
-magnozzlex validate --case resistive_dimov
+helicon validate --case resistive_dimov
 ```
 
 ## Results

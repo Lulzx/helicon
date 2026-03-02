@@ -1,4 +1,4 @@
-"""Tests for magnozzlex.optimize.surrogate."""
+"""Tests for helicon.optimize.surrogate."""
 
 from __future__ import annotations
 
@@ -7,7 +7,7 @@ import pytest
 
 sklearn = pytest.importorskip("sklearn", reason="scikit-learn not installed")
 
-from magnozzlex.optimize.surrogate import BayesianOptimizer, GPSurrogate, SurrogateResult
+from helicon.optimize.surrogate import BayesianOptimizer, GPSurrogate, SurrogateResult
 
 
 # ---------------------------------------------------------------------------

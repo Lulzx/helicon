@@ -8,27 +8,27 @@
 ## Basic Install
 
 ```bash
-pip install magnozzlex
+pip install helicon
 ```
 
 ## With GPU Acceleration (Apple Silicon)
 
 ```bash
-pip install "magnozzlex[mlx]"
+pip install "helicon[mlx]"
 ```
 
 ## With Optimization
 
 ```bash
-pip install "magnozzlex[optimize]"   # scikit-learn for GP surrogate
-pip install "magnozzlex[botorch]"    # botorch for Bayesian optimization
+pip install "helicon[optimize]"   # scikit-learn for GP surrogate
+pip install "helicon[botorch]"    # botorch for Bayesian optimization
 ```
 
 ## Development Install
 
 ```bash
-git clone https://github.com/magnozzlex/magnozzlex
-cd magnozzlex
+git clone https://github.com/helicon/helicon
+cd helicon
 uv sync --all-extras
 uv run pytest  # verify install
 ```
@@ -50,14 +50,14 @@ conda install -c conda-forge warpx=*=mpi_openmpi_cuda*
 # or use the provided Dockerfile
 ```
 
-Without WarpX, all MagNozzleX features work except actually running PIC simulations
+Without WarpX, all Helicon features work except actually running PIC simulations
 (`dry_run=True` generates input files without launching WarpX).
 
 ## Docker
 
 ```bash
-docker build -t magnozzlex .
-docker run --rm -v $(pwd)/results:/app/results magnozzlex \
+docker build -t helicon .
+docker run --rm -v $(pwd)/results:/app/results helicon \
     run --preset dfd --output results/dfd --dry-run
 ```
 
@@ -65,6 +65,6 @@ docker run --rm -v $(pwd)/results:/app/results magnozzlex \
 
 ```bash
 conda env create -f environment.yml
-conda activate magnozzlex
+conda activate helicon
 pip install -e .
 ```

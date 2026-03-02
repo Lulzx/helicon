@@ -1,4 +1,4 @@
-"""Tests for magnozzlex.cli."""
+"""Tests for helicon.cli."""
 
 from __future__ import annotations
 
@@ -8,7 +8,7 @@ from pathlib import Path
 import yaml
 from click.testing import CliRunner
 
-from magnozzlex.cli import main
+from helicon.cli import main
 
 
 def _write_config(tmpdir: str) -> str:

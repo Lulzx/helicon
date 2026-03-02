@@ -1,4 +1,4 @@
-"""Tests for magnozzlex.postprocess.plume module."""
+"""Tests for helicon.postprocess.plume module."""
 
 from __future__ import annotations
 
@@ -8,7 +8,7 @@ import h5py
 import numpy as np
 import pytest
 
-from magnozzlex.postprocess.plume import (
+from helicon.postprocess.plume import (
     PlumeResult,
     compute_electron_magnetization,
     compute_plume_metrics,

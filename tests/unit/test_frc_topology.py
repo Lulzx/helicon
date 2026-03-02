@@ -1,12 +1,12 @@
-"""Tests for magnozzlex.fields.frc_topology — FRC topology classification."""
+"""Tests for helicon.fields.frc_topology — FRC topology classification."""
 
 from __future__ import annotations
 
 import numpy as np
 import pytest
 
-from magnozzlex.fields.biot_savart import BField, Coil, Grid, compute_bfield
-from magnozzlex.fields.frc_topology import (
+from helicon.fields.biot_savart import BField, Coil, Grid, compute_bfield
+from helicon.fields.frc_topology import (
     FRCTopologyResult,
     compute_flux_function,
     find_frc_topology,

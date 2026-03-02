@@ -2,7 +2,7 @@
 
 ## Magnetic Nozzle Physics
 
-MagNozzleX simulates plasma expansion through a diverging magnetic field.
+Helicon simulates plasma expansion through a diverging magnetic field.
 The nozzle converts upstream thermal energy into directed exhaust momentum via two mechanisms:
 
 1. **Ion detachment** — ions have large Larmor radii (r_L >> L_B at the throat exit) and decouple from the field ballistically
@@ -22,7 +22,7 @@ Real detachment occurs when the approximations break down:
 
 ### Detachment Efficiency Definitions
 
-MagNozzleX computes and reports three definitions (all different in the literature):
+Helicon computes and reports three definitions (all different in the literature):
 
 $$\eta_d^{\text{momentum}} = \frac{\dot{p}_{\text{exit, axial}}}{\dot{p}_{\text{injected}}}$$
 

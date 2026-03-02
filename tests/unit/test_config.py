@@ -1,4 +1,4 @@
-"""Tests for magnozzlex.config module."""
+"""Tests for helicon.config module."""
 
 from __future__ import annotations
 
@@ -7,14 +7,14 @@ import tempfile
 import pytest
 import yaml
 
-from magnozzlex.config.parser import (
+from helicon.config.parser import (
     CoilConfig,
     DomainConfig,
     NozzleConfig,
     PlasmaSourceConfig,
     SimConfig,
 )
-from magnozzlex.config.validators import validate_config
+from helicon.config.validators import validate_config
 
 
 # ---------------------------------------------------------------------------

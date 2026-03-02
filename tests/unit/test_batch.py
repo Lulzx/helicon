@@ -1,18 +1,18 @@
-"""Tests for magnozzlex.runner.batch module."""
+"""Tests for helicon.runner.batch module."""
 
 from __future__ import annotations
 
 import tempfile
 from pathlib import Path
 
-from magnozzlex.config.parser import (
+from helicon.config.parser import (
     CoilConfig,
     DomainConfig,
     NozzleConfig,
     PlasmaSourceConfig,
     SimConfig,
 )
-from magnozzlex.runner.batch import (
+from helicon.runner.batch import (
     BatchConfig,
     BatchResult,
     generate_pbs_script,
@@ -54,7 +54,7 @@ def test_generate_slurm_script_contains_directives():
         script = generate_slurm_script(
             config,
             out,
-            "magnozzlex",
+            "helicon",
             partition="gpu",
             account="myaccount",
             time="06:00:00",
@@ -69,7 +69,7 @@ def test_generate_slurm_script_contains_directives():
         assert "#SBATCH --ntasks=2" in script
         assert "#SBATCH --cpus-per-task=8" in script
         assert "#SBATCH --mem=32G" in script
-        assert "magnozzlex run" in script
+        assert "helicon run" in script
 
 
 def test_generate_pbs_script_contains_directives():
@@ -79,7 +79,7 @@ def test_generate_pbs_script_contains_directives():
         script = generate_pbs_script(
             config,
             out,
-            "magnozzlex",
+            "helicon",
             queue="batch",
             walltime="08:00:00",
             ncpus=32,
@@ -88,7 +88,7 @@ def test_generate_pbs_script_contains_directives():
         assert "#PBS -q batch" in script
         assert "#PBS -l walltime=08:00:00" in script
         assert "#PBS -l ncpus=32" in script
-        assert "magnozzlex run" in script
+        assert "helicon run" in script
 
 
 def test_run_local_batch_dry_run_creates_output_dirs():

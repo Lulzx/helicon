@@ -1,11 +1,11 @@
-"""Tests for magnozzlex.optimize.constraints."""
+"""Tests for helicon.optimize.constraints."""
 
 import math
 
 import numpy as np
 import pytest
 
-from magnozzlex.optimize.constraints import (
+from helicon.optimize.constraints import (
     CoilConstraintResult,
     CoilConstraints,
     evaluate_constraints,
@@ -157,7 +157,7 @@ class TestMakeConstrainedObjective:
 
     def test_returns_callable(self):
         import mlx.core as mx
-        from magnozzlex.optimize.objectives import throat_ratio_objective
+        from helicon.optimize.objectives import throat_ratio_objective
 
         grid_r = mx.array([0.0, 0.05, 0.1])
         grid_z = mx.array([-0.2, 0.0, 0.2])
@@ -169,7 +169,7 @@ class TestMakeConstrainedObjective:
 
     def test_satisfied_constraint_no_penalty(self):
         import mlx.core as mx
-        from magnozzlex.optimize.objectives import throat_ratio_objective
+        from helicon.optimize.objectives import throat_ratio_objective
 
         grid_r = mx.array([0.0, 0.05, 0.1])
         grid_z = mx.array([-0.2, 0.0, 0.2])

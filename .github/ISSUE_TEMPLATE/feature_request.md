@@ -1,6 +1,6 @@
 ---
 name: Feature Request
-about: Suggest a new feature or enhancement for MagNozzleX
+about: Suggest a new feature or enhancement for Helicon
 title: "[FEATURE] "
 labels: enhancement
 assignees: ''

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Run the MagNozzleX validation suite."""
+"""Run the Helicon validation suite."""
 
 import argparse
 import sys
@@ -7,7 +7,7 @@ from pathlib import Path
 
 
 def main():
-    parser = argparse.ArgumentParser(description="Run MagNozzleX validation suite")
+    parser = argparse.ArgumentParser(description="Run Helicon validation suite")
     parser.add_argument("--cases", nargs="*", help="Case names to run (default: all)")
     parser.add_argument(
         "--output", default="results/validation", help="Output directory"
@@ -20,7 +20,7 @@ def main():
     parser.add_argument("--json", help="Save report JSON to this path")
     args = parser.parse_args()
 
-    from magnozzlex.validate.runner import run_validation
+    from helicon.validate.runner import run_validation
 
     report = run_validation(
         cases=args.cases, output_base=args.output, run_simulations=not args.no_run

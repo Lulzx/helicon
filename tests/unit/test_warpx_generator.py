@@ -1,18 +1,18 @@
-"""Tests for magnozzlex.config.warpx_generator."""
+"""Tests for helicon.config.warpx_generator."""
 
 from __future__ import annotations
 
 import tempfile
 from pathlib import Path
 
-from magnozzlex.config.parser import (
+from helicon.config.parser import (
     CoilConfig,
     DomainConfig,
     NozzleConfig,
     PlasmaSourceConfig,
     SimConfig,
 )
-from magnozzlex.config.warpx_generator import generate_warpx_input, write_warpx_input
+from helicon.config.warpx_generator import generate_warpx_input, write_warpx_input
 
 
 def _make_config() -> SimConfig:

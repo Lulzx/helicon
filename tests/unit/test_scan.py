@@ -1,4 +1,4 @@
-"""Tests for magnozzlex.optimize.scan."""
+"""Tests for helicon.optimize.scan."""
 
 from __future__ import annotations
 
@@ -7,8 +7,8 @@ from pathlib import Path
 
 import pytest
 
-from magnozzlex.config.parser import SimConfig
-from magnozzlex.optimize.scan import (
+from helicon.config.parser import SimConfig
+from helicon.optimize.scan import (
     ParameterRange,
     ScanPoint,
     _apply_params,

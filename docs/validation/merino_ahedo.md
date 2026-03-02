@@ -13,12 +13,12 @@ The Merino-Ahedo hybrid fluid model gives:
 
 $$\eta_{det}(R_B) \approx 1 - \frac{1}{\sqrt{R_B}}$$
 
-MagNozzleX's kinetic PIC should reproduce this trend within 10% over $R_B \in [2, 10]$.
+Helicon's kinetic PIC should reproduce this trend within 10% over $R_B \in [2, 10]$.
 
 ## Configuration
 
 ```python
-from magnozzlex.validate.cases.merino_ahedo import MerinoAhedoCase
+from helicon.validate.cases.merino_ahedo import MerinoAhedoCase
 case = MerinoAhedoCase()
 configs = case.get_scan_configs()  # 5 mirror ratios
 ```
@@ -31,7 +31,7 @@ configs = case.get_scan_configs()  # 5 mirror ratios
 ## Running
 
 ```bash
-magnozzlex validate --case merino_ahedo
+helicon validate --case merino_ahedo
 ```
 
 ## Results

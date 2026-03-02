@@ -1,9 +1,9 @@
-# MagNozzleX — reproducible build container
+# Helicon — reproducible build container
 #
 # Usage:
-#   docker build -t magnozzlex .
-#   docker run --rm -v $(pwd)/results:/app/results magnozzlex \
-#       magnozzlex run --preset dfd --output results/dfd
+#   docker build -t helicon .
+#   docker run --rm -v $(pwd)/results:/app/results helicon \
+#       helicon run --preset dfd --output results/dfd
 #
 # WarpX is NOT included in this image (it requires platform-specific
 # compilation for CUDA/OpenMP). Mount a pre-built WarpX install or
@@ -16,9 +16,9 @@
 
 FROM python:3.12-slim
 
-LABEL maintainer="MagNozzleX Contributors"
+LABEL maintainer="Helicon Contributors"
 LABEL description="GPU-Accelerated Magnetic Nozzle Simulation & Detachment Analysis Toolkit"
-LABEL org.opencontainers.image.source="https://github.com/magnozzlex/magnozzlex"
+LABEL org.opencontainers.image.source="https://github.com/helicon/helicon"
 
 # Install system dependencies
 RUN apt-get update && apt-get install -y --no-install-recommends \
@@ -33,9 +33,9 @@ WORKDIR /app
 
 # Copy project files
 COPY pyproject.toml uv.lock ./
-COPY magnozzlex/ ./magnozzlex/
+COPY helicon/ ./helicon/
 
-# Install magnozzlex and dependencies (no MLX — CPU fallback only in Docker)
+# Install helicon and dependencies (no MLX — CPU fallback only in Docker)
 RUN uv pip install --system --no-cache \
     numpy scipy pydantic pyyaml click h5py \
     scikit-learn \
@@ -50,5 +50,5 @@ RUN mkdir -p /app/results
 
 VOLUME ["/app/results"]
 
-ENTRYPOINT ["magnozzlex"]
+ENTRYPOINT ["helicon"]
 CMD ["--help"]

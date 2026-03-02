@@ -5,8 +5,8 @@ See [CONTRIBUTING.md](../CONTRIBUTING.md) in the repository root for full contri
 Quick summary:
 
 ```bash
-git clone https://github.com/magnozzlex/magnozzlex
-cd magnozzlex
+git clone https://github.com/helicon/helicon
+cd helicon
 uv sync --all-extras
 uv run pytest
 uv run ruff check .

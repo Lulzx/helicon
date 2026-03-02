@@ -1,14 +1,14 @@
 # Optimization
 
-MagNozzleX provides analytical pre-screening, Bayesian optimization, and Pareto front analysis.
+Helicon provides analytical pre-screening, Bayesian optimization, and Pareto front analysis.
 
 ## Analytical Pre-Screening
 
 Fast coil geometry evaluation without PIC simulation:
 
 ```python
-from magnozzlex.optimize.analytical import screen_geometry
-from magnozzlex.fields.biot_savart import Coil
+from helicon.optimize.analytical import screen_geometry
+from helicon.fields.biot_savart import Coil
 
 coils = [Coil(z=0.0, r=0.12, I=50000.0)]
 result = screen_geometry(coils, z_min=-0.3, z_max=2.0)
@@ -26,7 +26,7 @@ where $R_B = B_{throat}/B_{exhaust}$ is the magnetic mirror ratio.
 ## Constrained Optimization
 
 ```python
-from magnozzlex.optimize.constraints import CoilConstraints, evaluate_constraints
+from helicon.optimize.constraints import CoilConstraints, evaluate_constraints
 
 constraints = CoilConstraints(
     max_current_MA_turns=0.1,   # 100 kA-turns per coil
@@ -40,10 +40,10 @@ print(violations)  # empty list if all satisfied
 
 ## Bayesian Optimization
 
-Requires `pip install "magnozzlex[botorch]"`:
+Requires `pip install "helicon[botorch]"`:
 
 ```python
-from magnozzlex.optimize.bayesian import BayesianOptimizer, SearchSpace
+from helicon.optimize.bayesian import BayesianOptimizer, SearchSpace
 
 space = SearchSpace(
     parameters={
@@ -70,7 +70,7 @@ print(f"Best thrust: {result.best_thrust_N:.4f} N")
 For multi-objective optimization:
 
 ```python
-from magnozzlex.optimize.pareto import ParetoFront
+from helicon.optimize.pareto import ParetoFront
 
 # objectives: list of (thrust_N, efficiency) tuples
 objectives = [(r.thrust_N, r.detachment_momentum) for r in reports]
@@ -88,7 +88,7 @@ For Apple Silicon, the MLX backend supports `mx.grad` for coil current optimizat
 
 ```python
 import mlx.core as mx
-from magnozzlex.fields.biot_savart import compute_bfield_mlx_differentiable, Grid
+from helicon.fields.biot_savart import compute_bfield_mlx_differentiable, Grid
 
 grid = Grid(z_min=-0.3, z_max=2.0, r_max=0.5, nz=64, nr=32)
 r_flat = mx.array(grid.r_flat.astype("float32"))
@@ -111,7 +111,7 @@ print(f"∂obj/∂I = {grads[0, 2].item():.6e}")
 Verify that simulation results are resolution-independent:
 
 ```python
-from magnozzlex.runner.convergence import run_convergence_study
+from helicon.runner.convergence import run_convergence_study
 
 result = run_convergence_study(
     config,

@@ -1,4 +1,4 @@
-"""Tests for magnozzlex.validate.proximity."""
+"""Tests for helicon.validate.proximity."""
 
 from __future__ import annotations
 
@@ -6,7 +6,7 @@ import math
 
 import pytest
 
-from magnozzlex.config.parser import (
+from helicon.config.parser import (
     CoilConfig,
     DomainConfig,
     NozzleConfig,
@@ -14,7 +14,7 @@ from magnozzlex.config.parser import (
     ResolutionConfig,
     SimConfig,
 )
-from magnozzlex.validate.proximity import (
+from helicon.validate.proximity import (
     ProximityResult,
     VALIDATED_REGIONS,
     _MU_0,
@@ -272,11 +272,11 @@ class TestPublicAPIImport:
     """config_proximity and ProximityResult must be importable from the package."""
 
     def test_importable_from_validate_package(self):
-        from magnozzlex.validate import config_proximity as cp, ProximityResult as PR
+        from helicon.validate import config_proximity as cp, ProximityResult as PR
         assert cp is config_proximity
         assert PR is ProximityResult
 
     def test_in_validate_all(self):
-        import magnozzlex.validate as validate_pkg
+        import helicon.validate as validate_pkg
         assert "config_proximity" in validate_pkg.__all__
         assert "ProximityResult" in validate_pkg.__all__

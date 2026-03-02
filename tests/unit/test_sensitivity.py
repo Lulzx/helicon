@@ -1,11 +1,11 @@
-"""Tests for magnozzlex.optimize.sensitivity."""
+"""Tests for helicon.optimize.sensitivity."""
 
 from __future__ import annotations
 
 import numpy as np
 import pytest
 
-from magnozzlex.optimize.sensitivity import SobolResult, compute_sobol, saltelli_sample
+from helicon.optimize.sensitivity import SobolResult, compute_sobol, saltelli_sample
 
 
 # ---------------------------------------------------------------------------

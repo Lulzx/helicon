@@ -1,4 +1,4 @@
-"""Tests for magnozzlex.optimize.gradient — 6 test cases.
+"""Tests for helicon.optimize.gradient — 6 test cases.
 
 MLX-dependent tests are skipped when MLX is not installed.
 """
@@ -8,8 +8,8 @@ from __future__ import annotations
 import numpy as np
 import pytest
 
-from magnozzlex.fields.biot_savart import Grid, HAS_MLX
-from magnozzlex.optimize.gradient import (
+from helicon.fields.biot_savart import Grid, HAS_MLX
+from helicon.optimize.gradient import (
     GradientOptimizerConfig,
     GradientResult,
     GradientOptimizer,
@@ -130,7 +130,7 @@ def test_objective_history_decreasing():
 @skip_no_mlx
 def test_optimize_mirror_ratio_improves():
     """After optimization, the mirror ratio should be higher than the initial one."""
-    from magnozzlex.fields.biot_savart import Coil, compute_bfield
+    from helicon.fields.biot_savart import Coil, compute_bfield
 
     init_params = BASE_PARAMS.copy()
     grid = Grid(z_min=-0.5, z_max=0.5, r_max=0.3, nz=64, nr=4)
@@ -185,7 +185,7 @@ def test_optimize_mirror_ratio_improves():
 # ---------------------------------------------------------------------------
 def test_gradient_optimizer_no_mlx_raises(monkeypatch):
     """When MLX is absent, calling run() must raise ImportError."""
-    import magnozzlex.optimize.gradient as grad_module
+    import helicon.optimize.gradient as grad_module
 
     # Monkeypatch HAS_MLX to False inside the module
     monkeypatch.setattr(grad_module, "HAS_MLX", False)

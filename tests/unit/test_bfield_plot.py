@@ -7,8 +7,8 @@ import unittest.mock as mock
 import numpy as np
 import pytest
 
-from magnozzlex.fields.biot_savart import BField, Coil, Grid, compute_bfield
-from magnozzlex.optimize.pareto import ParetoResult, pareto_front
+from helicon.fields.biot_savart import BField, Coil, Grid, compute_bfield
+from helicon.optimize.pareto import ParetoResult, pareto_front
 
 
 @pytest.fixture

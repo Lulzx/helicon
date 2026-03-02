@@ -1,4 +1,4 @@
-"""Tests for magnozzlex.postprocess.detachment module.
+"""Tests for helicon.postprocess.detachment module.
 
 Since detachment computation requires HDF5 particle data from WarpX,
 these tests create synthetic openPMD-like HDF5 files for testing.
@@ -12,7 +12,7 @@ import h5py
 import numpy as np
 import pytest
 
-from magnozzlex.postprocess.detachment import DetachmentResult, compute_detachment
+from helicon.postprocess.detachment import DetachmentResult, compute_detachment
 
 
 def _write_synthetic_snapshot(

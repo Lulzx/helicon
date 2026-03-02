@@ -1,14 +1,14 @@
-# Contributing to MagNozzleX
+# Contributing to Helicon
 
-Thank you for your interest in contributing to MagNozzleX.
+Thank you for your interest in contributing to Helicon.
 
 ## Development Setup
 
 **Requirements:** Python 3.11+, [uv](https://docs.astral.sh/uv/)
 
 ```bash
-git clone https://github.com/magnozzlex/magnozzlex
-cd magnozzlex
+git clone https://github.com/helicon/helicon
+cd helicon
 uv sync --all-extras
 uv run pytest
 ```
@@ -34,7 +34,7 @@ uv run pytest -m "not slow"
 
 ## Code Style
 
-MagNozzleX uses [Ruff](https://docs.astral.sh/ruff/) for linting and formatting:
+Helicon uses [Ruff](https://docs.astral.sh/ruff/) for linting and formatting:
 
 ```bash
 uv run ruff check .
@@ -46,7 +46,7 @@ The CI pipeline enforces `ruff check` and `ruff format --check`. Fix issues befo
 ## Project Structure
 
 ```
-magnozzlex/
+helicon/
 ├── fields/          # Biot-Savart field solver (NumPy + MLX backends)
 ├── config/          # Pydantic simulation config parser
 ├── runner/          # WarpX launcher, hardware detection, convergence studies
@@ -62,14 +62,14 @@ docs/
 
 ## Adding a Validation Case
 
-1. Create `magnozzlex/validate/cases/your_case.py` with a class following the pattern in `free_expansion.py`.
+1. Create `helicon/validate/cases/your_case.py` with a class following the pattern in `free_expansion.py`.
 2. Implement `get_config() -> SimConfig`, `evaluate(output_dir) -> ValidationResult`.
-3. Register in `magnozzlex/validate/cases/__init__.py` and `magnozzlex/validate/runner.py`.
+3. Register in `helicon/validate/cases/__init__.py` and `helicon/validate/runner.py`.
 4. Add tests in `tests/unit/test_your_case.py`.
 
 ## Adding an Optimization Objective
 
-MLX gradient-based objectives live in `magnozzlex/optimize/objectives.py`. They must:
+MLX gradient-based objectives live in `helicon/optimize/objectives.py`. They must:
 - Accept `coil_params: mx.array` (shape `(N, 3)`, columns `[z, r, I]`) and grid arrays.
 - Return a scalar `mx.array` (no `mx.eval` call — preserve the graph for `mx.grad`).
 
@@ -83,7 +83,7 @@ MLX gradient-based objectives live in `magnozzlex/optimize/objectives.py`. They 
 ## Reporting Issues
 
 Please open a GitHub issue with:
-- MagNozzleX version (`magnozzlex --version`)
+- Helicon version (`helicon --version`)
 - Python version and platform
 - Minimal reproducible example
 - Full traceback

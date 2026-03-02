@@ -1,11 +1,11 @@
-"""Tests for magnozzlex.postprocess.report module."""
+"""Tests for helicon.postprocess.report module."""
 
 from __future__ import annotations
 
 import json
 from pathlib import Path
 
-from magnozzlex.postprocess.report import RunReport, generate_report, load_report, save_report
+from helicon.postprocess.report import RunReport, generate_report, load_report, save_report
 
 
 class TestRunReport:
@@ -13,7 +13,7 @@ class TestRunReport:
 
     def test_create_report(self) -> None:
         report = RunReport(
-            magnozzlex_version="0.2.0",
+            helicon_version="0.2.0",
             config_hash="abc123",
             thrust_N=1.5,
             isp_s=3000.0,
@@ -32,7 +32,7 @@ class TestRunReport:
 
     def test_none_fields(self) -> None:
         report = RunReport(
-            magnozzlex_version="0.2.0",
+            helicon_version="0.2.0",
             config_hash=None,
             thrust_N=None,
             isp_s=None,
@@ -55,7 +55,7 @@ class TestSaveLoadReport:
 
     def test_roundtrip(self, tmp_path: Path) -> None:
         report = RunReport(
-            magnozzlex_version="0.2.0",
+            helicon_version="0.2.0",
             config_hash="test_hash",
             thrust_N=2.5,
             isp_s=4000.0,
@@ -80,7 +80,7 @@ class TestSaveLoadReport:
 
     def test_creates_parent_dirs(self, tmp_path: Path) -> None:
         report = RunReport(
-            magnozzlex_version="0.2.0",
+            helicon_version="0.2.0",
             config_hash=None,
             thrust_N=None,
             isp_s=None,
@@ -100,7 +100,7 @@ class TestSaveLoadReport:
 
     def test_json_format(self, tmp_path: Path) -> None:
         report = RunReport(
-            magnozzlex_version="0.2.0",
+            helicon_version="0.2.0",
             config_hash=None,
             thrust_N=1.0,
             isp_s=None,
@@ -117,7 +117,7 @@ class TestSaveLoadReport:
         path = tmp_path / "report.json"
         save_report(report, path)
         data = json.loads(path.read_text())
-        assert "magnozzlex_version" in data
+        assert "helicon_version" in data
         assert "thrust_N" in data["results"]
 
 
@@ -134,8 +134,8 @@ class TestGenerateReport:
 
     def test_version_populated(self, tmp_path: Path) -> None:
         report = generate_report(tmp_path)
-        assert report.magnozzlex_version is not None
-        assert len(report.magnozzlex_version) > 0
+        assert report.helicon_version is not None
+        assert len(report.helicon_version) > 0
 
     def test_config_hash_forwarded(self, tmp_path: Path) -> None:
         report = generate_report(tmp_path, config_hash="abc123")

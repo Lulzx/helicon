@@ -1,4 +1,4 @@
-"""Integration tests for the MagNozzleX pipeline.
+"""Integration tests for the Helicon pipeline.
 
 All tests use dry_run=True so WarpX is not required.
 """
@@ -10,7 +10,7 @@ from pathlib import Path
 import yaml
 import pytest
 
-from magnozzlex.config.parser import (
+from helicon.config.parser import (
     CoilConfig,
     DomainConfig,
     NozzleConfig,
@@ -69,7 +69,7 @@ def _write_config_yaml(path: Path) -> Path:
 
 def test_full_dry_run_pipeline(tmp_path: Path) -> None:
     """Config → B-field precomputation → WarpX input file (dry_run=True)."""
-    from magnozzlex.runner.launch import run_simulation
+    from helicon.runner.launch import run_simulation
 
     config = _make_simple_config()
     output_dir = tmp_path / "pipeline_out"
@@ -89,7 +89,7 @@ def test_full_dry_run_pipeline(tmp_path: Path) -> None:
 
 def test_scan_dry_run(tmp_path: Path) -> None:
     """2×2 parameter grid dry-run scan must produce 4 point directories."""
-    from magnozzlex.optimize.scan import ParameterRange, run_scan
+    from helicon.optimize.scan import ParameterRange, run_scan
 
     config = _make_simple_config()
     ranges = [
@@ -115,7 +115,7 @@ def test_scan_dry_run(tmp_path: Path) -> None:
 
 def test_scan_prescreening(tmp_path: Path) -> None:
     """Scan with prescreening enabled; verify screened_out flag behaves correctly."""
-    from magnozzlex.optimize.scan import ParameterRange, generate_scan_points, run_scan
+    from helicon.optimize.scan import ParameterRange, generate_scan_points, run_scan
 
     # Use a very high min_mirror_ratio so that at least some (likely all)
     # points with low coil current will be screened out.
@@ -170,7 +170,7 @@ def test_validation_dry_run(tmp_path: Path) -> None:
     evaluate(); the case returns a result (even if passed=False because no
     output data exists yet).
     """
-    from magnozzlex.validate.runner import run_validation
+    from helicon.validate.runner import run_validation
 
     output_base = tmp_path / "validation"
     report = run_validation(

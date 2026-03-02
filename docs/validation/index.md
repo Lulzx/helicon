@@ -1,17 +1,17 @@
 # Validation Overview
 
-MagNozzleX maintains a suite of physics validation tests against published experimental and numerical benchmarks.
+Helicon maintains a suite of physics validation tests against published experimental and numerical benchmarks.
 
 ## Running All Validation Cases
 
 ```bash
-magnozzlex validate --all
+helicon validate --all
 ```
 
 Or from Python:
 
 ```python
-from magnozzlex.validate.runner import run_all_validations
+from helicon.validate.runner import run_all_validations
 
 results = run_all_validations()
 for name, result in results.items():
@@ -31,7 +31,7 @@ for name, result in results.items():
 ## Validation Report
 
 ```python
-from magnozzlex.validate.report import generate_html_report
+from helicon.validate.report import generate_html_report
 
 generate_html_report(results, output_dir="docs/validation_results/")
 ```
@@ -43,7 +43,7 @@ HTML reports with field plots are saved to `docs/validation_results/`.
 Subclass `ValidationCase`:
 
 ```python
-from magnozzlex.validate.base import ValidationCase, ValidationResult
+from helicon.validate.base import ValidationCase, ValidationResult
 
 class MyBenchmark(ValidationCase):
     name = "my_benchmark"

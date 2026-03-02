@@ -2,11 +2,11 @@
 
 from __future__ import annotations
 
-from magnozzlex.validate.cases.merino_ahedo import (
+from helicon.validate.cases.merino_ahedo import (
     REFERENCE_BETA_ETA,
     MerinoAhedoCase,
 )
-from magnozzlex.validate.cases.mn1d_comparison import (
+from helicon.validate.cases.mn1d_comparison import (
     MN1D_REFERENCE,
     MN1DComparisonCase,
 )

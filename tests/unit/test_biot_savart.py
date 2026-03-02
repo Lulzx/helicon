@@ -1,4 +1,4 @@
-"""Tests for magnozzlex.fields.biot_savart — 9 test cases.
+"""Tests for helicon.fields.biot_savart — 9 test cases.
 
 MLX tests are skipped when MLX is not installed.
 """
@@ -11,7 +11,7 @@ import tempfile
 import numpy as np
 import pytest
 
-from magnozzlex.fields.biot_savart import (
+from helicon.fields.biot_savart import (
     HAS_MLX,
     MU_0,
     BField,
@@ -23,7 +23,7 @@ from magnozzlex.fields.biot_savart import (
 if HAS_MLX:
     import mlx.core as mx
 
-    from magnozzlex.fields.biot_savart import compute_bfield_mlx_differentiable
+    from helicon.fields.biot_savart import compute_bfield_mlx_differentiable
 
 skip_no_mlx = pytest.mark.skipif(not HAS_MLX, reason="MLX not installed")
 

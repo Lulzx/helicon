@@ -1,9 +1,9 @@
-"""Tests for magnozzlex.validate.cases.resistive_dimov."""
+"""Tests for helicon.validate.cases.resistive_dimov."""
 
 import numpy as np
 import pytest
 
-from magnozzlex.validate.cases.resistive_dimov import (
+from helicon.validate.cases.resistive_dimov import (
     DIMOV_REFERENCE,
     ResistiveDimovCase,
     ValidationResult,
@@ -16,7 +16,7 @@ class TestResistiveDimovCase:
         assert "Dimov" in ResistiveDimovCase.description or "resistive" in ResistiveDimovCase.description.lower()
 
     def test_get_config_returns_sim_config(self):
-        from magnozzlex.config.parser import SimConfig
+        from helicon.config.parser import SimConfig
         config = ResistiveDimovCase.get_config()
         assert isinstance(config, SimConfig)
 
@@ -112,10 +112,10 @@ class TestResistiveDimovEvaluate:
 
 class TestResistiveDimovIntegration:
     def test_in_all_cases(self):
-        from magnozzlex.validate.runner import ALL_CASES
+        from helicon.validate.runner import ALL_CASES
         names = [c.name for c in ALL_CASES]
         assert "resistive_dimov" in names
 
     def test_importable_from_cases_init(self):
-        from magnozzlex.validate.cases import ResistiveDimovCase as Imported
+        from helicon.validate.cases import ResistiveDimovCase as Imported
         assert Imported is ResistiveDimovCase

@@ -1,49 +1,49 @@
-# magnozzlex.runner
+# helicon.runner
 
 Simulation launch, hardware detection, batch submission, checkpoints, and convergence.
 
 ## Hardware Detection
 
-::: magnozzlex.runner.hardware_config.HardwareInfo
+::: helicon.runner.hardware_config.HardwareInfo
 
-::: magnozzlex.runner.hardware_config.detect_hardware
+::: helicon.runner.hardware_config.detect_hardware
 
 ## Launch
 
-::: magnozzlex.runner.launch.RunResult
+::: helicon.runner.launch.RunResult
 
-::: magnozzlex.runner.launch.run_simulation
+::: helicon.runner.launch.run_simulation
 
 ## Batch Submission
 
-::: magnozzlex.runner.batch.BatchConfig
+::: helicon.runner.batch.BatchConfig
 
-::: magnozzlex.runner.batch.BatchJob
+::: helicon.runner.batch.BatchJob
 
-::: magnozzlex.runner.batch.BatchResult
+::: helicon.runner.batch.BatchResult
 
-::: magnozzlex.runner.batch.run_local_batch
+::: helicon.runner.batch.run_local_batch
 
-::: magnozzlex.runner.batch.submit_batch
+::: helicon.runner.batch.submit_batch
 
-::: magnozzlex.runner.batch.generate_slurm_script
+::: helicon.runner.batch.generate_slurm_script
 
-::: magnozzlex.runner.batch.generate_pbs_script
+::: helicon.runner.batch.generate_pbs_script
 
 ## Checkpoints
 
-::: magnozzlex.runner.checkpoints.CheckpointInfo
+::: helicon.runner.checkpoints.CheckpointInfo
 
-::: magnozzlex.runner.checkpoints.find_checkpoints
+::: helicon.runner.checkpoints.find_checkpoints
 
-::: magnozzlex.runner.checkpoints.find_latest_checkpoint
+::: helicon.runner.checkpoints.find_latest_checkpoint
 
-::: magnozzlex.runner.checkpoints.cleanup_checkpoints
+::: helicon.runner.checkpoints.cleanup_checkpoints
 
-::: magnozzlex.runner.checkpoints.get_restart_flag
+::: helicon.runner.checkpoints.get_restart_flag
 
 ## Grid Convergence
 
-::: magnozzlex.runner.convergence.ConvergenceResult
+::: helicon.runner.convergence.ConvergenceResult
 
-::: magnozzlex.runner.convergence.run_convergence_study
+::: helicon.runner.convergence.run_convergence_study

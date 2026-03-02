@@ -1,4 +1,4 @@
-# MagNozzleX — Technical Specification
+# Helicon — Technical Specification
 
 **GPU-Accelerated Magnetic Nozzle Simulation & Detachment Analysis Toolkit for Fusion Propulsion**
 
@@ -22,18 +22,18 @@ The central unsolved problem is **plasma detachment**. The magnetic field that c
 - Resistive and collisional effects (anomalous transport, wave-particle interactions)
 - Cross-field transport (instabilities that break frozen-in flux)
 
-No existing open-source tool provides a validated, GPU-accelerated workflow for studying these effects in propulsion-relevant geometries. MagNozzleX fills this gap.
+No existing open-source tool provides a validated, GPU-accelerated workflow for studying these effects in propulsion-relevant geometries. Helicon fills this gap.
 
-### 1.1 What MagNozzleX Is
+### 1.1 What Helicon Is
 
-A simulation **toolkit** — not a solver from scratch. MagNozzleX wraps and extends WarpX (the DOE Exascale Computing Project's high-performance, open-source particle-in-cell code) with:
+A simulation **toolkit** — not a solver from scratch. Helicon wraps and extends WarpX (the DOE Exascale Computing Project's high-performance, open-source particle-in-cell code) with:
 
 - Curated input configurations for fusion-propulsion magnetic nozzle geometries
 - Post-processing pipelines that extract propulsion-relevant quantities (thrust, Isp, detachment efficiency, plume divergence) from raw PIC output
 - Parameter-scan and optimization infrastructure for nozzle design
 - Validation cases against published analytical solutions and experimental data
 
-### 1.2 What MagNozzleX Is Not
+### 1.2 What Helicon Is Not
 
 - Not a new PIC/MHD solver (WarpX handles numerics; we don't rewrite them)
 - Not a full engine simulator (upstream fusion plasma source is a boundary condition, not modeled)
@@ -46,7 +46,7 @@ A simulation **toolkit** — not a solver from scratch. MagNozzleX wraps and ext
 
 ### 2.1 Core Physical Model
 
-MagNozzleX operates in **2D axisymmetric cylindrical coordinates (r, z)** using WarpX's existing RZ geometry support. Full 3D is available for asymmetric studies but is not the default due to computational cost.
+Helicon operates in **2D axisymmetric cylindrical coordinates (r, z)** using WarpX's existing RZ geometry support. Full 3D is available for asymmetric studies but is not the default due to computational cost.
 
 **Particle species modeled:**
 
@@ -80,7 +80,7 @@ MagNozzleX operates in **2D axisymmetric cylindrical coordinates (r, z)** using 
 
 ### 2.2 Geometry
 
-The nozzle is defined by its **applied magnetic field topology**, which is set by coil positions and currents. MagNozzleX provides parameterized geometry generators for the three canonical propulsion nozzle types:
+The nozzle is defined by its **applied magnetic field topology**, which is set by coil positions and currents. Helicon provides parameterized geometry generators for the three canonical propulsion nozzle types:
 
 1. **Simple solenoid nozzle** — Single coil or coil pair producing a diverging field downstream. Baseline case; analytically tractable for validation.
 
@@ -140,7 +140,7 @@ Axisymmetric boundary condition (WarpX RZ native handling).
 
 ```
 ┌─────────────────────────────────────────────────┐
-│                   MagNozzleX                     │
+│                   Helicon                     │
 │                                                  │
 │  ┌──────────┐  ┌──────────┐  ┌───────────────┐  │
 │  │  Config   │  │  B-field  │  │   WarpX       │  │
@@ -168,7 +168,7 @@ Axisymmetric boundary condition (WarpX RZ native handling).
 
 ### 3.2 Module Breakdown
 
-#### Module 1: `magnozzlex.config`
+#### Module 1: `helicon.config`
 **Purpose:** Parse and validate YAML input files. Generate WarpX input scripts.
 
 - Reads nozzle geometry, plasma source, simulation parameters
@@ -178,7 +178,7 @@ Axisymmetric boundary condition (WarpX RZ native handling).
 
 **Key files:**
 ```
-magnozzlex/config/
+helicon/config/
 ├── parser.py          # YAML → internal config dataclass
 ├── presets/
 │   ├── sunbird.yaml   # Pulsar Sunbird reference case
@@ -191,7 +191,7 @@ magnozzlex/config/
 └── validators.py      # physics sanity checks
 ```
 
-#### Module 2: `magnozzlex.fields`
+#### Module 2: `helicon.fields`
 **Purpose:** Compute and manage the applied magnetic field.
 
 - Biot-Savart integrator for arbitrary coil sets (vectorized NumPy/MLX)
@@ -202,7 +202,7 @@ magnozzlex/config/
 
 **Key files:**
 ```
-magnozzlex/fields/
+helicon/fields/
 ├── biot_savart.py     # coil → B(r,z) on grid (MLX primary, NumPy fallback)
 ├── field_lines.py     # tracing and topology classification
 ├── import_external.py # FEMM, COMSOL, CSV loaders
@@ -211,7 +211,7 @@ magnozzlex/fields/
 
 **MLX/Apple Silicon acceleration note:** The Biot-Savart module detects MLX availability at import and falls back to NumPy transparently. When MLX is available, computation runs on the Apple Silicon GPU via Metal. `mlx.core.grad` through the field computation enables gradient-based coil optimization in Module 5; `mlx.core.vmap` vectorizes the Biot-Savart integration over coil segments and grid points. Without MLX, the optimizer is limited to Bayesian/gradient-free methods. On Linux/HPC systems with NVIDIA GPUs, an optional JAX backend is available for CUDA acceleration.
 
-#### Module 3: `magnozzlex.runner`
+#### Module 3: `helicon.runner`
 **Purpose:** Configure, launch, and monitor WarpX simulations.
 
 - Programmatic WarpX invocation via `pywarpx` Python bindings
@@ -226,7 +226,7 @@ This module does **not** contain any physics — it is pure orchestration. All p
 
 **Key files:**
 ```
-magnozzlex/runner/
+helicon/runner/
 ├── launch.py          # single run execution
 ├── hardware_config.py # hardware detection and WarpX backend selection
 ├── batch.py           # parameter scan submission (local / SLURM / PBS)
@@ -234,8 +234,8 @@ magnozzlex/runner/
 └── diagnostics.py     # configure WarpX in-situ diagnostics
 ```
 
-#### Module 4: `magnozzlex.postprocess`
-**Purpose:** Extract propulsion metrics from WarpX output. This is the core value-add of MagNozzleX.
+#### Module 4: `helicon.postprocess`
+**Purpose:** Extract propulsion metrics from WarpX output. This is the core value-add of Helicon.
 
 **Computed quantities:**
 
@@ -252,7 +252,7 @@ magnozzlex/runner/
 | **Thrust coefficient (C_T)** | F / (ṁ · c_s), where c_s is ion sound speed at throat | Standard nozzle performance metric in Ahedo/Merino literature; enables direct comparison to published results |
 | **Pressure anisotropy (A)** | P_perp / P_parallel - 1 | From velocity-space moments of particle data |
 
-**Key insight on detachment efficiency:** The standard metric in the literature (η_d) is ambiguous because different papers define it differently. MagNozzleX computes three definitions and reports all:
+**Key insight on detachment efficiency:** The standard metric in the literature (η_d) is ambiguous because different papers define it differently. Helicon computes three definitions and reports all:
 
 1. **Momentum-based:** Net axial momentum at exit / injected axial momentum
 2. **Particle-based:** Fraction of injected particles that exit through the downstream boundary (vs. radial loss or reflection)
@@ -262,7 +262,7 @@ Users must specify which they're comparing against when citing literature values
 
 **Key files:**
 ```
-magnozzlex/postprocess/
+helicon/postprocess/
 ├── thrust.py          # momentum flux integration
 ├── detachment.py      # three definitions of η_d
 ├── plume.py           # divergence angle and beam efficiency
@@ -271,7 +271,7 @@ magnozzlex/postprocess/
 └── report.py          # summary JSON/CSV + auto-generated plots
 ```
 
-#### Module 5: `magnozzlex.optimize`
+#### Module 5: `helicon.optimize`
 **Purpose:** Nozzle design optimization via parameter sweeps and gradient-free optimization.
 
 - **Parameter scan:** Grid or Latin hypercube sampling over coil positions, currents, plasma beta, injection velocity. Each point is a WarpX run.
@@ -284,14 +284,14 @@ magnozzlex/postprocess/
 
 **Key files:**
 ```
-magnozzlex/optimize/
+helicon/optimize/
 ├── scan.py            # parameter sweep generation
 ├── surrogate.py       # GP surrogate model (botorch)
 ├── sensitivity.py     # Sobol analysis
 └── objectives.py      # multi-objective (thrust vs Isp vs η_d)
 ```
 
-#### Module 6: `magnozzlex.validate`
+#### Module 6: `helicon.validate`
 **Purpose:** Automated validation against known solutions. This is what gives the tool credibility.
 
 **Validation cases (v0.1):**
@@ -308,7 +308,7 @@ Each case has a reference solution (analytic or digitized from publication) and 
 
 **Key files:**
 ```
-magnozzlex/validate/
+helicon/validate/
 ├── cases/
 │   ├── free_expansion.py
 │   ├── guiding_center.py
@@ -368,8 +368,8 @@ magnozzlex/validate/
 ## 5. Repository Structure
 
 ```
-magnozzlex/
-├── magnozzlex/                # main Python package
+helicon/
+├── helicon/                # main Python package
 │   ├── __init__.py
 │   ├── config/
 │   ├── fields/
@@ -412,31 +412,31 @@ magnozzlex/
 
 ```bash
 # Run a preset case
-magnozzlex run --preset sunbird
+helicon run --preset sunbird
 
 # Run on NVIDIA GPU (Linux)
-magnozzlex run --preset sunbird --gpu cuda
+helicon run --preset sunbird --gpu cuda
 
 # Run a custom configuration
-magnozzlex run --config my_nozzle.yaml --output results/
+helicon run --config my_nozzle.yaml --output results/
 
 # Run full validation suite
-magnozzlex validate --all
+helicon validate --all
 
 # Parameter scan
-magnozzlex scan --config my_nozzle.yaml \
+helicon scan --config my_nozzle.yaml \
     --vary coils.0.I:20000:80000:5 \
     --vary coils.1.z:0.2:0.6:5 \
     --output scan_results/
 
 # Postprocess existing WarpX output
-magnozzlex postprocess --input warpx_output/ --metrics thrust,detachment,plume
+helicon postprocess --input warpx_output/ --metrics thrust,detachment,plume
 ```
 
 ### 6.2 Python API
 
 ```python
-import magnozzlex as mnx
+import helicon as mnx
 
 # Load configuration
 config = mnx.Config.from_yaml("my_nozzle.yaml")
@@ -480,7 +480,7 @@ Example JSON summary:
 
 ```json
 {
-  "magnozzlex_version": "0.1.0",
+  "helicon_version": "0.1.0",
   "config_hash": "a3f8c1...",
   "timestamp": "2026-03-15T14:30:00Z",
   "nozzle_type": "converging_diverging",
@@ -521,7 +521,7 @@ Example JSON summary:
 
 ## 7. Validation Strategy
 
-Validation is not optional. MagNozzleX ships with automated validation, and every release must pass all cases before tagging.
+Validation is not optional. Helicon ships with automated validation, and every release must pass all cases before tagging.
 
 ### 7.1 Verification (does the code solve the equations correctly?)
 
@@ -540,7 +540,7 @@ Validation is not optional. MagNozzleX ships with automated validation, and ever
 
 Every validation run generates a comparison plot (our result vs. reference) and a quantitative error metric. These plots are committed to the repository under `docs/validation_results/` and linked from the documentation.
 
-**No result from MagNozzleX should be published or cited without stating which validation cases the specific configuration has been tested against.** The tool enforces this by including a `validation_proximity` field in output — a measure of how similar the user's configuration is to the nearest validated case (in parameter space).
+**No result from Helicon should be published or cited without stating which validation cases the specific configuration has been tested against.** The tool enforces this by including a `validation_proximity` field in output — a measure of how similar the user's configuration is to the nearest validated case (in parameter space).
 
 ---
 
@@ -555,7 +555,7 @@ Every validation run generates a comparison plot (our result vs. reference) and 
 - [ ] Post-processing: thrust and mass flow rate from openPMD output
 - [ ] Validation case: free expansion (momentum conservation)
 - [ ] Validation case: single-particle guiding center orbit
-- [ ] CLI: `magnozzlex run` and `magnozzlex postprocess`
+- [ ] CLI: `helicon run` and `helicon postprocess`
 - [ ] README, installation docs, one tutorial notebook
 - [ ] CI: linting + unit tests
 - [ ] Reproducibility infrastructure: every run logs config hash, code version (git SHA), WarpX version + commit hash, random seeds for PIC particle initialization, and environment info in output metadata
@@ -643,9 +643,9 @@ Every validation run generates a comparison plot (our result vs. reference) and 
 
 ## 10. Success Criteria
 
-MagNozzleX succeeds if:
+Helicon succeeds if:
 
-1. **It produces a number someone publishes.** A peer-reviewed paper uses MagNozzleX results for a magnetic nozzle detachment study.
+1. **It produces a number someone publishes.** A peer-reviewed paper uses Helicon results for a magnetic nozzle detachment study.
 
 2. **It resolves a design question.** An engine team (Pulsar, RocketStar, Howe, or academic group) uses the optimization module to select a coil geometry and can cite the validated basis for that choice.
 
@@ -657,7 +657,7 @@ The tool does not succeed merely by having GitHub stars or a pretty dashboard. I
 
 ## 11. Prior Art & Differentiation
 
-| Existing Tool | What It Does | Gap MagNozzleX Fills |
+| Existing Tool | What It Does | Gap Helicon Fills |
 |---|---|---|
 | WarpX | General-purpose PIC solver | No propulsion-specific postprocessing, presets, or optimization |
 | EPOCH | UK PIC code | Less GPU-optimized; same postprocessing gap |
@@ -666,7 +666,7 @@ The tool does not succeed merely by having GitHub stars or a pretty dashboard. I
 | PlasmaPy | General plasma analysis library | No PIC integration; no nozzle-specific tools |
 | FUSE.jl | Tokamak integrated modeling | Wrong confinement geometry for propulsion |
 
-MagNozzleX is differentiated by being: (a) open-source, (b) accelerated via WarpX (CPU/CUDA) and MLX (Apple Silicon GPU), (c) propulsion-specific in its analysis pipeline, and (d) validation-first in its development philosophy.
+Helicon is differentiated by being: (a) open-source, (b) accelerated via WarpX (CPU/CUDA) and MLX (Apple Silicon GPU), (c) propulsion-specific in its analysis pipeline, and (d) validation-first in its development philosophy.
 
 ---
 
@@ -681,7 +681,7 @@ MagNozzleX is differentiated by being: (a) open-source, (b) accelerated via Warp
 
 **Code of conduct:** Contributor Covenant v2.1.
 
-**Citation:** All publications using MagNozzleX must cite the methodology paper (once published) and the specific version used. CITATION.cff is provided in the repository root.
+**Citation:** All publications using Helicon must cite the methodology paper (once published) and the specific version used. CITATION.cff is provided in the repository root.
 
 ---
 
@@ -689,7 +689,7 @@ MagNozzleX is differentiated by being: (a) open-source, (b) accelerated via Warp
 
 ### 13.1 Unit Convention
 
-MagNozzleX uses **SI units throughout** (meters, kilograms, seconds, amperes, tesla, eV for temperatures). This matches WarpX's native unit system and avoids conversion errors.
+Helicon uses **SI units throughout** (meters, kilograms, seconds, amperes, tesla, eV for temperatures). This matches WarpX's native unit system and avoids conversion errors.
 
 For comparison with the magnetic nozzle literature (which frequently uses normalized units), the postprocessing module provides optional conversions to plasma-physics normalizations:
 
@@ -704,7 +704,7 @@ These are computed and stored alongside SI values in output files but are never 
 
 Full mass ratio PIC simulations (m_i/m_e = 3672 for deuterium, 7344 for helium-4) are expensive because electrons require ~√(m_i/m_e) ≈ 60× smaller timesteps than ions. This is the single largest driver of computational cost.
 
-MagNozzleX supports user-configurable mass ratio with the following guidance:
+Helicon supports user-configurable mass ratio with the following guidance:
 
 | Mass Ratio | Use Case | Cost | Detachment Accuracy |
 |---|---|---|---|
@@ -720,10 +720,10 @@ MagNozzleX supports user-configurable mass ratio with the following guidance:
 
 ## 14. Reproducibility
 
-Every MagNozzleX run must be fully reproducible from its output metadata alone. The following are logged automatically in the output JSON:
+Every Helicon run must be fully reproducible from its output metadata alone. The following are logged automatically in the output JSON:
 
-- `magnozzlex_version`: package version string
-- `magnozzlex_git_sha`: git commit hash of the magnozzlex installation
+- `helicon_version`: package version string
+- `helicon_git_sha`: git commit hash of the helicon installation
 - `warpx_version`: WarpX version string
 - `warpx_git_sha`: WarpX commit hash (if built from source)
 - `config_hash`: SHA-256 of the input YAML file
@@ -735,7 +735,7 @@ Every MagNozzleX run must be fully reproducible from its output metadata alone. 
 - `hostname`, `timestamp`: execution environment
 - `wall_time_seconds`: total runtime
 
-**Reproducibility contract:** Given the same `config_hash` and `magnozzlex_git_sha` on the same hardware, the output must be bit-for-bit identical (deterministic PIC initialization, deterministic reduction order). On different hardware (e.g., different GPU), results may differ at floating-point level but must agree within statistical noise bounds documented for each metric.
+**Reproducibility contract:** Given the same `config_hash` and `helicon_git_sha` on the same hardware, the output must be bit-for-bit identical (deterministic PIC initialization, deterministic reduction order). On different hardware (e.g., different GPU), results may differ at floating-point level but must agree within statistical noise bounds documented for each metric.
 
 From v0.4, a `Dockerfile` and `conda-lock.yml` are provided so that any result can be reproduced in an identical environment.
 
@@ -754,7 +754,7 @@ From v0.4, a `Dockerfile` and `conda-lock.yml` are provided so that any result c
 
 ### 15.2 Diagnostic Modes
 
-To manage storage, MagNozzleX provides two diagnostic presets:
+To manage storage, Helicon provides two diagnostic presets:
 
 **Scan mode** (default for parameter scans): Only reduced diagnostics (scalar thrust, Isp, η_d computed in-situ by WarpX callbacks). No full field or particle dumps. ~10 MB per run.
 

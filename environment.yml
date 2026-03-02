@@ -1,7 +1,7 @@
-# MagNozzleX conda environment
+# Helicon conda environment
 #
 # Create: conda env create -f environment.yml
-# Activate: conda activate magnozzlex
+# Activate: conda activate helicon
 #
 # For Apple Silicon (MLX acceleration):
 #   pip install mlx  # after conda env create
@@ -11,7 +11,7 @@
 #   pip install torch --index-url https://download.pytorch.org/whl/cu121
 #   pip install botorch
 
-name: magnozzlex
+name: helicon
 channels:
   - conda-forge
   - defaults
@@ -48,7 +48,7 @@ dependencies:
 
   # pip-only packages
   - pip:
-    - magnozzlex
+    - helicon
     # MLX (Apple Silicon only — install separately)
     # - mlx>=0.10
     # WarpX (install from pre-built wheel or source)

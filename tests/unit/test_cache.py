@@ -1,4 +1,4 @@
-"""Tests for magnozzlex.fields.cache — HDF5 field map cache."""
+"""Tests for helicon.fields.cache — HDF5 field map cache."""
 
 from __future__ import annotations
 
@@ -7,8 +7,8 @@ import tempfile
 import numpy as np
 import pytest
 
-from magnozzlex.fields.biot_savart import BField, Coil, Grid, compute_bfield
-from magnozzlex.fields.cache import FieldCache, compute_bfield_cached
+from helicon.fields.biot_savart import BField, Coil, Grid, compute_bfield
+from helicon.fields.cache import FieldCache, compute_bfield_cached
 
 pytest.importorskip("h5py")
 

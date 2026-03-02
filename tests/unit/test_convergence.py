@@ -1,11 +1,11 @@
-"""Tests for magnozzlex.runner.convergence."""
+"""Tests for helicon.runner.convergence."""
 
 import math
 
 import numpy as np
 import pytest
 
-from magnozzlex.runner.convergence import (
+from helicon.runner.convergence import (
     ConvergenceLevel,
     ConvergenceResult,
     richardson_extrapolate,
@@ -69,7 +69,7 @@ class TestRunConvergenceStudy:
     """Integration tests using dry_run=True to avoid launching WarpX."""
 
     def _get_base_config(self):
-        from magnozzlex.config.parser import (
+        from helicon.config.parser import (
             CoilConfig,
             DomainConfig,
             NozzleConfig,

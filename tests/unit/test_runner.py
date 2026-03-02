@@ -1,19 +1,19 @@
-"""Tests for magnozzlex.runner module."""
+"""Tests for helicon.runner module."""
 
 from __future__ import annotations
 
 import tempfile
 from pathlib import Path
 
-from magnozzlex.config.parser import (
+from helicon.config.parser import (
     CoilConfig,
     DomainConfig,
     NozzleConfig,
     PlasmaSourceConfig,
     SimConfig,
 )
-from magnozzlex.runner.hardware_config import detect_hardware
-from magnozzlex.runner.launch import run_simulation
+from helicon.runner.hardware_config import detect_hardware
+from helicon.runner.launch import run_simulation
 
 
 def _make_config() -> SimConfig:
@@ -45,7 +45,7 @@ def test_dry_run_creates_files():
 
 def test_dry_run_bfield_is_valid():
     """The pre-computed B-field should be loadable."""
-    from magnozzlex.fields.biot_savart import BField
+    from helicon.fields.biot_savart import BField
 
     config = _make_config()
     with tempfile.TemporaryDirectory() as tmpdir:

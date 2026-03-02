@@ -1,5 +1,5 @@
 [project]
-name = "magnozzlex"
+name = "helicon"
 version = "0.4.0"
 description = "GPU-Accelerated Magnetic Nozzle Simulation & Detachment Analysis Toolkit"
 license = "MIT"
@@ -14,7 +14,7 @@ dependencies = [
 ]
 
 [project.scripts]
-magnozzlex = "magnozzlex.cli:main"
+helicon = "helicon.cli:main"
 
 [project.optional-dependencies]
 mlx = ["mlx>=0.10"]

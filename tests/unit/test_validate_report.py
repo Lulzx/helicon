@@ -1,4 +1,4 @@
-"""Tests for magnozzlex.validate.report module."""
+"""Tests for helicon.validate.report module."""
 
 from __future__ import annotations
 
@@ -6,7 +6,7 @@ from pathlib import Path
 
 import pytest
 
-from magnozzlex.validate.report import generate_html_report
+from helicon.validate.report import generate_html_report
 
 try:
     import matplotlib  # noqa: F401
@@ -33,7 +33,7 @@ def _make_result(case_name: str = "test_case", passed: bool = True) -> dict:
 @needs_matplotlib
 class TestPlotValidationComparison:
     def test_returns_path(self, tmp_path: Path) -> None:
-        from magnozzlex.validate.report import plot_validation_comparison
+        from helicon.validate.report import plot_validation_comparison
 
         result = _make_result()
         output = tmp_path / "plot.png"
@@ -42,7 +42,7 @@ class TestPlotValidationComparison:
         assert p.exists()
 
     def test_empty_metrics(self, tmp_path: Path) -> None:
-        from magnozzlex.validate.report import plot_validation_comparison
+        from helicon.validate.report import plot_validation_comparison
 
         result = {
             "case_name": "empty",
@@ -59,7 +59,7 @@ class TestPlotValidationComparison:
 @needs_matplotlib
 class TestSaveValidationPlots:
     def test_returns_list(self, tmp_path: Path) -> None:
-        from magnozzlex.validate.report import save_validation_plots
+        from helicon.validate.report import save_validation_plots
 
         results = [_make_result("case_a"), _make_result("case_b", passed=False)]
         paths = save_validation_plots(results, tmp_path / "plots")
@@ -69,7 +69,7 @@ class TestSaveValidationPlots:
             assert p.exists()
 
     def test_creates_output_dir(self, tmp_path: Path) -> None:
-        from magnozzlex.validate.report import save_validation_plots
+        from helicon.validate.report import save_validation_plots
 
         results = [_make_result()]
         out_dir = tmp_path / "deep" / "nested"

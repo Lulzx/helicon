@@ -1,8 +1,8 @@
-site_name: MagNozzleX
+site_name: Helicon
 site_description: GPU-Accelerated Magnetic Nozzle Simulation & Detachment Analysis Toolkit
-site_url: https://magnozzlex.github.io/magnozzlex
-repo_url: https://github.com/magnozzlex/magnozzlex
-repo_name: magnozzlex/magnozzlex
+site_url: https://helicon.github.io/helicon
+repo_url: https://github.com/helicon/helicon
+repo_name: helicon/helicon
 
 theme:
   name: material
@@ -45,12 +45,12 @@ nav:
       - VASIMR VX-200: validation/vasimr.md
       - Resistive Detachment: validation/dimov.md
   - API Reference:
-      - magnozzlex.fields: api/fields.md
-      - magnozzlex.config: api/config.md
-      - magnozzlex.runner: api/runner.md
-      - magnozzlex.postprocess: api/postprocess.md
-      - magnozzlex.optimize: api/optimize.md
-      - magnozzlex.validate: api/validate.md
+      - helicon.fields: api/fields.md
+      - helicon.config: api/config.md
+      - helicon.runner: api/runner.md
+      - helicon.postprocess: api/postprocess.md
+      - helicon.optimize: api/optimize.md
+      - helicon.validate: api/validate.md
   - FAQ: faq.md
   - Contributing: contributing.md
   - Changelog: changelog.md
@@ -88,7 +88,7 @@ extra_javascript:
 extra:
   social:
     - icon: fontawesome/brands/github
-      link: https://github.com/magnozzlex/magnozzlex
+      link: https://github.com/helicon/helicon
 
 watch:
-  - magnozzlex/
+  - helicon/

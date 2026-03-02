@@ -1,12 +1,12 @@
-"""Tests for magnozzlex.fields.field_lines module."""
+"""Tests for helicon.fields.field_lines module."""
 
 from __future__ import annotations
 
 import numpy as np
 import pytest
 
-from magnozzlex.fields.biot_savart import BField, Coil, Grid, compute_bfield
-from magnozzlex.fields.field_lines import (
+from helicon.fields.biot_savart import BField, Coil, Grid, compute_bfield
+from helicon.fields.field_lines import (
     FieldLine,
     FieldLineSet,
     FieldLineType,

@@ -1,6 +1,6 @@
 ---
 name: Bug Report
-about: Report a bug in MagNozzleX
+about: Report a bug in Helicon
 title: "[BUG] "
 labels: bug
 assignees: ''
@@ -26,7 +26,7 @@ What actually happened.
 
 ## Environment
 
-- MagNozzleX version:
+- Helicon version:
 - Python version:
 - OS:
 - MLX/WarpX version (if applicable):

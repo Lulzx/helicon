@@ -1,10 +1,10 @@
-"""Tests for magnozzlex.validate.cases.vasimr_plume."""
+"""Tests for helicon.validate.cases.vasimr_plume."""
 
 from pathlib import Path
 
 import pytest
 
-from magnozzlex.validate.cases.vasimr_plume import (
+from helicon.validate.cases.vasimr_plume import (
     TOLERANCES,
     VASIMR_REFERENCE,
     VASIMRPlumeCase,
@@ -18,7 +18,7 @@ class TestVASIMRPlumeCase:
         assert "VX-200" in VASIMRPlumeCase.description or "VASIMR" in VASIMRPlumeCase.description.upper()
 
     def test_get_config_returns_sim_config(self):
-        from magnozzlex.config.parser import SimConfig
+        from helicon.config.parser import SimConfig
         config = VASIMRPlumeCase.get_config()
         assert isinstance(config, SimConfig)
 
@@ -77,10 +77,10 @@ class TestVASIMRIntegration:
     """Test that VASIMR case appears in validation suite."""
 
     def test_in_all_cases(self):
-        from magnozzlex.validate.runner import ALL_CASES
+        from helicon.validate.runner import ALL_CASES
         names = [c.name for c in ALL_CASES]
         assert "vasimr_plume" in names
 
     def test_importable_from_cases_init(self):
-        from magnozzlex.validate.cases import VASIMRPlumeCase as Imported
+        from helicon.validate.cases import VASIMRPlumeCase as Imported
         assert Imported is VASIMRPlumeCase

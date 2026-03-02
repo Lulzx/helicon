@@ -1,13 +1,13 @@
 cff-version: 1.2.0
-message: "If you use MagNozzleX in your research, please cite it as below."
+message: "If you use Helicon in your research, please cite it as below."
 type: software
-title: "MagNozzleX: GPU-Accelerated Magnetic Nozzle Simulation & Detachment Analysis Toolkit"
+title: "Helicon: GPU-Accelerated Magnetic Nozzle Simulation & Detachment Analysis Toolkit"
 version: 0.2.0
 date-released: "2026-03-02"
 license: MIT
-repository-code: "https://github.com/magnozzlex/magnozzlex"
+repository-code: "https://github.com/helicon/helicon"
 abstract: >
-  MagNozzleX is a Python toolkit for simulating plasma detachment and thrust
+  Helicon is a Python toolkit for simulating plasma detachment and thrust
   generation in magnetic nozzle thrusters. It combines GPU-accelerated
   Biot-Savart field computation (via MLX on Apple Silicon), WarpX PIC
   integration, analytical pre-screening models, Bayesian coil optimization,

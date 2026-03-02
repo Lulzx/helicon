@@ -1,4 +1,4 @@
-"""Tests for magnozzlex.fields.import_external."""
+"""Tests for helicon.fields.import_external."""
 
 from __future__ import annotations
 
@@ -8,8 +8,8 @@ from pathlib import Path
 import numpy as np
 import pytest
 
-from magnozzlex.fields.biot_savart import BField
-from magnozzlex.fields.import_external import load_csv_bfield, load_femm_bfield
+from helicon.fields.biot_savart import BField
+from helicon.fields.import_external import load_csv_bfield, load_femm_bfield
 
 
 # ---------------------------------------------------------------------------

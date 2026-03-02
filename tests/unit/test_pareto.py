@@ -1,9 +1,9 @@
-"""Tests for magnozzlex.optimize.pareto."""
+"""Tests for helicon.optimize.pareto."""
 
 import numpy as np
 import pytest
 
-from magnozzlex.optimize.pareto import (
+from helicon.optimize.pareto import (
     ParetoResult,
     hypervolume_indicator,
     is_dominated,

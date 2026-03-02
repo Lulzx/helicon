@@ -1,17 +1,17 @@
-"""Tests for magnozzlex.optimize.objectives."""
+"""Tests for helicon.optimize.objectives."""
 
 from __future__ import annotations
 
 import numpy as np
 import pytest
 
-from magnozzlex.fields.biot_savart import HAS_MLX
+from helicon.fields.biot_savart import HAS_MLX
 
 skip_no_mlx = pytest.mark.skipif(not HAS_MLX, reason="MLX not installed")
 
 if HAS_MLX:
     import mlx.core as mx
-    from magnozzlex.optimize.objectives import (
+    from helicon.optimize.objectives import (
         OptimizationResult,
         optimize_coils_mlx,
         peak_field_objective,

@@ -1,43 +1,43 @@
-# magnozzlex.postprocess
+# helicon.postprocess
 
 Post-processing pipeline: thrust, detachment, plume metrics, reports, PropBench export.
 
 ## Thrust
 
-::: magnozzlex.postprocess.thrust.compute_thrust
+::: helicon.postprocess.thrust.compute_thrust
 
 ## Detachment
 
-::: magnozzlex.postprocess.detachment.compute_detachment
+::: helicon.postprocess.detachment.compute_detachment
 
 ## Plume
 
-::: magnozzlex.postprocess.plume.compute_plume_metrics
+::: helicon.postprocess.plume.compute_plume_metrics
 
 ## Moments
 
-::: magnozzlex.postprocess.moments.compute_moments
+::: helicon.postprocess.moments.compute_moments
 
 ## Pulsed Engines
 
-::: magnozzlex.postprocess.pulsed.compute_pulsed_metrics
+::: helicon.postprocess.pulsed.compute_pulsed_metrics
 
 ## Run Report
 
-::: magnozzlex.postprocess.report.RunReport
+::: helicon.postprocess.report.RunReport
 
-::: magnozzlex.postprocess.report.generate_report
+::: helicon.postprocess.report.generate_report
 
-::: magnozzlex.postprocess.report.save_report
+::: helicon.postprocess.report.save_report
 
-::: magnozzlex.postprocess.report.load_report
+::: helicon.postprocess.report.load_report
 
 ## PropBench
 
-::: magnozzlex.postprocess.propbench.PropBenchResult
+::: helicon.postprocess.propbench.PropBenchResult
 
-::: magnozzlex.postprocess.propbench.to_propbench
+::: helicon.postprocess.propbench.to_propbench
 
-::: magnozzlex.postprocess.propbench.save_propbench
+::: helicon.postprocess.propbench.save_propbench
 
-::: magnozzlex.postprocess.propbench.load_propbench
+::: helicon.postprocess.propbench.load_propbench

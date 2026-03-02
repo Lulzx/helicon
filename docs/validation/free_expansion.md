@@ -19,7 +19,7 @@ that the PIC solver correctly reproduces:
 ## Configuration
 
 ```python
-from magnozzlex.validate.cases.free_expansion import FreeExpansionCase
+from helicon.validate.cases.free_expansion import FreeExpansionCase
 case = FreeExpansionCase()
 config = case.get_config()
 ```
@@ -43,11 +43,11 @@ Key parameters:
 ## Running
 
 ```bash
-magnozzlex validate --case free_expansion
+helicon validate --case free_expansion
 ```
 
 ```python
-from magnozzlex.validate.runner import run_validation
+from helicon.validate.runner import run_validation
 result = run_validation("free_expansion", dry_run=True)
 print(result.summary)
 ```
@@ -55,4 +55,4 @@ print(result.summary)
 ## Results
 
 See `docs/validation_results/free_expansion/` for field plots and comparison figures
-after running `magnozzlex validate --case free_expansion`.
+after running `helicon validate --case free_expansion`.

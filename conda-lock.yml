@@ -1,9 +1,9 @@
-# conda-lock.yml — Reproducible conda environment for MagNozzleX
+# conda-lock.yml — Reproducible conda environment for Helicon
 # Generated for: macOS (Apple Silicon, arm64) and Linux (x86_64)
 #
 # To create the environment:
 #   conda install -n base -c conda-forge conda-lock
-#   conda-lock install --name magnozzlex conda-lock.yml
+#   conda-lock install --name helicon conda-lock.yml
 #
 # To regenerate from environment.yml:
 #   conda-lock lock --file environment.yml --platform linux-64 --platform osx-arm64
@@ -259,9 +259,9 @@ package:
 # NOTE: The following must be installed separately after conda env creation:
 #
 # pip packages (not on conda-forge):
-#   pip install magnozzlex
-#   pip install "magnozzlex[mlx]"        # Apple Silicon only
-#   pip install "magnozzlex[botorch]"    # Bayesian optimization
+#   pip install helicon
+#   pip install "helicon[mlx]"        # Apple Silicon only
+#   pip install "helicon[botorch]"    # Bayesian optimization
 #
 # WarpX (separate install):
 #   conda install -c conda-forge warpx   # CPU/OpenMP

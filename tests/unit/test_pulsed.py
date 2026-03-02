@@ -1,4 +1,4 @@
-"""Tests for magnozzlex.postprocess.pulsed module."""
+"""Tests for helicon.postprocess.pulsed module."""
 
 from __future__ import annotations
 
@@ -8,7 +8,7 @@ import h5py
 import numpy as np
 import pytest
 
-from magnozzlex.postprocess.pulsed import PulsedResult, compute_pulsed_metrics
+from helicon.postprocess.pulsed import PulsedResult, compute_pulsed_metrics
 
 
 def _write_pulsed_snapshot(

@@ -2,17 +2,17 @@
 
 ## General
 
-**Q: Does MagNozzleX include a PIC solver?**
+**Q: Does Helicon include a PIC solver?**
 
-No. MagNozzleX wraps WarpX — the DOE Exascale Computing Project's particle-in-cell code.
-You must install WarpX separately. MagNozzleX handles configuration, field pre-computation,
+No. Helicon wraps WarpX — the DOE Exascale Computing Project's particle-in-cell code.
+You must install WarpX separately. Helicon handles configuration, field pre-computation,
 parameter scanning, optimization, and post-processing.
 
-**Q: Can I use MagNozzleX without WarpX?**
+**Q: Can I use Helicon without WarpX?**
 
 Yes — for everything except running PIC simulations:
 - Biot-Savart field computation works standalone
-- Analytical pre-screening (`magnozzlex.optimize.analytical`) requires no WarpX
+- Analytical pre-screening (`helicon.optimize.analytical`) requires no WarpX
 - Post-processing can re-analyze existing WarpX output
 - Use `dry_run=True` to generate input files without launching WarpX
 
@@ -28,10 +28,10 @@ in output metadata as `mass_ratio_reduced=true`.
 **Q: Does WarpX run on the Apple Silicon GPU?**
 
 No — WarpX uses CPU/OpenMP on macOS (no Metal backend). The Apple Silicon GPU is used
-by MagNozzleX's Python layer: Biot-Savart computation, optimization, and post-processing
+by Helicon's Python layer: Biot-Savart computation, optimization, and post-processing
 via MLX.
 
-**Q: How fast is MagNozzleX on Apple Silicon vs NVIDIA?**
+**Q: How fast is Helicon on Apple Silicon vs NVIDIA?**
 
 WarpX itself runs ~2-4x slower on Apple Silicon CPU vs an NVIDIA A100. For production
 parameter scans (100+ runs), use a Linux/NVIDIA cluster. Apple Silicon is excellent
@@ -65,7 +65,7 @@ publishing.
 **Q: `ImportError: No module named 'mlx'`**
 
 Install MLX: `pip install mlx` (macOS with Apple Silicon only).
-On other platforms, MagNozzleX automatically falls back to NumPy.
+On other platforms, Helicon automatically falls back to NumPy.
 
 **Q: WarpX input is generated but simulation doesn't start**
 
@@ -74,6 +74,6 @@ Use `dry_run=True` to test without WarpX.
 
 **Q: How do I reproduce a result from a previous run?**
 
-Every run saves `run_metadata.json` containing the `config_hash`, `magnozzlex_git_sha`,
+Every run saves `run_metadata.json` containing the `config_hash`, `helicon_git_sha`,
 `warpx_version`, `random_seed`, and all dependency versions. Replicate the environment
 using the provided `Dockerfile` or `environment.yml`.

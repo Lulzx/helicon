@@ -19,7 +19,7 @@ through a magnetic nozzle. This case validates:
 ## Configuration
 
 ```python
-from magnozzlex.validate.cases.vasimr_plume import VasimrPlumeCase
+from helicon.validate.cases.vasimr_plume import VasimrPlumeCase
 case = VasimrPlumeCase()
 config = case.get_config()
 ```
@@ -44,11 +44,11 @@ Key parameters matching VX-200 operating point:
 ## Running
 
 ```bash
-magnozzlex validate --case vasimr
+helicon validate --case vasimr
 ```
 
 ```python
-from magnozzlex.validate.runner import run_validation
+from helicon.validate.runner import run_validation
 result = run_validation("vasimr", dry_run=True)
 print(result.summary)
 ```

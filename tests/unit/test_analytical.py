@@ -1,11 +1,11 @@
-"""Tests for magnozzlex.optimize.analytical."""
+"""Tests for helicon.optimize.analytical."""
 
 import math
 
 import numpy as np
 import pytest
 
-from magnozzlex.optimize.analytical import (
+from helicon.optimize.analytical import (
     NozzleScreeningResult,
     divergence_half_angle,
     thrust_coefficient_paraxial,
@@ -118,24 +118,24 @@ class TestScreenGeometry:
     """Integration test for screen_geometry using a real Biot-Savart call."""
 
     def test_screen_geometry_returns_result(self):
-        from magnozzlex.fields.biot_savart import Coil
-        from magnozzlex.optimize.analytical import screen_geometry
+        from helicon.fields.biot_savart import Coil
+        from helicon.optimize.analytical import screen_geometry
 
         coils = [Coil(z=0.0, r=0.1, I=1e4)]
         result = screen_geometry(coils, z_min=-0.5, z_max=2.0, n_pts=50)
         assert isinstance(result, NozzleScreeningResult)
 
     def test_screen_geometry_mirror_ratio_gt1(self):
-        from magnozzlex.fields.biot_savart import Coil
-        from magnozzlex.optimize.analytical import screen_geometry
+        from helicon.fields.biot_savart import Coil
+        from helicon.optimize.analytical import screen_geometry
 
         coils = [Coil(z=0.0, r=0.1, I=1e4)]
         result = screen_geometry(coils, z_min=-0.5, z_max=2.0, n_pts=50)
         assert result.mirror_ratio > 1.0
 
     def test_screen_geometry_metrics_consistent(self):
-        from magnozzlex.fields.biot_savart import Coil
-        from magnozzlex.optimize.analytical import screen_geometry
+        from helicon.fields.biot_savart import Coil
+        from helicon.optimize.analytical import screen_geometry
 
         coils = [Coil(z=0.0, r=0.1, I=1e4)]
         result = screen_geometry(coils, z_min=-0.5, z_max=2.0, n_pts=50)
@@ -145,8 +145,8 @@ class TestScreenGeometry:
 
     def test_higher_current_higher_mirror_ratio(self):
         """More current → stronger throat field → higher mirror ratio."""
-        from magnozzlex.fields.biot_savart import Coil
-        from magnozzlex.optimize.analytical import screen_geometry
+        from helicon.fields.biot_savart import Coil
+        from helicon.optimize.analytical import screen_geometry
 
         coils_low = [Coil(z=0.0, r=0.1, I=1e3)]
         coils_high = [Coil(z=0.0, r=0.1, I=1e5)]

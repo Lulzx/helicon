@@ -1,11 +1,11 @@
 # Parameter Scans
 
-MagNozzleX supports automated parameter scans for multi-dimensional design space exploration.
+Helicon supports automated parameter scans for multi-dimensional design space exploration.
 
 ## CLI
 
 ```bash
-magnozzlex scan --config my_nozzle.yaml \
+helicon scan --config my_nozzle.yaml \
     --vary "coils.0.I:20000:80000:5" \
     --vary "coils.0.r:0.05:0.20:5" \
     --output scan_results/ \
@@ -17,7 +17,7 @@ Sampling methods: `grid` (full factorial), `lhc` (Latin hypercube), `random`.
 ## Python API
 
 ```python
-from magnozzlex.optimize.scan import build_scan_configs, ScanConfig
+from helicon.optimize.scan import build_scan_configs, ScanConfig
 
 scan = ScanConfig(
     base_config=config,
@@ -35,7 +35,7 @@ print(f"Generated {len(configs)} configs")
 ## Running a Batch Scan
 
 ```python
-from magnozzlex.runner.batch import run_local_batch, BatchConfig
+from helicon.runner.batch import run_local_batch, BatchConfig
 
 batch = BatchConfig(n_workers=4)
 result = run_local_batch(configs, output_base="scan_results/", batch_config=batch, dry_run=True)
@@ -45,7 +45,7 @@ print(f"{result.n_completed}/{result.n_total} completed")
 ## SLURM Cluster Submission
 
 ```python
-from magnozzlex.runner.batch import submit_batch, BatchConfig
+from helicon.runner.batch import submit_batch, BatchConfig
 
 batch = BatchConfig(
     backend="slurm",
@@ -75,7 +75,7 @@ submit_batch(configs, batch, output_base="scan_results/")
 After runs complete:
 
 ```python
-from magnozzlex.postprocess.report import load_report
+from helicon.postprocess.report import load_report
 import pathlib
 
 reports = []
@@ -91,7 +91,7 @@ efficiencies = [r.detachment_momentum for r in reports]
 Fit a surrogate model to scan results for fast function evaluations:
 
 ```python
-from magnozzlex.optimize.surrogate import GPSurrogate
+from helicon.optimize.surrogate import GPSurrogate
 
 X = [[c.nozzle.coils[0].I, c.nozzle.coils[0].r] for c in configs]
 y = [r.thrust_N for r in reports]

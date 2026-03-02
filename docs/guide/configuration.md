@@ -1,6 +1,6 @@
 # Configuration Reference
 
-MagNozzleX uses YAML configuration files validated with Pydantic.
+Helicon uses YAML configuration files validated with Pydantic.
 
 ## Full Example
 
@@ -46,7 +46,7 @@ output_dir: results/my_run
 ## Loading from Python
 
 ```python
-from magnozzlex.config.parser import SimConfig
+from helicon.config.parser import SimConfig
 
 # From YAML file
 config = SimConfig.from_yaml("my_nozzle.yaml")
@@ -55,7 +55,7 @@ config = SimConfig.from_yaml("my_nozzle.yaml")
 config = SimConfig.from_preset("dfd")   # sunbird | dfd | ppr
 
 # Programmatically
-from magnozzlex.config.parser import (
+from helicon.config.parser import (
     CoilConfig, DomainConfig, NozzleConfig,
     PlasmaSourceConfig, ResolutionConfig, SimConfig,
 )
@@ -86,7 +86,7 @@ config = SimConfig(
 
 ## Physics Validation
 
-`magnozzlex.config.validators.validate_config(config)` checks:
+`helicon.config.validators.validate_config(config)` checks:
 
 - Domain extends at least 5× coil radius downstream (detachment clearance)
 - Grid resolution > 10 cells per ion Larmor radius
