@@ -42,6 +42,25 @@ class ResolutionConfig(BaseModel):
 
     nz: int = Field(default=512, gt=0, description="Axial grid points")
     nr: int = Field(default=256, gt=0, description="Radial grid points")
+    geometry: Literal["2d_rz", "3d"] = Field(
+        default="2d_rz",
+        description=(
+            "Simulation geometry. '2d_rz' is the default axisymmetric cylindrical "
+            "geometry (2D). '3d' enables full 3D Cartesian for non-axisymmetric "
+            "nozzles (asymmetric coil placement, tilted exhaust). Note: 3D WarpX "
+            "on Apple Silicon CPU is expensive — use cloud HPC offload (v1.3) for "
+            "production 3D runs. Default: '2d_rz'."
+        ),
+    )
+    np_phi: int = Field(
+        default=1,
+        gt=0,
+        description=(
+            "Azimuthal grid points (used only when geometry='3d'). "
+            "For 2D-RZ this field is ignored. "
+            "Recommended: 32–128 for production 3D runs."
+        ),
+    )
 
 
 class NozzleConfig(BaseModel):

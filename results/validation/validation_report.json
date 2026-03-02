@@ -1,5 +1,12 @@
 [
   {
+    "case_name": "free_expansion",
+    "passed": false,
+    "metrics": {},
+    "tolerances": {},
+    "description": "Simulation failed: pywarpx is not installed. Install WarpX with Python bindings to run simulations. See: https://warpx.readthedocs.io/en/latest/install/\nUse dry_run=True to generate input files without running."
+  },
+  {
     "case_name": "guiding_center",
     "passed": true,
     "metrics": {
@@ -10,5 +17,33 @@
       "order_relative_error": 0.2
     },
     "description": "Boris pusher convergence to guiding-center theory"
+  },
+  {
+    "case_name": "merino_ahedo_2016",
+    "passed": false,
+    "metrics": {},
+    "tolerances": {},
+    "description": "Simulation failed: pywarpx is not installed. Install WarpX with Python bindings to run simulations. See: https://warpx.readthedocs.io/en/latest/install/\nUse dry_run=True to generate input files without running."
+  },
+  {
+    "case_name": "mn1d_comparison",
+    "passed": false,
+    "metrics": {},
+    "tolerances": {},
+    "description": "Simulation failed: pywarpx is not installed. Install WarpX with Python bindings to run simulations. See: https://warpx.readthedocs.io/en/latest/install/\nUse dry_run=True to generate input files without running."
+  },
+  {
+    "case_name": "resistive_dimov",
+    "passed": false,
+    "metrics": {},
+    "tolerances": {},
+    "description": "Simulation failed: pywarpx is not installed. Install WarpX with Python bindings to run simulations. See: https://warpx.readthedocs.io/en/latest/install/\nUse dry_run=True to generate input files without running."
+  },
+  {
+    "case_name": "vasimr_plume",
+    "passed": false,
+    "metrics": {},
+    "tolerances": {},
+    "description": "Simulation failed: pywarpx is not installed. Install WarpX with Python bindings to run simulations. See: https://warpx.readthedocs.io/en/latest/install/\nUse dry_run=True to generate input files without running."
   }
 ]
