@@ -1,6 +1,6 @@
 # Quick Start
 
-See also: [notebooks/01_quickstart.ipynb](https://github.com/helicon/helicon/blob/main/notebooks/01_quickstart.ipynb)
+See also: [notebooks/01_quickstart.ipynb](https://github.com/lulzx/helicon/blob/main/notebooks/01_quickstart.ipynb)
 
 ## 1. Compute a magnetic field
 

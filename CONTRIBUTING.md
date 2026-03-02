@@ -7,7 +7,7 @@ Thank you for your interest in contributing to Helicon.
 **Requirements:** Python 3.11+, [uv](https://docs.astral.sh/uv/)
 
 ```bash
-git clone https://github.com/helicon/helicon
+git clone https://github.com/lulzx/helicon
 cd helicon
 uv sync --all-extras
 uv run pytest

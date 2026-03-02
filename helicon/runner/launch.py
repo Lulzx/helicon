@@ -133,23 +133,37 @@ def run_simulation(
     # Set OMP threads
     os.environ["OMP_NUM_THREADS"] = str(hardware.omp_num_threads)
 
-    try:
-        import subprocess
+    import shutil
+    import subprocess
+    import sys
 
-        result = subprocess.run(
-            [
-                "python",
-                "-c",
-                "from pywarpx import picmi; # WarpX execution via pywarpx would go here",
-            ],
-            cwd=str(out),
-            capture_output=True,
-            text=True,
-            timeout=3600 * 24,  # 24 hour max
-        )
-        success = result.returncode == 0
+    # Build WarpX command: python -m pywarpx.WarpX <input_file>
+    cmd = [sys.executable, "-m", "pywarpx.WarpX", str(input_path)]
+
+    # On Linux with NVIDIA GPU, try mpirun for multi-rank execution
+    if hardware.platform == "linux" and hardware.has_nvidia_gpu:
+        mpirun = shutil.which("mpirun") or shutil.which("mpiexec")
+        if mpirun:
+            n_ranks = max(1, hardware.cpu_count // 4)  # 1 rank per 4 CPU threads
+            cmd = [mpirun, "-n", str(n_ranks), *cmd]
+
+    log_path = out / "warpx.log"
+    success = False
+    try:
+        with log_path.open("w") as log_fh:
+            proc = subprocess.run(
+                cmd,
+                cwd=str(out),
+                stdout=log_fh,
+                stderr=subprocess.STDOUT,
+                timeout=3600 * 24,  # 24-hour max
+            )
+        success = proc.returncode == 0
+        if not success:
+            meta["warpx_returncode"] = proc.returncode
+    except subprocess.TimeoutExpired:
+        meta["error"] = "WarpX simulation timed out after 24 hours"
     except Exception as exc:
-        success = False
         meta["error"] = str(exc)
 
     wall = time.monotonic() - t0

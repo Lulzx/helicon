@@ -5,7 +5,7 @@ See [CONTRIBUTING.md](../CONTRIBUTING.md) in the repository root for full contri
 Quick summary:
 
 ```bash
-git clone https://github.com/helicon/helicon
+git clone https://github.com/lulzx/helicon
 cd helicon
 uv sync --all-extras
 uv run pytest

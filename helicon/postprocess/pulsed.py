@@ -21,7 +21,7 @@ class PulseMetrics:
 
     pulse_index: int
     impulse_bit_Ns: float
-    detachment_efficiency: float
+    detachment_efficiency: float | None
     peak_thrust_N: float
     pulse_duration_s: float
     particle_count: int
@@ -50,6 +50,7 @@ def compute_pulsed_metrics(
     species_mass: float = 3.3435837724e-27,
     pulse_period_s: float | None = None,
     n_pulses: int | None = None,
+    bfield_path: str | Path | None = None,
 ) -> PulsedResult:
     """Compute per-pulse propulsion metrics from time-resolved output.
 
@@ -68,6 +69,11 @@ def compute_pulsed_metrics(
         Expected pulse repetition period [s]. If None, auto-detected.
     n_pulses : int, optional
         Expected number of pulses. If None, auto-detected.
+    bfield_path : path, optional
+        Path to a pre-computed B-field HDF5 file (written by
+        ``BField.save()``).  When provided, per-pulse detachment
+        efficiency is computed via field-line classification.  If None,
+        ``detachment_efficiency`` is set to ``None`` for every pulse.
     """
     import h5py
 
@@ -149,16 +155,40 @@ def compute_pulsed_metrics(
             PulseMetrics(
                 pulse_index=i,
                 impulse_bit_Ns=abs(impulse),
-                detachment_efficiency=0.0,  # would need field-line classification
+                detachment_efficiency=None,  # filled below if bfield_path given
                 peak_thrust_N=peak,
                 pulse_duration_s=float(pulse_duration),
                 particle_count=int(np.sum(mask)),
             )
         )
 
+    # Compute per-pulse detachment efficiency via field-line classification
+    if bfield_path is not None and pulses:
+        try:
+            from helicon.fields.biot_savart import BField
+            from helicon.postprocess.fieldline_classify import classify_particles
+
+            bfield = BField.load(str(bfield_path))
+            classification = classify_particles(
+                output_dir, bfield, species_name=species_name
+            )
+            # Detachment efficiency = fraction of particles on open field lines
+            eta = (
+                classification.n_open / classification.n_total
+                if classification.n_total > 0
+                else None
+            )
+            for pulse in pulses:
+                pulse.detachment_efficiency = eta
+        except Exception:
+            pass  # leave detachment_efficiency as None if classification fails
+
     total_impulse = sum(p.impulse_bit_Ns for p in pulses)
     mean_impulse = total_impulse / len(pulses) if pulses else 0.0
-    mean_eta = np.mean([p.detachment_efficiency for p in pulses]) if pulses else 0.0
+    eta_values = [
+        p.detachment_efficiency for p in pulses if p.detachment_efficiency is not None
+    ]
+    mean_eta = float(np.mean(eta_values)) if eta_values else 0.0
 
     rep_rate = 1.0 / pulse_duration if pulse_duration > 0 else None
 

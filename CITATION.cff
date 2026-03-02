@@ -5,7 +5,7 @@ title: "Helicon: GPU-Accelerated Magnetic Nozzle Simulation & Detachment Analysi
 version: 0.2.0
 date-released: "2026-03-02"
 license: MIT
-repository-code: "https://github.com/helicon/helicon"
+repository-code: "https://github.com/lulzx/helicon"
 abstract: >
   Helicon is a Python toolkit for simulating plasma detachment and thrust
   generation in magnetic nozzle thrusters. It combines GPU-accelerated

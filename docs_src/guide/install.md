@@ -27,7 +27,7 @@ pip install "helicon[botorch]"    # botorch for Bayesian optimization
 ## Development Install
 
 ```bash
-git clone https://github.com/helicon/helicon
+git clone https://github.com/lulzx/helicon
 cd helicon
 uv sync --all-extras
 uv run pytest  # verify install

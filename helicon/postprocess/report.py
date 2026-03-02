@@ -34,6 +34,9 @@ class RunReport:
     # Optional spec §6.3 fields
     nozzle_type: str | None = None
     plasma_source: dict | None = None
+    # Convergence diagnostics (§6.3 results.convergence)
+    thrust_relative_change_last_10pct: float | None = None
+    particle_count_exit: int | None = None
 
     def to_spec_dict(
         self,
@@ -90,8 +93,10 @@ class RunReport:
                 "beam_efficiency": self.beam_efficiency,
                 "radial_loss_fraction": self.radial_loss_fraction,
                 "convergence": {
-                    "thrust_relative_change_last_10pct": None,
-                    "particle_count_exit": None,
+                    "thrust_relative_change_last_10pct": (
+                        self.thrust_relative_change_last_10pct
+                    ),
+                    "particle_count_exit": self.particle_count_exit,
                 },
             },
             "validation_flags": {
@@ -164,7 +169,74 @@ def generate_report(
     except (FileNotFoundError, ValueError):
         pass
 
+    # Convergence diagnostics from time-series snapshots
+    report.thrust_relative_change_last_10pct, report.particle_count_exit = (
+        _compute_convergence_diagnostics(output_dir)
+    )
+
     return report
+
+
+def _compute_convergence_diagnostics(
+    output_dir: Path,
+) -> tuple[float | None, int | None]:
+    """Compute convergence diagnostics from time-series HDF5 snapshots.
+
+    Returns
+    -------
+    thrust_relative_change_last_10pct : float or None
+        Relative std-dev of thrust over the final 10% of timesteps.
+        A small value indicates the simulation reached steady state.
+    particle_count_exit : int or None
+        Total macro-particle count near the exit plane in the last snapshot.
+    """
+    import h5py
+    import numpy as np
+
+    h5_files = sorted(output_dir.glob("**/*.h5"))
+    if len(h5_files) < 2:
+        return None, None
+
+    momentum_series: list[float] = []
+    particle_counts: list[int] = []
+
+    for h5_path in h5_files:
+        try:
+            with h5py.File(h5_path, "r") as f:
+                base = f["data"][sorted(f["data"].keys(), key=int)[-1]] if "data" in f else f
+                if "particles" not in base:
+                    continue
+                total_pz = 0.0
+                total_n = 0
+                for sp_name in base["particles"]:
+                    sp = base["particles"][sp_name]
+                    if "momentum" not in sp or "z" not in sp["momentum"]:
+                        continue
+                    pz = sp["momentum"]["z"][:]
+                    w = sp["weighting"][:] if "weighting" in sp else np.ones_like(pz)
+                    total_pz += float(np.sum(w * pz))
+                    # Exit plane: top 10% of z range
+                    if "position" in sp and "z" in sp["position"]:
+                        z = sp["position"]["z"][:]
+                        z_threshold = z.min() + 0.9 * (z.max() - z.min())
+                        total_n += int(np.sum(z > z_threshold))
+                momentum_series.append(total_pz)
+                particle_counts.append(total_n)
+        except Exception:
+            continue
+
+    thrust_rc = None
+    if len(momentum_series) >= 5:
+        arr = np.array(momentum_series)
+        n_last = max(1, len(arr) // 10)  # last 10%
+        tail = arr[-n_last:]
+        mean_tail = float(np.mean(np.abs(tail)))
+        if mean_tail > 0:
+            thrust_rc = float(np.std(tail) / mean_tail)
+
+    particle_count_exit = particle_counts[-1] if particle_counts else None
+
+    return thrust_rc, particle_count_exit
 
 
 def save_report(report: RunReport, path: str | Path, *, config: Any = None) -> None:

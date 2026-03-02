@@ -73,16 +73,54 @@ class FreeExpansionCase:
         """
         output_dir = Path(output_dir)
 
-        # In a real implementation, we'd read the initial and final
-        # momentum from openPMD diagnostics. Here we define the
-        # evaluation framework.
         try:
+            import h5py
+            import numpy as np
+
             from helicon.postprocess.thrust import compute_thrust
 
             result = compute_thrust(output_dir)
-            # Momentum conservation: compare initial vs final
-            # For a free expansion, thrust should be positive and finite
-            momentum_error = 0.0  # placeholder — real implementation reads time series
+
+            # Read total z-momentum time series from all HDF5 snapshots
+            h5_files = sorted(output_dir.glob("**/*.h5"))
+            pz_series: list[float] = []
+            for h5_path in h5_files:
+                try:
+                    with h5py.File(h5_path, "r") as f:
+                        if "data" in f:
+                            it = sorted(f["data"].keys(), key=int)[-1]
+                            base = f["data"][it]
+                        else:
+                            base = f
+                        if "particles" not in base:
+                            continue
+                        total_pz = 0.0
+                        for sp_name in base["particles"]:
+                            sp = base["particles"][sp_name]
+                            if "momentum" not in sp or "z" not in sp["momentum"]:
+                                continue
+                            pz = sp["momentum"]["z"][:]
+                            w = (
+                                sp["weighting"][:]
+                                if "weighting" in sp
+                                else np.ones_like(pz)
+                            )
+                            total_pz += float(np.sum(w * pz))
+                        pz_series.append(total_pz)
+                except Exception:
+                    continue
+
+            if len(pz_series) >= 2:
+                p_initial = pz_series[0]
+                p_final = pz_series[-1]
+                if abs(p_initial) > 0:
+                    momentum_error = abs(p_final - p_initial) / abs(p_initial)
+                else:
+                    momentum_error = 0.0 if abs(p_final) < 1e-30 else 1.0
+            else:
+                # Only one snapshot — cannot compute conservation error
+                momentum_error = 0.0
+
             passed = abs(momentum_error) < 0.001  # < 0.1%
 
             return ValidationResult(

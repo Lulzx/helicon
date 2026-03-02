@@ -1,8 +1,8 @@
 site_name: Helicon
 site_description: GPU-Accelerated Magnetic Nozzle Simulation & Detachment Analysis Toolkit
 site_url: https://helicon.github.io/helicon
-repo_url: https://github.com/helicon/helicon
-repo_name: helicon/helicon
+repo_url: https://github.com/lulzx/helicon
+repo_name: lulzx/helicon
 
 theme:
   name: material
@@ -88,7 +88,7 @@ extra_javascript:
 extra:
   social:
     - icon: fontawesome/brands/github
-      link: https://github.com/helicon/helicon
+      link: https://github.com/lulzx/helicon
 
 docs_dir: docs_src
 site_dir: docs

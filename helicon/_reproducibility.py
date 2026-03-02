@@ -41,7 +41,7 @@ def collect_metadata(config: object | None = None) -> dict:
 
     # WarpX version and git SHA
     meta["warpx_version"] = _get_warpx_version()
-    meta["warpx_git_sha"] = None
+    meta["warpx_git_sha"] = _get_warpx_git_sha()
 
     # Dependency versions
     for pkg in ["numpy", "scipy", "pydantic", "h5py"]:
@@ -144,6 +144,29 @@ def _get_warpx_version() -> str | None:
         return pywarpx.__version__
     except Exception:
         return None
+
+
+def _get_warpx_git_sha() -> str | None:
+    """Try to get the git SHA of the WarpX installation."""
+    import subprocess
+    from pathlib import Path
+
+    try:
+        import pywarpx
+
+        pkg_dir = Path(pywarpx.__file__).parent
+        result = subprocess.run(
+            ["git", "rev-parse", "HEAD"],
+            cwd=str(pkg_dir),
+            capture_output=True,
+            text=True,
+            timeout=5,
+        )
+        if result.returncode == 0:
+            return result.stdout.strip()
+    except Exception:
+        pass
+    return None
 
 
 def _get_metal_version() -> str | None:

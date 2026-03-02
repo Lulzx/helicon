@@ -52,7 +52,7 @@ validation-first.
 
 ## Citing Helicon
 
-See [CITATION.cff](https://github.com/helicon/helicon/blob/main/CITATION.cff) or cite as:
+See [CITATION.cff](https://github.com/lulzx/helicon/blob/main/CITATION.cff) or cite as:
 
 ```bibtex
 @software{helicon,
