@@ -44,6 +44,7 @@ class GuidingCenterCase:
 
     name = "guiding_center"
     description = "Single-particle guiding center orbit vs Littlejohn theory"
+    requires_warpx = False  # self-contained Boris pusher test — no WarpX output needed
 
     @staticmethod
     def get_config() -> SimConfig:

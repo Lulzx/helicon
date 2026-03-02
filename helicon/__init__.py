@@ -193,9 +193,19 @@ def postprocess(output_dir) -> Metrics:
     -------
     Metrics
     """
+    import json
+    from pathlib import Path
+
     from helicon.postprocess.report import generate_report
 
-    report = generate_report(output_dir)
+    # Read config_hash from run_metadata.json if present
+    config_hash = None
+    meta_path = Path(output_dir) / "run_metadata.json"
+    with contextlib.suppress(Exception):
+        meta = json.loads(meta_path.read_text())
+        config_hash = meta.get("config_hash")
+
+    report = generate_report(output_dir, config_hash=config_hash)
 
     return Metrics(
         thrust=report.thrust_N,

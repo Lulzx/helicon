@@ -78,7 +78,7 @@ def run_validation(
     for case_cls in selected:
         case_dir = output_base / case_cls.name
 
-        if run_simulations:
+        if run_simulations and getattr(case_cls, "requires_warpx", True):
             config = case_cls.get_config()
             try:
                 from helicon.runner.launch import run_simulation
