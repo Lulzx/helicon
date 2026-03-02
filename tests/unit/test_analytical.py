@@ -150,7 +150,7 @@ class TestScreenGeometry:
         assert 0.0 <= result.divergence_half_angle_deg <= 90.0
 
     def test_higher_current_higher_mirror_ratio(self):
-        """More current → stronger throat field → higher mirror ratio."""
+        """Mirror ratio is scale-invariant w.r.t. current for a single coil."""
         from helicon.fields.biot_savart import Coil
         from helicon.optimize.analytical import screen_geometry
 
@@ -158,7 +158,8 @@ class TestScreenGeometry:
         coils_high = [Coil(z=0.0, r=0.1, I=1e5)]
         r_low = screen_geometry(coils_low, z_min=-0.5, z_max=2.0, n_pts=50).mirror_ratio
         r_high = screen_geometry(coils_high, z_min=-0.5, z_max=2.0, n_pts=50).mirror_ratio
-        assert r_high > r_low
+        # B scales linearly with I, so mirror ratio B_max/B_min is invariant
+        assert abs(r_high - r_low) / max(r_high, r_low) < 1e-4
 
 
 class TestBatchFunctions:

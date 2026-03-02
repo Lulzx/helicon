@@ -30,7 +30,7 @@ from dataclasses import dataclass
 
 import numpy as np
 
-from helicon._mlx_utils import HAS_MLX, resolve_backend, to_mx, to_np
+from helicon._mlx_utils import resolve_backend, to_mx, to_np
 
 _QE = 1.6021766340e-19   # C
 _ME = 9.1093837015e-31   # kg
@@ -142,7 +142,8 @@ class LHDITransport:
         # Lower-hybrid frequency: ω_LH ≈ sqrt(ω_ci * ω_ce) for ω_pe >> ω_ce
         # Full expression: ω_LH = ω_ci / sqrt(1 + ω_ci^2/ω_ce^2 + ω_pe^2/ω_ce^2)
         # Approximate: ω_LH ≈ sqrt(ω_ci * ω_ce) when ω_pe >> ω_ce
-        omega_lh = np.sqrt(omega_ci * omega_ce / (1.0 + omega_pe**2 / omega_ce**2 + omega_ci / omega_ce))
+        denom = 1.0 + omega_pe**2 / omega_ce**2 + omega_ci / omega_ce
+        omega_lh = np.sqrt(omega_ci * omega_ce / denom)
 
         # Electron Larmor radius: ρ_e = v_th_e / ω_ce
         T_e_J = np.asarray(T_e_eV, dtype=float) * _QE
@@ -199,11 +200,9 @@ class LHDITransport:
         omega_ci = qe * B_mx / mi
         omega_pe = mx.sqrt(n_mx * qe**2 / (eps0 * me))
 
-        omega_lh = mx.sqrt(
-            omega_ci * omega_ce / (
-                mx.array(1.0) + omega_pe * omega_pe / (omega_ce * omega_ce) + omega_ci / omega_ce
-            )
-        )
+        pe_sq = omega_pe * omega_pe / (omega_ce * omega_ce)
+        denom_mx = mx.array(1.0) + pe_sq + omega_ci / omega_ce
+        omega_lh = mx.sqrt(omega_ci * omega_ce / denom_mx)
 
         T_e_J = float(np.mean(T_e_eV)) * qe if np.ndim(T_e_eV) == 0 else None
         if T_e_J is None:
@@ -266,8 +265,6 @@ class LHDITransport:
         ndarray
             Updated electron density [m⁻³]
         """
-        nr, nz = n_e.shape
-
         # Radial diffusion only (cross-field in 2D-RZ)
         D_avg = 0.5 * (D_eff[:-1, :] + D_eff[1:, :])  # (nr-1, nz)
         flux_plus = D_avg * (n_e[1:, :] - n_e[:-1, :]) / dr  # inward flux

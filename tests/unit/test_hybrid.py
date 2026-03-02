@@ -130,7 +130,7 @@ class TestCGLElectronFluid:
 
     def test_pressure_tensor(self):
         fluid = self._make_fluid()
-        P_rr, P_phi, P_zz = fluid.electron_pressure_tensor()
+        P_rr, P_phi, _P_zz = fluid.electron_pressure_tensor()
         np.testing.assert_array_equal(P_rr, P_phi)  # perp symmetry
         # P_zz = p_par may differ from P_rr if anisotropic
 
@@ -191,7 +191,9 @@ class TestLHDITransport:
         # High gradient
         r = np.linspace(0.01, 0.5, 20)
         n_high_grad = 1e18 * np.exp(-r[:, None] / 0.02)  # very steep
-        params_high = lhdi.compute_lhdi_params(n_high_grad, B_mag, T_e_eV, T_i_eV=5.0, dr=0.025)
+        params_high = lhdi.compute_lhdi_params(
+            n_high_grad, B_mag, T_e_eV, T_i_eV=5.0, dr=0.025
+        )
 
         # Mean gamma should be higher for steeper gradient
         assert np.mean(params_high.gamma_lhdi) > np.mean(params_low.gamma_lhdi)
@@ -207,7 +209,9 @@ class TestLHDITransport:
     def test_saturation_factor(self):
         """Higher saturation factor → proportionally higher D_eff."""
         lhdi_low = LHDITransport(ion_mass_kg=2.0 * _MP, backend="numpy", saturation_factor=0.1)
-        lhdi_high = LHDITransport(ion_mass_kg=2.0 * _MP, backend="numpy", saturation_factor=0.5)
+        lhdi_high = LHDITransport(
+            ion_mass_kg=2.0 * _MP, backend="numpy", saturation_factor=0.5
+        )
         n_e, B_mag, T_e_eV = self._make_grid()
         p_low = lhdi_low.compute_lhdi_params(n_e, B_mag, T_e_eV, T_i_eV=5.0, dr=0.025)
         p_high = lhdi_high.compute_lhdi_params(n_e, B_mag, T_e_eV, T_i_eV=5.0, dr=0.025)

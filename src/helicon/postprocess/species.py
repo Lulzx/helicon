@@ -342,7 +342,6 @@ def _compute_single_species(
     backend: str,
 ) -> SpeciesDetachmentResult:
     """Compute detachment for one species from openPMD snapshots."""
-    import h5py
 
     use_mlx = resolve_backend(backend) == "mlx"
 
@@ -398,7 +397,9 @@ def _compute_single_species(
         n_reflected = float(to_np(mx.sum(w_mx * ref_f)))
         pz_exit = float(to_np(mx.sum(w_mx * pz_mx * down_f)))
         vz_mx = pz_mx / float(species_mass)
-        ke_exit = float(to_np(mx.sum(w_mx * down_f * 0.5 * float(species_mass) * vz_mx * vz_mx)))
+        ke_exit = float(
+            to_np(mx.sum(w_mx * down_f * 0.5 * float(species_mass) * vz_mx * vz_mx))
+        )
     else:
         downstream = z_pos >= z_exit
         radial_loss = r_pos >= r_max

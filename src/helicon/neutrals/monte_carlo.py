@@ -22,7 +22,7 @@ from dataclasses import dataclass, field
 
 import numpy as np
 
-from helicon._mlx_utils import HAS_MLX, resolve_backend, to_mx, to_np
+from helicon._mlx_utils import resolve_backend, to_mx, to_np
 from helicon.neutrals.cross_sections import (
     SPECIES_MASS,
     cx_rate_m3s,
@@ -274,8 +274,12 @@ class MCCCollider:
         n_alive = len(idx_alive)
 
         # Compute collision probabilities for alive particles
-        n_i = n_ion_m3[idx_alive] if len(n_ion_m3) > 1 else np.full(n_alive, float(n_ion_m3[0]))
-        T_i = T_ion_eV[idx_alive] if len(T_ion_eV) > 1 else np.full(n_alive, float(T_ion_eV[0]))
+        n_i = (
+            n_ion_m3[idx_alive] if len(n_ion_m3) > 1 else np.full(n_alive, float(n_ion_m3[0]))
+        )
+        T_i = (
+            T_ion_eV[idx_alive] if len(T_ion_eV) > 1 else np.full(n_alive, float(T_ion_eV[0]))
+        )
         T_e = T_e_eV[idx_alive] if len(T_e_eV) > 1 else np.full(n_alive, float(T_e_eV[0]))
 
         rate_cx = cx_rate_m3s(self.species, T_i)
@@ -366,8 +370,12 @@ class MCCCollider:
         n_alive = len(idx_alive)
 
         # 3. Compute collision rates on GPU
-        n_i = n_ion_m3[idx_alive] if len(n_ion_m3) > 1 else np.full(n_alive, float(n_ion_m3[0]))
-        T_i = T_ion_eV[idx_alive] if len(T_ion_eV) > 1 else np.full(n_alive, float(T_ion_eV[0]))
+        n_i = (
+            n_ion_m3[idx_alive] if len(n_ion_m3) > 1 else np.full(n_alive, float(n_ion_m3[0]))
+        )
+        T_i = (
+            T_ion_eV[idx_alive] if len(T_ion_eV) > 1 else np.full(n_alive, float(T_ion_eV[0]))
+        )
         T_e = T_e_eV[idx_alive] if len(T_e_eV) > 1 else np.full(n_alive, float(T_e_eV[0]))
 
         n_mx = to_mx(n_i)

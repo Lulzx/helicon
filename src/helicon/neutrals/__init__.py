@@ -24,12 +24,12 @@ from helicon.neutrals.monte_carlo import (
 
 __all__ = [
     "SPECIES_MASS",
-    "cx_cross_section_m2",
-    "cx_rate_m3s",
-    "ionization_rate_m3s",
-    "recombination_rate_m3s",
     "MCCCollider",
     "MCCResult",
     "NeutralDynamics",
     "NeutralParticles",
+    "cx_cross_section_m2",
+    "cx_rate_m3s",
+    "ionization_rate_m3s",
+    "recombination_rate_m3s",
 ]

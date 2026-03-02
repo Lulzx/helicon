@@ -4,8 +4,6 @@ from __future__ import annotations
 
 import numpy as np
 import pytest
-import tempfile
-from pathlib import Path
 
 from helicon.postprocess.species import (
     SPECIES_CATALOG,
@@ -13,7 +11,6 @@ from helicon.postprocess.species import (
     SpeciesDetachmentResult,
     compute_species_moments,
 )
-
 
 _QE = 1.6021766340e-19
 _MP = 1.6726219236951e-27
@@ -30,11 +27,11 @@ class TestSpeciesCatalog:
             assert sp in SPECIES_CATALOG
 
     def test_mass_plausible(self):
-        for sp, info in SPECIES_CATALOG.items():
+        for _sp, info in SPECIES_CATALOG.items():
             assert info["mass"] > 0
 
     def test_charge_number_positive(self):
-        for sp, info in SPECIES_CATALOG.items():
+        for _sp, info in SPECIES_CATALOG.items():
             assert info["Z"] >= 1
 
 

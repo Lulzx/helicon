@@ -7,7 +7,6 @@ import pytest
 from helicon.config.parser import ResolutionConfig, SimConfig
 from helicon.config.warpx_generator import generate_warpx_input
 
-
 # ---------------------------------------------------------------------------
 # ResolutionConfig 3D fields
 # ---------------------------------------------------------------------------
@@ -24,7 +23,7 @@ class TestResolutionConfig3D:
         assert res.np_phi == 32
 
     def test_invalid_geometry_raises(self):
-        with pytest.raises(Exception):
+        with pytest.raises(ValueError):
             ResolutionConfig(geometry="cylindrical")  # invalid
 
     def test_np_phi_default_1(self):
@@ -32,7 +31,7 @@ class TestResolutionConfig3D:
         assert res.np_phi == 1
 
     def test_np_phi_positive(self):
-        with pytest.raises(Exception):
+        with pytest.raises(ValueError):
             ResolutionConfig(np_phi=0)
 
 

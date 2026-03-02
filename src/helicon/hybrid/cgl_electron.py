@@ -28,7 +28,7 @@ from dataclasses import dataclass
 
 import numpy as np
 
-from helicon._mlx_utils import HAS_MLX, resolve_backend, to_mx, to_np
+from helicon._mlx_utils import resolve_backend, to_mx, to_np
 
 _QE = 1.6021766340e-19  # C
 _ME = 9.1093837015e-31  # kg
