@@ -11,6 +11,7 @@ skip_no_mlx = pytest.mark.skipif(not HAS_MLX, reason="MLX not installed")
 
 if HAS_MLX:
     import mlx.core as mx
+
     from helicon.optimize.objectives import (
         OptimizationResult,
         optimize_coils_mlx,

@@ -19,7 +19,7 @@ def _write_csv(path: Path, nr: int = 4, nz: int = 5) -> tuple[np.ndarray, np.nda
     """Write a synthetic CSV field map and return (Br, Bz) ground truth."""
     r_vals = np.linspace(0.0, 0.3, nr)
     z_vals = np.linspace(-0.5, 0.5, nz)
-    Z, R = np.meshgrid(z_vals, r_vals)  # shapes (nr, nz)
+    _Z, R = np.meshgrid(z_vals, r_vals)  # shapes (nr, nz)
 
     Br_true = 0.01 * R
     Bz_true = 0.05 * (1.0 - R / 0.3)
@@ -41,7 +41,7 @@ def _write_femm(path: Path, nr: int = 3, nz: int = 4) -> tuple[np.ndarray, np.nd
     """Write a synthetic FEMM .ans-style file (coordinates in mm)."""
     r_mm = np.linspace(0.0, 100.0, nr)  # 0–100 mm
     z_mm = np.linspace(-200.0, 200.0, nz)
-    Z, R = np.meshgrid(z_mm, r_mm)
+    _Z, R = np.meshgrid(z_mm, r_mm)
 
     Br_true = 0.01 * R / 100.0  # in Tesla
     Bz_true = 0.05 * np.ones_like(R)
@@ -118,8 +118,10 @@ class TestLoadCSVBField:
                 f.write("radius,axial,Br_T,Bz_T\n")
                 for r in r_vals:
                     for z in z_vals:
-                        f.write(f"{r},{z},{0.01*r},{0.05}\n")
-            bf = load_csv_bfield(path, r_col="radius", z_col="axial", Br_col="Br_T", Bz_col="Bz_T")
+                        f.write(f"{r},{z},{0.01 * r},{0.05}\n")
+            bf = load_csv_bfield(
+                path, r_col="radius", z_col="axial", Br_col="Br_T", Bz_col="Bz_T"
+            )
         assert bf.Br.shape == (nr, nz)
 
 

@@ -3,4 +3,4 @@
 from helicon.validate.proximity import ProximityResult, config_proximity
 from helicon.validate.runner import run_validation
 
-__all__ = ["run_validation", "config_proximity", "ProximityResult"]
+__all__ = ["ProximityResult", "config_proximity", "run_validation"]

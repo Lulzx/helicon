@@ -94,7 +94,7 @@ def test_generate_pbs_script_contains_directives():
 def test_run_local_batch_dry_run_creates_output_dirs():
     configs = [_make_config() for _ in range(3)]
     with tempfile.TemporaryDirectory() as tmpdir:
-        result = run_local_batch(configs, tmpdir, dry_run=True)
+        run_local_batch(configs, tmpdir, dry_run=True)
         for i in range(3):
             assert (Path(tmpdir) / f"run_{i:04d}").is_dir()
 

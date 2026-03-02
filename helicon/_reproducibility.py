@@ -195,7 +195,10 @@ def _get_cuda_version() -> str | None:
 
 
 def _get_gpu_model() -> str | None:
-    """Get GPU model name on Linux via nvidia-smi; returns None on other platforms or on failure."""
+    """Get GPU model name on Linux via nvidia-smi.
+
+    Returns None on other platforms or on failure.
+    """
     import subprocess
 
     if platform.system() != "Linux":

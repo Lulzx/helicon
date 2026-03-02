@@ -45,7 +45,6 @@ from dataclasses import dataclass, field
 
 import numpy as np
 
-
 # Physical constants
 _MU0 = 4.0e-7 * math.pi
 
@@ -79,9 +78,9 @@ class CoilConstraints:
     max_total_mass_kg: float | None = None
     max_total_power_W: float | None = None
     max_B_conductor_T: float | None = None
-    current_density_Am2: float = 1.0e7          # 10 MA/m², typical for copper
+    current_density_Am2: float = 1.0e7  # 10 MA/m², typical for copper
     conductor_resistivity_Ohm_m: float = 1.72e-8  # copper at 20 °C
-    conductor_density_kg_m3: float = 8960.0      # copper
+    conductor_density_kg_m3: float = 8960.0  # copper
 
 
 @dataclass
@@ -141,7 +140,7 @@ def evaluate_constraints(
     CoilConstraintResult
     """
     params = np.atleast_2d(np.asarray(coil_params, dtype=float))
-    z_arr = params[:, 0]
+    params[:, 0]
     r_arr = params[:, 1]
     I_arr = params[:, 2]
 
@@ -152,17 +151,17 @@ def evaluate_constraints(
     # Per-coil quantities
     abs_I = np.abs(I_arr)
     r_safe = np.maximum(r_arr, 1e-9)
-    L_wire = 2.0 * math.pi * r_safe               # conductor path length per coil [m]
-    A_cond = abs_I / max(J, 1e-30)                # conductor cross-section [m²]
+    L_wire = 2.0 * math.pi * r_safe  # conductor path length per coil [m]
+    A_cond = abs_I / max(J, 1e-30)  # conductor cross-section [m²]
 
-    masses = rho_mass * A_cond * L_wire            # coil mass [kg]
+    masses = rho_mass * A_cond * L_wire  # coil mass [kg]
     total_mass = float(np.sum(masses))
 
     R_coil = rho_elec * L_wire / np.maximum(A_cond, 1e-30)
-    powers = abs_I**2 * R_coil                     # coil power [W]
+    powers = abs_I**2 * R_coil  # coil power [W]
     total_power = float(np.sum(powers))
 
-    B_peak = _MU0 * abs_I / (2.0 * r_safe)        # on-axis field at coil [T]
+    B_peak = _MU0 * abs_I / (2.0 * r_safe)  # on-axis field at coil [T]
 
     violations: dict[str, float] = {}
     penalty = 0.0
@@ -249,7 +248,7 @@ def make_constrained_objective(
     rho_mass = constraints.conductor_density_kg_m3
     mu0 = float(_MU0)
 
-    def constrained(coil_params: "mx.array") -> "mx.array":
+    def constrained(coil_params: mx.array) -> mx.array:
         obj = objective_fn(coil_params)
 
         r = coil_params[:, 1]

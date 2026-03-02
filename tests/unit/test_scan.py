@@ -118,8 +118,8 @@ class TestSetNested:
 def test_apply_params_does_not_mutate_base(base_config):
     params = {"coils.0.I": 9999.0}
     new_config = _apply_params(base_config, params)
-    assert new_config.nozzle.coils[0].I == pytest.approx(9999.0)
-    assert base_config.nozzle.coils[0].I == pytest.approx(1000.0)
+    assert pytest.approx(9999.0) == new_config.nozzle.coils[0].I
+    assert pytest.approx(1000.0) == base_config.nozzle.coils[0].I
 
 
 # ---------------------------------------------------------------------------
@@ -165,14 +165,12 @@ class TestGenerateScanPoints:
         ranges = [ParameterRange("coils.0.I", 500.0, 1500.0, 5)]
         p1 = generate_scan_points(base_config, ranges, method="lhc", seed=7)
         p2 = generate_scan_points(base_config, ranges, method="lhc", seed=7)
-        assert [pt.params["coils.0.I"] for pt in p1] == [
-            pt.params["coils.0.I"] for pt in p2
-        ]
+        assert [pt.params["coils.0.I"] for pt in p1] == [pt.params["coils.0.I"] for pt in p2]
 
     def test_config_modified_correctly(self, base_config):
         ranges = [ParameterRange("coils.0.I", 999.0, 999.0, 1)]
         points = generate_scan_points(base_config, ranges)
-        assert points[0].config.nozzle.coils[0].I == pytest.approx(999.0)
+        assert pytest.approx(999.0) == points[0].config.nozzle.coils[0].I
 
     def test_unknown_method_raises(self, base_config):
         with pytest.raises(ValueError, match="Unknown scan method"):

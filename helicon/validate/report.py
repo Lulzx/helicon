@@ -42,8 +42,14 @@ def plot_validation_comparison(result_dict: dict, output_path: str | Path) -> Pa
     if not metric_names:
         # Create a minimal placeholder figure
         fig, ax = plt.subplots(figsize=(6, 4))
-        ax.text(0.5, 0.5, f"{case_name}: no metrics", ha="center", va="center",
-                transform=ax.transAxes)
+        ax.text(
+            0.5,
+            0.5,
+            f"{case_name}: no metrics",
+            ha="center",
+            va="center",
+            transform=ax.transAxes,
+        )
         ax.set_title(f"{case_name} ({'PASS' if passed else 'FAIL'})")
         fig.savefig(output_path, dpi=150, bbox_inches="tight")
         plt.close(fig)
@@ -58,12 +64,19 @@ def plot_validation_comparison(result_dict: dict, output_path: str | Path) -> Pa
 
     fig, ax = plt.subplots(figsize=(max(6, len(metric_names) * 1.5), 4))
     x = range(len(metric_names))
-    bars = ax.bar(x, sim_values, color="steelblue", alpha=0.8, label="Simulated")
+    ax.bar(x, sim_values, color="steelblue", alpha=0.8, label="Simulated")
 
     # Show tolerance as error bars if available
     if any(t > 0 for t in tol_values):
-        ax.errorbar(x, sim_values, yerr=tol_values, fmt="none", ecolor="red",
-                     capsize=4, label="Tolerance")
+        ax.errorbar(
+            x,
+            sim_values,
+            yerr=tol_values,
+            fmt="none",
+            ecolor="red",
+            capsize=4,
+            label="Tolerance",
+        )
 
     ax.set_xticks(list(x))
     ax.set_xticklabels(metric_names, rotation=45, ha="right")
@@ -147,7 +160,7 @@ def generate_html_report(
 
         rows.append(
             f"<tr>"
-            f'<td>{case_name}</td>'
+            f"<td>{case_name}</td>"
             f'<td style="color: {status_color}; font-weight: bold;">{status_text}</td>'
             f"<td><pre>{metrics_json}</pre></td>"
             f"<td>{description}</td>"

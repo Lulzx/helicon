@@ -32,11 +32,13 @@ class TestIsDominated:
         assert not dominated[1]
 
     def test_three_points_one_dominated(self):
-        costs = np.array([
-            [1.0, 2.0],  # not dominated
-            [3.0, 1.0],  # not dominated
-            [2.0, 2.0],  # dominated by [1,2]
-        ])
+        costs = np.array(
+            [
+                [1.0, 2.0],  # not dominated
+                [3.0, 1.0],  # not dominated
+                [2.0, 2.0],  # dominated by [1,2]
+            ]
+        )
         dominated = is_dominated(costs)
         assert not dominated[0]
         assert not dominated[1]
@@ -50,11 +52,13 @@ class TestIsDominated:
         assert not dominated[1]
 
     def test_three_objective_dominance(self):
-        costs = np.array([
-            [1.0, 1.0, 1.0],  # dominates all others
-            [2.0, 2.0, 2.0],  # dominated
-            [1.5, 0.5, 1.5],  # not dominated by [1,1,1]: better in obj 1
-        ])
+        costs = np.array(
+            [
+                [1.0, 1.0, 1.0],  # dominates all others
+                [2.0, 2.0, 2.0],  # dominated
+                [1.5, 0.5, 1.5],  # not dominated by [1,1,1]: better in obj 1
+            ]
+        )
         dominated = is_dominated(costs)
         assert not dominated[0]
         assert dominated[1]
@@ -76,7 +80,8 @@ class TestParetoFront:
     def test_both_tradeoff_points_on_front(self):
         costs = np.array([[1.0, 3.0], [3.0, 1.0], [2.0, 2.0]])
         result = pareto_front(costs)
-        # [2,2] is dominated by both [1,3] and [3,1]... actually [1,3] doesn't dominate [2,2] since 3>2.
+        # [2,2] is dominated by both [1,3] and [3,1]... actually [1,3] doesn't dominate [2,2]
+        # since 3>2.
         # [1,3]: obj0=1 < 2, but obj1=3 > 2, so no dominance
         # [3,1]: obj0=3 > 2, obj1=1 < 2, no dominance
         # None dominates [2,2] — all three on front

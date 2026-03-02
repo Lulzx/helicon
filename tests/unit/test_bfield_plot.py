@@ -7,8 +7,8 @@ import unittest.mock as mock
 import numpy as np
 import pytest
 
-from helicon.fields.biot_savart import BField, Coil, Grid, compute_bfield
-from helicon.optimize.pareto import ParetoResult, pareto_front
+from helicon.fields.biot_savart import Coil, Grid, compute_bfield
+from helicon.optimize.pareto import pareto_front
 
 
 @pytest.fixture
@@ -21,21 +21,24 @@ def simple_bfield():
 def test_bfield_plot_requires_matplotlib(simple_bfield):
     """BField.plot() raises ImportError when matplotlib unavailable."""
     import sys
-    with mock.patch.dict(sys.modules, {"matplotlib.pyplot": None}):
-        with pytest.raises((ImportError, TypeError)):
-            simple_bfield.plot()
+
+    patched = mock.patch.dict(sys.modules, {"matplotlib.pyplot": None})
+    with patched, pytest.raises((ImportError, TypeError)):
+        simple_bfield.plot()
 
 
 def test_bfield_plot_returns_fig_ax(simple_bfield):
     """BField.plot() returns (fig, ax) tuple."""
     pytest.importorskip("matplotlib")
     import matplotlib
+
     matplotlib.use("Agg")
 
     fig, ax = simple_bfield.plot()
     assert fig is not None
     assert ax is not None
     import matplotlib.pyplot as plt
+
     plt.close(fig)
 
 
@@ -43,6 +46,7 @@ def test_bfield_plot_component_bz(simple_bfield):
     """BField.plot() works with Bz component."""
     pytest.importorskip("matplotlib")
     import matplotlib
+
     matplotlib.use("Agg")
     import matplotlib.pyplot as plt
 
@@ -55,6 +59,7 @@ def test_bfield_plot_component_br(simple_bfield):
     """BField.plot() works with Br component."""
     pytest.importorskip("matplotlib")
     import matplotlib
+
     matplotlib.use("Agg")
     import matplotlib.pyplot as plt
 
@@ -67,6 +72,7 @@ def test_bfield_plot_component_bmag(simple_bfield):
     """BField.plot() works with |B| component."""
     pytest.importorskip("matplotlib")
     import matplotlib
+
     matplotlib.use("Agg")
     import matplotlib.pyplot as plt
 
@@ -79,6 +85,7 @@ def test_bfield_plot_invalid_component(simple_bfield):
     """BField.plot() raises ValueError for unknown component."""
     pytest.importorskip("matplotlib")
     import matplotlib
+
     matplotlib.use("Agg")
 
     with pytest.raises(ValueError, match="Unknown component"):
@@ -89,10 +96,11 @@ def test_bfield_plot_no_field_lines(simple_bfield):
     """BField.plot() works with field_lines=False."""
     pytest.importorskip("matplotlib")
     import matplotlib
+
     matplotlib.use("Agg")
     import matplotlib.pyplot as plt
 
-    fig, ax = simple_bfield.plot(field_lines=False)
+    fig, _ax = simple_bfield.plot(field_lines=False)
     assert fig is not None
     plt.close(fig)
 
@@ -101,27 +109,31 @@ def test_bfield_plot_custom_axes(simple_bfield):
     """BField.plot() accepts an existing axes object."""
     pytest.importorskip("matplotlib")
     import matplotlib
+
     matplotlib.use("Agg")
     import matplotlib.pyplot as plt
 
     fig_pre, ax_pre = plt.subplots()
-    fig_out, ax_out = simple_bfield.plot(ax=ax_pre)
+    _fig_out, ax_out = simple_bfield.plot(ax=ax_pre)
     assert ax_out is ax_pre
     plt.close(fig_pre)
 
 
 # --- ParetoResult.plot() ---
 
+
 @pytest.fixture
 def simple_pareto():
     """2-objective Pareto front."""
-    costs = np.array([
-        [1.0, 4.0],
-        [2.0, 3.0],
-        [3.0, 2.0],
-        [4.0, 1.0],
-        [3.0, 3.5],  # dominated
-    ])
+    costs = np.array(
+        [
+            [1.0, 4.0],
+            [2.0, 3.0],
+            [3.0, 2.0],
+            [4.0, 1.0],
+            [3.0, 3.5],  # dominated
+        ]
+    )
     return pareto_front(costs)
 
 
@@ -129,6 +141,7 @@ def test_pareto_plot_returns_fig_ax(simple_pareto):
     """ParetoResult.plot() returns (fig, ax)."""
     pytest.importorskip("matplotlib")
     import matplotlib
+
     matplotlib.use("Agg")
     import matplotlib.pyplot as plt
 
@@ -142,6 +155,7 @@ def test_pareto_plot_with_labels(simple_pareto):
     """ParetoResult.plot() sets axis labels."""
     pytest.importorskip("matplotlib")
     import matplotlib
+
     matplotlib.use("Agg")
     import matplotlib.pyplot as plt
 
@@ -164,12 +178,13 @@ def test_pareto_plot_no_dominated_points():
     """ParetoResult.plot() handles case where all points are Pareto-optimal."""
     pytest.importorskip("matplotlib")
     import matplotlib
+
     matplotlib.use("Agg")
     import matplotlib.pyplot as plt
 
     # All 4 points non-dominated
     costs = np.array([[1.0, 4.0], [2.0, 3.0], [3.0, 2.0], [4.0, 1.0]])
     result = pareto_front(costs)
-    fig, ax = result.plot()
+    fig, _ax = result.plot()
     assert fig is not None
     plt.close(fig)

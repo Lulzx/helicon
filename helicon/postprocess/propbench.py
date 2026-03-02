@@ -8,7 +8,7 @@ from __future__ import annotations
 
 import json
 from dataclasses import asdict, dataclass
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 
 from helicon.postprocess.report import RunReport
@@ -71,7 +71,7 @@ def to_propbench(
     """
     result = PropBenchResult(
         code_version=run_report.helicon_version,
-        timestamp=datetime.now(tz=timezone.utc).isoformat(),
+        timestamp=datetime.now(tz=UTC).isoformat(),
         config_hash=run_report.config_hash,
         thrust_N=run_report.thrust_N,
         isp_s=run_report.isp_s,

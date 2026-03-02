@@ -15,16 +15,16 @@ from helicon.config.parser import (
     SimConfig,
 )
 from helicon.validate.proximity import (
-    ProximityResult,
-    VALIDATED_REGIONS,
     _MU_0,
+    VALIDATED_REGIONS,
+    ProximityResult,
     config_proximity,
 )
-
 
 # ---------------------------------------------------------------------------
 # Helpers to build SimConfig objects quickly
 # ---------------------------------------------------------------------------
+
 
 def _make_config(
     n0: float,
@@ -64,6 +64,7 @@ def _coil_current_for_b(B: float, r: float = 0.10) -> float:
 # 1. Structure test
 # ---------------------------------------------------------------------------
 
+
 class TestProximityResultStructure:
     """ProximityResult has all required fields with correct types."""
 
@@ -81,6 +82,7 @@ class TestProximityResultStructure:
 
     def test_result_is_dataclass_instance(self):
         import dataclasses
+
         config = _make_config(n0=1e18, T_i_eV=100.0, I_coil=_coil_current_for_b(0.10))
         result = config_proximity(config)
         assert dataclasses.is_dataclass(result)
@@ -89,6 +91,7 @@ class TestProximityResultStructure:
 # ---------------------------------------------------------------------------
 # 2. Free-expansion close config → distance < 1.0
 # ---------------------------------------------------------------------------
+
 
 class TestProximityFreeExpansionClose:
     """A config matching the free_expansion region centre must be inside it."""
@@ -124,6 +127,7 @@ class TestProximityFreeExpansionClose:
 # ---------------------------------------------------------------------------
 # 3. Far config → warning is not None
 # ---------------------------------------------------------------------------
+
 
 class TestProximityFarConfigWarning:
     """A config far from every validated case must produce a warning."""
@@ -161,14 +165,15 @@ class TestProximityFarConfigWarning:
 # 4. VASIMR-like config → nearest = "vasimr"
 # ---------------------------------------------------------------------------
 
+
 class TestProximityNearestCaseCorrect:
     """A VASIMR-like configuration should identify 'vasimr' as the nearest case."""
 
     def test_proximity_nearest_case_correct(self):
         region = VALIDATED_REGIONS["vasimr"]
-        n0_centre, _ = region["n0"]       # 5e19
-        T_centre, _ = region["T_i_eV"]    # 1000
-        B_centre, _ = region["B_T"]        # 2.0
+        n0_centre, _ = region["n0"]  # 5e19
+        T_centre, _ = region["T_i_eV"]  # 1000
+        B_centre, _ = region["B_T"]  # 2.0
 
         I_coil = _coil_current_for_b(B_centre)
         config = _make_config(n0=n0_centre, T_i_eV=T_centre, I_coil=I_coil)
@@ -195,6 +200,7 @@ class TestProximityNearestCaseCorrect:
 # ---------------------------------------------------------------------------
 # 5. Config at region centre → in_validated_region = True
 # ---------------------------------------------------------------------------
+
 
 class TestProximityInValidatedRegion:
     """A config placed at the exact centre of any region must be inside it."""
@@ -234,10 +240,11 @@ class TestProximityInValidatedRegion:
 # 6. parameter_distances dict has expected keys
 # ---------------------------------------------------------------------------
 
+
 class TestProximityParameterDistancesDict:
     """result.parameter_distances must contain exactly the expected keys."""
 
-    EXPECTED_KEYS = {"n0", "T_i_eV", "B_T"}
+    EXPECTED_KEYS: frozenset = frozenset({"n0", "T_i_eV", "B_T"})
 
     def test_proximity_parameter_distances_dict(self):
         config = _make_config(n0=1e18, T_i_eV=100.0, I_coil=_coil_current_for_b(0.10))
@@ -268,15 +275,19 @@ class TestProximityParameterDistancesDict:
 # 7. Import from validate package public API
 # ---------------------------------------------------------------------------
 
+
 class TestPublicAPIImport:
     """config_proximity and ProximityResult must be importable from the package."""
 
     def test_importable_from_validate_package(self):
-        from helicon.validate import config_proximity as cp, ProximityResult as PR
+        from helicon.validate import ProximityResult as PR
+        from helicon.validate import config_proximity as cp
+
         assert cp is config_proximity
         assert PR is ProximityResult
 
     def test_in_validate_all(self):
         import helicon.validate as validate_pkg
+
         assert "config_proximity" in validate_pkg.__all__
         assert "ProximityResult" in validate_pkg.__all__

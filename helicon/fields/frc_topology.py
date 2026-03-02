@@ -27,9 +27,7 @@ class FRCTopologyResult:
     psi_separatrix: float
 
 
-def compute_flux_function(
-    Bz: np.ndarray, r_arr: np.ndarray, dr: float
-) -> np.ndarray:
+def compute_flux_function(Bz: np.ndarray, r_arr: np.ndarray, dr: float) -> np.ndarray:
     """Compute psi(r,z) = integral_0^r (-r' * Bz(r',z)) dr'.
 
     Parameters

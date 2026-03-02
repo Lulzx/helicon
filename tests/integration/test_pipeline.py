@@ -7,8 +7,8 @@ from __future__ import annotations
 
 from pathlib import Path
 
-import yaml
 import pytest
+import yaml
 
 from helicon.config.parser import (
     CoilConfig,
@@ -19,10 +19,10 @@ from helicon.config.parser import (
     SimConfig,
 )
 
-
 # ---------------------------------------------------------------------------
 # Shared helpers
 # ---------------------------------------------------------------------------
+
 
 def _make_simple_config() -> SimConfig:
     """Return a minimal SimConfig suitable for fast integration tests."""
@@ -67,6 +67,7 @@ def _write_config_yaml(path: Path) -> Path:
 # Test 1: full dry-run pipeline — config → bfield → WarpX input file
 # ---------------------------------------------------------------------------
 
+
 def test_full_dry_run_pipeline(tmp_path: Path) -> None:
     """Config → B-field precomputation → WarpX input file (dry_run=True)."""
     from helicon.runner.launch import run_simulation
@@ -86,6 +87,7 @@ def test_full_dry_run_pipeline(tmp_path: Path) -> None:
 # ---------------------------------------------------------------------------
 # Test 2: scan dry-run — 2×2 grid, verify 4 output dirs created
 # ---------------------------------------------------------------------------
+
 
 def test_scan_dry_run(tmp_path: Path) -> None:
     """2×2 parameter grid dry-run scan must produce 4 point directories."""
@@ -112,6 +114,7 @@ def test_scan_dry_run(tmp_path: Path) -> None:
 # ---------------------------------------------------------------------------
 # Test 3: scan with prescreening — verify screened_out flag is set
 # ---------------------------------------------------------------------------
+
 
 def test_scan_prescreening(tmp_path: Path) -> None:
     """Scan with prescreening enabled; verify screened_out flag behaves correctly."""
@@ -163,6 +166,7 @@ def test_scan_prescreening(tmp_path: Path) -> None:
 # Test 4: validate dry-run — free_expansion case with run_simulations=False
 # ---------------------------------------------------------------------------
 
+
 def test_validation_dry_run(tmp_path: Path) -> None:
     """Run the free_expansion validation case with run_simulations=False.
 
@@ -190,6 +194,7 @@ def test_validation_dry_run(tmp_path: Path) -> None:
 # Test 5: config roundtrip — save to YAML, reload, verify equality
 # ---------------------------------------------------------------------------
 
+
 def test_config_roundtrip(tmp_path: Path) -> None:
     """Save a SimConfig to YAML, reload it, and verify field-by-field equality."""
     original = _make_simple_config()
@@ -210,7 +215,7 @@ def test_config_roundtrip(tmp_path: Path) -> None:
     for rc, oc in zip(reloaded.nozzle.coils, original.nozzle.coils):
         assert rc.z == pytest.approx(oc.z)
         assert rc.r == pytest.approx(oc.r)
-        assert rc.I == pytest.approx(oc.I)
+        assert pytest.approx(oc.I) == rc.I
 
     # Domain
     assert reloaded.nozzle.domain.z_min == pytest.approx(original.nozzle.domain.z_min)

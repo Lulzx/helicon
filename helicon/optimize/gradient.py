@@ -30,9 +30,8 @@ Typical usage
 
 from __future__ import annotations
 
-import math
-from dataclasses import dataclass, field
-from typing import Callable
+from collections.abc import Callable
+from dataclasses import dataclass
 
 import numpy as np
 
@@ -280,6 +279,8 @@ def optimize_mirror_ratio(
     """
     from helicon.fields.biot_savart import (
         HAS_MLX as _HAS_MLX,
+    )
+    from helicon.fields.biot_savart import (
         compute_bfield_mlx_differentiable,
     )
 
@@ -299,7 +300,7 @@ def optimize_mirror_ratio(
     _require_mlx()
 
     # Build grid arrays once (outside the hot loop)
-    r_np = np.linspace(0.0, grid.r_max, grid.nr).astype(np.float32)
+    np.linspace(0.0, grid.r_max, grid.nr).astype(np.float32)
     z_np = np.linspace(grid.z_min, grid.z_max, grid.nz).astype(np.float32)
     # Use on-axis points only (r=0) for efficiency
     z_axis_np = z_np.copy()

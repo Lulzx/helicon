@@ -17,7 +17,11 @@ from helicon.runner.checkpoints import (
     find_latest_checkpoint,
     get_restart_flag,
 )
-from helicon.runner.convergence import ConvergenceLevel, ConvergenceResult, run_convergence_study
+from helicon.runner.convergence import (
+    ConvergenceLevel,
+    ConvergenceResult,
+    run_convergence_study,
+)
 from helicon.runner.hardware_config import HardwareInfo, detect_hardware
 from helicon.runner.launch import RunResult, run_simulation
 

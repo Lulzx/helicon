@@ -33,34 +33,34 @@ _MU_0: float = 4.0e-7 * math.pi
 # ---------------------------------------------------------------------------
 VALIDATED_REGIONS: dict[str, dict[str, tuple[float, float]]] = {
     "free_expansion": {
-        "n0":    (1e18, 5e17),
+        "n0": (1e18, 5e17),
         "T_i_eV": (100.0, 50.0),
-        "B_T":   (0.10, 0.05),
+        "B_T": (0.10, 0.05),
     },
     "guiding_center": {
-        "n0":    (1e16, 5e15),
+        "n0": (1e16, 5e15),
         "T_i_eV": (10.0, 5.0),
-        "B_T":   (0.05, 0.02),
+        "B_T": (0.05, 0.02),
     },
     "merino_ahedo": {
-        "n0":    (1e19, 5e18),
+        "n0": (1e19, 5e18),
         "T_i_eV": (1000.0, 500.0),
-        "B_T":   (1.0, 0.5),
+        "B_T": (1.0, 0.5),
     },
     "resistive_dimov": {
-        "n0":    (1e21, 5e20),
+        "n0": (1e21, 5e20),
         "T_i_eV": (10.0, 5.0),
-        "B_T":   (0.05, 0.02),
+        "B_T": (0.05, 0.02),
     },
     "vasimr": {
-        "n0":    (5e19, 2e19),
+        "n0": (5e19, 2e19),
         "T_i_eV": (1000.0, 500.0),
-        "B_T":   (2.0, 1.0),
+        "B_T": (2.0, 1.0),
     },
     "mn1d_comparison": {
-        "n0":    (1e19, 5e18),
+        "n0": (1e19, 5e18),
         "T_i_eV": (500.0, 200.0),
-        "B_T":   (1.0, 0.5),
+        "B_T": (1.0, 0.5),
     },
 }
 
@@ -103,6 +103,7 @@ class ProximityResult:
 # ---------------------------------------------------------------------------
 # Internal helpers
 # ---------------------------------------------------------------------------
+
 
 def _estimate_b_throat(config: SimConfig) -> float:
     """Estimate the on-axis magnetic field at the throat [T].
@@ -194,8 +195,7 @@ def _build_warning(
     )
     param_hints: list[str] = []
     for param, dist in far_params:
-        centre, half_width = VALIDATED_REGIONS[nearest_case][param]
-        direction = "increase" if dist > 0 else "decrease"
+        centre, _half_width = VALIDATED_REGIONS[nearest_case][param]
         # Determine whether the user value is above or below the centre
         # We don't have the user value here, but we can describe the region.
         param_hints.append(
@@ -219,6 +219,7 @@ def _build_warning(
 # ---------------------------------------------------------------------------
 # Public API
 # ---------------------------------------------------------------------------
+
 
 def config_proximity(config: SimConfig) -> ProximityResult:
     """Compute parameter-space distance from *config* to the nearest validated case.

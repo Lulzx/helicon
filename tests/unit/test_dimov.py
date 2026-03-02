@@ -13,10 +13,12 @@ from helicon.validate.cases.resistive_dimov import (
 class TestResistiveDimovCase:
     def test_name_and_description(self):
         assert ResistiveDimovCase.name == "resistive_dimov"
-        assert "Dimov" in ResistiveDimovCase.description or "resistive" in ResistiveDimovCase.description.lower()
+        desc = ResistiveDimovCase.description
+        assert "Dimov" in desc or "resistive" in desc.lower()
 
     def test_get_config_returns_sim_config(self):
         from helicon.config.parser import SimConfig
+
         config = ResistiveDimovCase.get_config()
         assert isinstance(config, SimConfig)
 
@@ -72,8 +74,9 @@ class TestHallParameterThreshold:
 
     def test_coulomb_log_effect(self):
         # Higher ln_lambda → more collisions → lower omega_tau
-        ot1 = ResistiveDimovCase.hall_parameter_threshold(B_T=0.05, T_e_eV=10.0, n_m3=1e19, ln_lambda=10.0)
-        ot2 = ResistiveDimovCase.hall_parameter_threshold(B_T=0.05, T_e_eV=10.0, n_m3=1e19, ln_lambda=20.0)
+        kw = {"B_T": 0.05, "T_e_eV": 10.0, "n_m3": 1e19}
+        ot1 = ResistiveDimovCase.hall_parameter_threshold(**kw, ln_lambda=10.0)
+        ot2 = ResistiveDimovCase.hall_parameter_threshold(**kw, ln_lambda=20.0)
         assert ot1 > ot2
 
     def test_positive_value(self):
@@ -113,9 +116,11 @@ class TestResistiveDimovEvaluate:
 class TestResistiveDimovIntegration:
     def test_in_all_cases(self):
         from helicon.validate.runner import ALL_CASES
+
         names = [c.name for c in ALL_CASES]
         assert "resistive_dimov" in names
 
     def test_importable_from_cases_init(self):
         from helicon.validate.cases import ResistiveDimovCase as Imported
+
         assert Imported is ResistiveDimovCase

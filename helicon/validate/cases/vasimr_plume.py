@@ -125,14 +125,12 @@ class VASIMRPlumeCase:
 
             # Beam efficiency as proxy for thrust efficiency
             ref_eff = VASIMR_REFERENCE["thrust_efficiency"]
-            errors["thrust_efficiency"] = abs(
-                plume.beam_efficiency - ref_eff
-            ) / ref_eff
+            errors["thrust_efficiency"] = abs(plume.beam_efficiency - ref_eff) / ref_eff
 
             ref_angle = VASIMR_REFERENCE["plume_half_angle_deg"]
-            errors["plume_half_angle_deg"] = abs(
-                plume.divergence_half_angle_deg - ref_angle
-            ) / ref_angle
+            errors["plume_half_angle_deg"] = (
+                abs(plume.divergence_half_angle_deg - ref_angle) / ref_angle
+            )
 
         except (FileNotFoundError, ValueError):
             return ValidationResult(

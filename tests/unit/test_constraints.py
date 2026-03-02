@@ -12,7 +12,6 @@ from helicon.optimize.constraints import (
     make_constrained_objective,
 )
 
-
 # Single coil at z=0, r=0.1 m, I=10000 A-turns
 SINGLE_COIL = np.array([[0.0, 0.1, 10000.0]])
 # Two coils
@@ -157,11 +156,14 @@ class TestMakeConstrainedObjective:
 
     def test_returns_callable(self):
         import mlx.core as mx
+
         from helicon.optimize.objectives import throat_ratio_objective
 
         grid_r = mx.array([0.0, 0.05, 0.1])
         grid_z = mx.array([-0.2, 0.0, 0.2])
-        objective = lambda cp: throat_ratio_objective(cp, grid_r, grid_z)
+
+        def objective(cp):
+            return throat_ratio_objective(cp, grid_r, grid_z)
 
         c = CoilConstraints(max_total_mass_kg=1000.0)
         fn = make_constrained_objective(objective, c)
@@ -169,6 +171,7 @@ class TestMakeConstrainedObjective:
 
     def test_satisfied_constraint_no_penalty(self):
         import mlx.core as mx
+
         from helicon.optimize.objectives import throat_ratio_objective
 
         grid_r = mx.array([0.0, 0.05, 0.1])
@@ -179,10 +182,14 @@ class TestMakeConstrainedObjective:
             return throat_ratio_objective(cp, grid_r, grid_z)
 
         # Budget well above actual mass → no penalty
-        r_unconstrained = evaluate_constraints(np.array([[0.0, 0.1, 10000.0]]), CoilConstraints())
+        r_unconstrained = evaluate_constraints(
+            np.array([[0.0, 0.1, 10000.0]]), CoilConstraints()
+        )
         large_budget = r_unconstrained.total_mass_kg * 10
         c = CoilConstraints(max_total_mass_kg=large_budget)
-        fn_unconstrained = make_constrained_objective(lambda cp: mx.array(1.0), CoilConstraints())
+        fn_unconstrained = make_constrained_objective(
+            lambda cp: mx.array(1.0), CoilConstraints()
+        )
         fn_constrained = make_constrained_objective(lambda cp: mx.array(1.0), c)
         mx.eval(coil_params)
         val_unc = float(fn_unconstrained(coil_params))
@@ -219,6 +226,8 @@ class TestMakeConstrainedObjective:
         val = float(fn(coil_params))
         # Penalty from two violations should be larger than one
         c_single = CoilConstraints(max_total_mass_kg=1e-10)
-        fn_single = make_constrained_objective(lambda cp: mx.array(0.0), c_single, penalty_factor=1000.0)
+        fn_single = make_constrained_objective(
+            lambda cp: mx.array(0.0), c_single, penalty_factor=1000.0
+        )
         val_single = float(fn_single(coil_params))
         assert val > val_single

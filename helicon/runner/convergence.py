@@ -22,10 +22,7 @@ import math
 from dataclasses import dataclass
 from pathlib import Path
 
-import numpy as np
-
 from helicon.config.parser import (
-    ResolutionConfig,
     SimConfig,
 )
 

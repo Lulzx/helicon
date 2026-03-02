@@ -212,10 +212,7 @@ def _apply_prescreening(
     from helicon.optimize.analytical import screen_geometry
 
     for point in points:
-        coils = [
-            Coil(z=c.z, r=c.r, I=c.I)
-            for c in point.config.nozzle.coils
-        ]
+        coils = [Coil(z=c.z, r=c.r, I=c.I) for c in point.config.nozzle.coils]
         z_min = point.config.nozzle.domain.z_min
         z_max = point.config.nozzle.domain.z_max
         result = screen_geometry(coils, z_min=z_min, z_max=z_max)

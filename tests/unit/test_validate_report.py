@@ -15,9 +15,7 @@ try:
 except ImportError:
     HAS_MATPLOTLIB = False
 
-needs_matplotlib = pytest.mark.skipif(
-    not HAS_MATPLOTLIB, reason="matplotlib not installed"
-)
+needs_matplotlib = pytest.mark.skipif(not HAS_MATPLOTLIB, reason="matplotlib not installed")
 
 
 def _make_result(case_name: str = "test_case", passed: bool = True) -> dict:

@@ -2,9 +2,6 @@
 
 import math
 
-import numpy as np
-import pytest
-
 from helicon.optimize.analytical import (
     NozzleScreeningResult,
     divergence_half_angle,

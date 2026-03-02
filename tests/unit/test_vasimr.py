@@ -1,24 +1,24 @@
 """Tests for helicon.validate.cases.vasimr_plume."""
 
-from pathlib import Path
-
 import pytest
 
 from helicon.validate.cases.vasimr_plume import (
     TOLERANCES,
     VASIMR_REFERENCE,
-    VASIMRPlumeCase,
     ValidationResult,
+    VASIMRPlumeCase,
 )
 
 
 class TestVASIMRPlumeCase:
     def test_name_and_description(self):
         assert VASIMRPlumeCase.name == "vasimr_plume"
-        assert "VX-200" in VASIMRPlumeCase.description or "VASIMR" in VASIMRPlumeCase.description.upper()
+        desc = VASIMRPlumeCase.description
+        assert "VX-200" in desc or "VASIMR" in desc.upper()
 
     def test_get_config_returns_sim_config(self):
         from helicon.config.parser import SimConfig
+
         config = VASIMRPlumeCase.get_config()
         assert isinstance(config, SimConfig)
 
@@ -32,6 +32,7 @@ class TestVASIMRPlumeCase:
 
     def test_config_throat_field_approx(self):
         import numpy as np
+
         config = VASIMRPlumeCase.get_config()
         mu0 = 4e-7 * np.pi
         coil = config.nozzle.coils[0]
@@ -78,9 +79,11 @@ class TestVASIMRIntegration:
 
     def test_in_all_cases(self):
         from helicon.validate.runner import ALL_CASES
+
         names = [c.name for c in ALL_CASES]
         assert "vasimr_plume" in names
 
     def test_importable_from_cases_init(self):
         from helicon.validate.cases import VASIMRPlumeCase as Imported
+
         assert Imported is VASIMRPlumeCase

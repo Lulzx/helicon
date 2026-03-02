@@ -7,7 +7,11 @@ import pytest
 
 sklearn = pytest.importorskip("sklearn", reason="scikit-learn not installed")
 
-from helicon.optimize.surrogate import BayesianOptimizer, GPSurrogate, SurrogateResult
+from helicon.optimize.surrogate import (  # noqa: E402
+    BayesianOptimizer,
+    GPSurrogate,
+    SurrogateResult,
+)
 
 
 # ---------------------------------------------------------------------------
@@ -46,7 +50,7 @@ class TestGPSurrogate:
 
     def test_expected_improvement_nonnegative(self):
         X = np.linspace(0, 1, 15).reshape(-1, 1)
-        y = -(X.ravel() - 0.5) ** 2
+        y = -((X.ravel() - 0.5) ** 2)
         gp = GPSurrogate()
         gp.fit(X, y)
         ei = gp.expected_improvement(X, y_best=float(np.max(y)))

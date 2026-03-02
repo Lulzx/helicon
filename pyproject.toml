@@ -32,7 +32,13 @@ line-length = 95
 
 [tool.ruff.lint]
 select = ["E", "F", "W", "I", "UP", "B", "SIM", "RUF"]
-ignore = ["E741"]  # allow I for current (physics convention)
+ignore = [
+    "E741",    # allow I for current (physics convention)
+    "RUF001",  # allow Unicode in string literals (physics notation: ×, ≈, etc.)
+    "RUF002",  # allow Unicode in docstrings (physics notation: γ, ρ, ν, −, etc.)
+    "RUF003",  # allow Unicode in comments (physics notation)
+    "B905",    # zip without strict= is fine in physics/numeric code
+]
 
 [tool.ty.environment]
 python-version = "3.11"
@@ -45,5 +51,6 @@ dev = [
     "matplotlib>=3.10",
     "mkdocs-material>=9.5",
     "mkdocstrings[python]>=0.27",
+    "ruff>=0.9",
     "scikit-learn>=1.5",
 ]

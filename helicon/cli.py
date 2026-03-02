@@ -257,7 +257,9 @@ def validate(
 )
 @click.option("--dry-run", is_flag=True, help="Skip WarpX; generate configs only")
 @click.option("--seed", default=0, type=int, show_default=True, help="RNG seed (LHC only)")
-@click.option("--prescreen", is_flag=True, help="Run Tier 1 analytical pre-screening before WarpX")
+@click.option(
+    "--prescreen", is_flag=True, help="Run Tier 1 analytical pre-screening before WarpX"
+)
 @click.option(
     "--min-mirror-ratio",
     default=1.5,
@@ -309,7 +311,8 @@ def scan(
     click.echo(f"Done: {n_ok}/{n_points} points succeeded.")
     if result.n_screened > 0:
         click.echo(
-            f"  Prescreened: {result.n_screened}/{n_points} filtered by mirror ratio < {min_mirror_ratio}"
+            f"  Prescreened: {result.n_screened}/{n_points} "
+            f"filtered by mirror ratio < {min_mirror_ratio}"
         )
     click.echo(f"Output: {output_dir}/")
 
@@ -345,9 +348,7 @@ def optimize(
     for r in ranges:
         r.n = max(1, n_iterations // len(ranges))
 
-    click.echo(
-        f"Optimize: {n_iterations} iterations, method=lhc, objective={objective}"
-    )
+    click.echo(f"Optimize: {n_iterations} iterations, method=lhc, objective={objective}")
     for r in ranges:
         click.echo(f"  {r.path}: [{r.low}, {r.high}] n={r.n}")
 
@@ -365,10 +366,9 @@ def optimize(
     best_value = None
     for m in result.metrics:
         val = m.get(objective)
-        if val is not None:
-            if best_value is None or val > best_value:
-                best_value = val
-                best_metric = m
+        if val is not None and (best_value is None or val > best_value):
+            best_value = val
+            best_metric = m
 
     n_ok = sum(1 for m in result.metrics if m.get("success"))
     click.echo(f"Done: {n_ok}/{len(result.metrics)} points succeeded.")
@@ -417,9 +417,7 @@ def convergence(
         try:
             nz, nr = int(parts[0]), int(parts[1])
         except ValueError:
-            click.echo(
-                f"Error: non-integer values in resolution '{token}'", err=True
-            )
+            click.echo(f"Error: non-integer values in resolution '{token}'", err=True)
             sys.exit(1)
         res_list.append((nz, nr))
 

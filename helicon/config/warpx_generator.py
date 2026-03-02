@@ -132,7 +132,11 @@ def generate_warpx_input(config: SimConfig) -> str:
         )
         # Use the lightest ion mass to compute effective electron mass
         ion_species = [s for s in config.plasma.species if s != "e-"]
-        m_ion_ref = min(SPECIES_MASS.get(s, 1.67e-27) for s in ion_species) if ion_species else 1.67e-27
+        _default_mass = 1.67e-27
+        if ion_species:
+            m_ion_ref = min(SPECIES_MASS.get(s, _default_mass) for s in ion_species)
+        else:
+            m_ion_ref = _default_mass
         m_e_effective = m_ion_ref / mr
     else:
         m_e_effective = m_e_physical
@@ -198,7 +202,9 @@ def generate_warpx_input(config: SimConfig) -> str:
         )
 
     if reduced_mass_ratio:
-        lines.append(f"# METADATA: mass_ratio_reduced = true (m_i/m_e = {config.plasma.mass_ratio})")
+        lines.append(
+            f"# METADATA: mass_ratio_reduced = true (m_i/m_e = {config.plasma.mass_ratio})"
+        )
     if fluid_electrons:
         lines.append("# METADATA: electron_model = fluid")
 

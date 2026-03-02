@@ -17,7 +17,6 @@ use :class:`helicon.optimize.surrogate.BayesianOptimizer` instead.
 
 from __future__ import annotations
 
-import math
 from dataclasses import dataclass
 
 import numpy as np

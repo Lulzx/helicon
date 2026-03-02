@@ -3,9 +3,8 @@
 from __future__ import annotations
 
 import numpy as np
-import pytest
 
-from helicon.fields.biot_savart import BField, Coil, Grid, compute_bfield
+from helicon.fields.biot_savart import Coil, Grid, compute_bfield
 from helicon.fields.frc_topology import (
     FRCTopologyResult,
     compute_flux_function,

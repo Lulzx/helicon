@@ -2,6 +2,9 @@
 
 from __future__ import annotations
 
+import contextlib
+from dataclasses import dataclass
+
 __version__ = "0.4.0"
 
 
@@ -9,12 +12,16 @@ __version__ = "0.4.0"
 # Config alias
 # ---------------------------------------------------------------------------
 
+
 def __getattr__(name: str):
     if name == "Config":
         from helicon.config.parser import SimConfig
+
         return SimConfig
     if name == "fields":
-        return _fields_instance
+        from helicon import fields as _fields_mod
+
+        return _fields_mod
     raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
 
 
@@ -22,27 +29,33 @@ def __getattr__(name: str):
 # Lazy Config alias at module level for direct attribute access
 # ---------------------------------------------------------------------------
 
+
 class _LazyConfig:
     """Proxy so ``mnx.Config`` resolves to ``SimConfig`` on first access."""
 
     def __repr__(self) -> str:
         from helicon.config.parser import SimConfig
+
         return repr(SimConfig)
 
     def __call__(self, *args, **kwargs):
         from helicon.config.parser import SimConfig
+
         return SimConfig(*args, **kwargs)
 
     def from_yaml(self, path):
         from helicon.config.parser import SimConfig
+
         return SimConfig.from_yaml(path)
 
     def from_preset(self, name):
         from helicon.config.parser import SimConfig
+
         return SimConfig.from_preset(name)
 
     def model_validate(self, data):
         from helicon.config.parser import SimConfig
+
         return SimConfig.model_validate(data)
 
 
@@ -52,6 +65,7 @@ Config = _LazyConfig()
 # ---------------------------------------------------------------------------
 # _FieldsNamespace
 # ---------------------------------------------------------------------------
+
 
 class _FieldsNamespace:
     """Namespace object exposing ``fields.compute(...)``."""
@@ -74,11 +88,13 @@ class _FieldsNamespace:
         from helicon.fields.biot_savart import Coil, Grid, compute_bfield
 
         # Detect whether we received a NozzleConfig
-        if hasattr(nozzle_or_coils, "coils") and hasattr(nozzle_or_coils, "domain") and hasattr(nozzle_or_coils, "resolution"):
+        if (
+            hasattr(nozzle_or_coils, "coils")
+            and hasattr(nozzle_or_coils, "domain")
+            and hasattr(nozzle_or_coils, "resolution")
+        ):
             nozzle = nozzle_or_coils
-            coils = [
-                Coil(z=c.z, r=c.r, I=c.I) for c in nozzle.coils
-            ]
+            coils = [Coil(z=c.z, r=c.r, I=c.I) for c in nozzle.coils]
             grid = Grid(
                 z_min=nozzle.domain.z_min,
                 z_max=nozzle.domain.z_max,
@@ -103,6 +119,7 @@ fields = _FieldsNamespace()
 # ---------------------------------------------------------------------------
 # run()
 # ---------------------------------------------------------------------------
+
 
 def run(config, output_dir=None, dry_run=False, **kwargs):
     """Run a Helicon simulation.
@@ -130,8 +147,6 @@ def run(config, output_dir=None, dry_run=False, **kwargs):
 # ---------------------------------------------------------------------------
 # Metrics / DetachmentMetrics dataclasses
 # ---------------------------------------------------------------------------
-
-from dataclasses import dataclass
 
 
 @dataclass
@@ -161,6 +176,7 @@ class Metrics:
 # ---------------------------------------------------------------------------
 # postprocess()
 # ---------------------------------------------------------------------------
+
 
 def postprocess(output_dir) -> Metrics:
     """Generate postprocessing metrics from a simulation output directory.
@@ -201,6 +217,7 @@ def postprocess(output_dir) -> Metrics:
 # ---------------------------------------------------------------------------
 # scan()
 # ---------------------------------------------------------------------------
+
 
 def scan(
     config,
@@ -255,9 +272,7 @@ def scan(
     try:
         object.__setattr__(result, "objectives", objectives)
     except (AttributeError, TypeError):
-        try:
+        with contextlib.suppress(AttributeError):
             result.objectives = objectives
-        except AttributeError:
-            pass
 
     return result

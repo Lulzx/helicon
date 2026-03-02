@@ -2,9 +2,6 @@
 
 import math
 
-import numpy as np
-import pytest
-
 from helicon.runner.convergence import (
     ConvergenceLevel,
     ConvergenceResult,
@@ -38,14 +35,14 @@ class TestRichardsonExtrapolate:
     def test_already_converged_returns_fine(self):
         # Near-zero differences → returns Q3
         values = [1.0, 1.0 + 1e-25, 1.0 + 2e-25]
-        order, extrap = richardson_extrapolate(values, [2.0, 2.0])
+        _order, extrap = richardson_extrapolate(values, [2.0, 2.0])
         # Either nan order or Q3 returned; check extrap is near Q3
         assert abs(extrap - values[2]) < 1e-15
 
     def test_non_monotone_returns_nan_order(self):
         # Non-monotone convergence → ratio could be negative
         values = [1.0, 2.0, 1.5]  # oscillating
-        order, extrap = richardson_extrapolate(values, [2.0, 2.0])
+        order, _extrap = richardson_extrapolate(values, [2.0, 2.0])
         assert math.isnan(order)
 
     def test_non_uniform_refinement(self):
@@ -77,6 +74,7 @@ class TestRunConvergenceStudy:
             ResolutionConfig,
             SimConfig,
         )
+
         return SimConfig(
             nozzle=NozzleConfig(
                 type="solenoid",
@@ -193,7 +191,10 @@ class TestRunConvergenceStudy:
         for nz, nr in [(64, 32), (128, 64), (256, 128)]:
             h = 1.0 / math.sqrt(nz * nr)
             thrust = f_exact + h**2 * 1000.0  # 2nd-order error
-            levels.append(ConvergenceLevel(nz=nz, nr=nr, h=h, output_dir=None, success=True, thrust_N=thrust))
+            lv = ConvergenceLevel(
+                nz=nz, nr=nr, h=h, output_dir=None, success=True, thrust_N=thrust
+            )
+            levels.append(lv)
 
         thrust_values = [lv.thrust_N for lv in levels]
         h_vals = [lv.h for lv in levels]

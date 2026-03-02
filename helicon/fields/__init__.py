@@ -16,11 +16,11 @@ from helicon.fields.import_external import load_csv_bfield, load_femm_bfield
 __all__ = [
     "BField",
     "Coil",
+    "FRCTopologyResult",
     "FieldCache",
     "FieldLine",
     "FieldLineSet",
     "FieldLineType",
-    "FRCTopologyResult",
     "Grid",
     "compute_bfield",
     "compute_bfield_cached",

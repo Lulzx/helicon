@@ -7,7 +7,7 @@ optionally generates summary CSV for parameter scans.
 from __future__ import annotations
 
 import json
-from dataclasses import asdict, dataclass, field
+from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
@@ -58,10 +58,7 @@ class RunReport:
         import datetime
 
         if timestamp is None:
-            timestamp = (
-                datetime.datetime.now(datetime.timezone.utc)
-                .strftime("%Y-%m-%dT%H:%M:%SZ")
-            )
+            timestamp = datetime.datetime.now(datetime.UTC).strftime("%Y-%m-%dT%H:%M:%SZ")
 
         # Resolve nozzle_type
         nozzle_type: str | None = self.nozzle_type

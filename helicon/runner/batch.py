@@ -13,7 +13,6 @@ import warnings
 from concurrent.futures import ProcessPoolExecutor, ThreadPoolExecutor
 from dataclasses import dataclass, field
 from pathlib import Path
-from textwrap import dedent
 
 from helicon.config.parser import SimConfig
 
@@ -168,7 +167,7 @@ def generate_slurm_script(
     config_path = output_dir / "config.yaml"
     lines = [
         "#!/bin/bash",
-        f"#SBATCH --job-name=helicon",
+        "#SBATCH --job-name=helicon",
         f"#SBATCH --output={output_dir / 'slurm_%j.out'}",
         f"#SBATCH --error={output_dir / 'slurm_%j.err'}",
         f"#SBATCH --ntasks={ntasks}",
@@ -181,11 +180,13 @@ def generate_slurm_script(
     if account:
         lines.append(f"#SBATCH --account={account}")
 
-    lines.extend([
-        "",
-        f"cd {output_dir}",
-        f"{helicon_exe} run {config_path}",
-    ])
+    lines.extend(
+        [
+            "",
+            f"cd {output_dir}",
+            f"{helicon_exe} run {config_path}",
+        ]
+    )
 
     return "\n".join(lines) + "\n"
 
@@ -220,7 +221,7 @@ def generate_pbs_script(
     config_path = output_dir / "config.yaml"
     lines = [
         "#!/bin/bash",
-        f"#PBS -N helicon",
+        "#PBS -N helicon",
         f"#PBS -o {output_dir / 'pbs_output.log'}",
         f"#PBS -e {output_dir / 'pbs_error.log'}",
         f"#PBS -l ncpus={ncpus}",
@@ -230,11 +231,13 @@ def generate_pbs_script(
     if walltime:
         lines.append(f"#PBS -l walltime={walltime}")
 
-    lines.extend([
-        "",
-        f"cd {output_dir}",
-        f"{helicon_exe} run {config_path}",
-    ])
+    lines.extend(
+        [
+            "",
+            f"cd {output_dir}",
+            f"{helicon_exe} run {config_path}",
+        ]
+    )
 
     return "\n".join(lines) + "\n"
 

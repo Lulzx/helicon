@@ -10,6 +10,7 @@ circular current loops.  Two backends:
 
 from __future__ import annotations
 
+import contextlib
 import math
 from collections.abc import Sequence
 from dataclasses import dataclass
@@ -169,10 +170,8 @@ class BField:
             # Flux function ψ(r,z) = cumulative integral of r*B_z over r (up to sign)
             dr = self.r[1] - self.r[0] if len(self.r) > 1 else 1.0
             psi = np.cumsum(self.r[:, None] * self.Bz, axis=0) * dr
-            try:
+            with contextlib.suppress(Exception):
                 ax.contour(Z, R, psi, n_field_lines, colors="k", linewidths=0.6, alpha=0.5)
-            except Exception:
-                pass  # field line drawing is best-effort
 
         # Mark coil positions
         for coil in self.coils:
@@ -434,9 +433,7 @@ def compute_bfield(
 
     if backend == "mlx":
         if not HAS_MLX:
-            raise ImportError(
-                "MLX is not installed. Install with: pip install 'helicon[mlx]'"
-            )
+            raise ImportError("MLX is not installed. Install with: pip install 'helicon[mlx]'")
         Br, Bz, r, z = _compute_mlx(coils, grid, n_phi=n_phi)
     elif backend == "numpy":
         Br, Bz, r, z = _compute_numpy(coils, grid)

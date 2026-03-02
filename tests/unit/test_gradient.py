@@ -8,11 +8,11 @@ from __future__ import annotations
 import numpy as np
 import pytest
 
-from helicon.fields.biot_savart import Grid, HAS_MLX
+from helicon.fields.biot_savart import HAS_MLX, Grid
 from helicon.optimize.gradient import (
+    GradientOptimizer,
     GradientOptimizerConfig,
     GradientResult,
-    GradientOptimizer,
     optimize_mirror_ratio,
 )
 
@@ -136,8 +136,10 @@ def test_optimize_mirror_ratio_improves():
     grid = Grid(z_min=-0.5, z_max=0.5, r_max=0.3, nz=64, nr=4)
 
     # Compute initial mirror ratio using the numpy backend for reference
-    coils_init = [Coil(z=init_params[i, 0], r=init_params[i, 1], I=init_params[i, 2])
-                  for i in range(len(init_params))]
+    coils_init = [
+        Coil(z=init_params[i, 0], r=init_params[i, 1], I=init_params[i, 2])
+        for i in range(len(init_params))
+    ]
     bf_init = compute_bfield(coils_init, grid, backend="numpy")
     Bz_axis_init = bf_init.Bz[0, :]
     B_max_init = float(np.max(np.abs(Bz_axis_init)))
@@ -160,17 +162,19 @@ def test_optimize_mirror_ratio_improves():
 
     # Compute final mirror ratio
     final_params = result.final_coil_params
-    coils_final = [Coil(z=float(final_params[i, 0]),
-                        r=float(final_params[i, 1]),
-                        I=float(final_params[i, 2]))
-                   for i in range(len(final_params))]
+    coils_final = [
+        Coil(
+            z=float(final_params[i, 0]),
+            r=float(final_params[i, 1]),
+            I=float(final_params[i, 2]),
+        )
+        for i in range(len(final_params))
+    ]
     bf_final = compute_bfield(coils_final, grid, backend="numpy")
     Bz_axis_final = bf_final.Bz[0, :]
     B_max_final = float(np.max(np.abs(Bz_axis_final)))
     B_exit_final = float(np.abs(Bz_axis_final[-1]))
-    mirror_ratio_final = (
-        B_max_final / B_exit_final if B_exit_final > 1e-20 else float("inf")
-    )
+    mirror_ratio_final = B_max_final / B_exit_final if B_exit_final > 1e-20 else float("inf")
 
     # The optimizer minimizes -R_B, so R_B should increase (or at minimum not worsen
     # beyond a small tolerance for very short runs)
