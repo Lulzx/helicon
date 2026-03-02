@@ -703,6 +703,54 @@ def mission(
         click.echo(f"Results written to: {output_file}")
 
 
+@main.command("run-3d")
+@click.option("--config", "config_path", required=True, type=click.Path(exists=True))
+@click.option("--output", "output_dir", type=click.Path(), default="results/sim3d")
+@click.option("--particles", "n_particles", default=2000, type=int)
+@click.option("--steps", "n_steps", default=5000, type=int)
+@click.option("--backend", default="auto", type=click.Choice(["auto", "mlx", "numpy"]))
+@click.option("--seed", default=0, type=int)
+@click.option("--save-json", "save_json", is_flag=True, help="Save result as JSON")
+def run_3d(
+    config_path: str,
+    output_dir: str,
+    n_particles: int,
+    n_steps: int,
+    backend: str,
+    seed: int,
+    save_json: bool,
+) -> None:
+    """Run a 3D Boris-pusher test-particle simulation."""
+    import json
+
+    from helicon.config.parser import SimConfig
+    from helicon.runner.sim3d import Sim3DConfig, run_3d_simulation
+
+    config = SimConfig.from_yaml(config_path)
+    sim_cfg = Sim3DConfig(
+        n_particles=n_particles,
+        n_steps=n_steps,
+        backend=backend,
+        seed=seed,
+    )
+
+    click.echo(
+        f"Running 3D simulation: {n_particles} particles × {n_steps} steps "
+        f"[backend={backend}]"
+    )
+    result = run_3d_simulation(config, sim_cfg)
+    click.echo(result.summary())
+
+    if save_json:
+        from pathlib import Path
+
+        out = Path(output_dir)
+        out.mkdir(parents=True, exist_ok=True)
+        p = out / "sim3d_result.json"
+        p.write_text(json.dumps(result.to_dict(), indent=2))
+        click.echo(f"Result saved to: {p}")
+
+
 @main.command()
 @click.option("--port", default=8501, type=int, help="Streamlit server port")
 @click.option(
