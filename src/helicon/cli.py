@@ -703,5 +703,86 @@ def mission(
         click.echo(f"Results written to: {output_file}")
 
 
+@main.command()
+@click.option("--port", default=8501, type=int, help="Streamlit server port")
+@click.option(
+    "--no-browser",
+    "no_browser",
+    is_flag=True,
+    help="Do not open a browser tab automatically",
+)
+def app(port: int, no_browser: bool) -> None:
+    """Launch the interactive nozzle design explorer (Streamlit)."""
+    from helicon.app.launcher import launch_app
+
+    click.echo(
+        f"Launching Helicon design app on http://localhost:{port} ..."
+    )
+    launch_app(port=port, browser=not no_browser)
+
+
+@main.command("surrogate-train")
+@click.option(
+    "--config",
+    "config_path",
+    type=click.Path(exists=True),
+    help="YAML config (used for domain bounds in sampling)",
+)
+@click.option(
+    "--n-samples",
+    "n_samples",
+    default=500,
+    type=int,
+    help="Number of training samples",
+)
+@click.option("--epochs", default=300, type=int, help="Training epochs")
+@click.option(
+    "--output", "output_dir", required=True, type=click.Path(), help="Output directory"
+)
+@click.option("--seed", default=0, type=int, help="Random seed")
+def surrogate_train(
+    config_path: str | None,
+    n_samples: int,
+    epochs: int,
+    output_dir: str,
+    seed: int,
+) -> None:
+    """Train the MLX neural surrogate on generated analytical data."""
+    from helicon.surrogate.training import generate_training_data, train_surrogate
+
+    click.echo(f"Generating {n_samples} training samples (seed={seed})...")
+    data = generate_training_data(n_samples=n_samples, seed=seed)
+    click.echo(f"Training MLP surrogate for {epochs} epochs...")
+    surrogate = train_surrogate(data, epochs=epochs, verbose=True, seed=seed)
+    path = Path(output_dir)
+    surrogate.save(path)
+    click.echo(f"Surrogate saved to: {path.resolve()}")
+    click.echo(surrogate.accuracy_envelope()["notes"])
+
+
+@main.command("export-cad")
+@click.option("--config", "config_path", required=True, type=click.Path(exists=True))
+@click.option("--output", "output_path", required=True, type=click.Path())
+@click.option(
+    "--format",
+    "fmt",
+    type=click.Choice(["step", "iges"]),
+    default="step",
+    help="CAD output format",
+)
+def export_cad(config_path: str, output_path: str, fmt: str) -> None:
+    """Export coil geometry to STEP or IGES for mechanical CAD."""
+    from helicon.config.parser import SimConfig
+    from helicon.export.cad import export_coils_iges, export_coils_step
+
+    config = SimConfig.from_yaml(config_path)
+    out = Path(output_path)
+    if fmt == "step":
+        result = export_coils_step(config, out)
+    else:
+        result = export_coils_iges(config, out)
+    click.echo(f"Exported {len(config.nozzle.coils)} coil(s) to: {result}")
+
+
 if __name__ == "__main__":
     main()
