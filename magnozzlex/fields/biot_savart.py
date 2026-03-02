@@ -105,6 +105,86 @@ class BField:
     coils: list[Coil]
     backend: str
 
+    # -- Visualization -------------------------------------------------------
+    def plot(
+        self,
+        *,
+        component: str = "Bz",
+        field_lines: bool = True,
+        n_field_lines: int = 8,
+        ax=None,
+        cmap: str = "RdBu_r",
+        figsize: tuple = (10, 5),
+    ):
+        """Plot the B-field on the (z, r) plane.
+
+        Parameters
+        ----------
+        component : ``"Bz"`` | ``"Br"`` | ``"Bmag"``
+            Field component to show as a filled contour.
+        field_lines : bool
+            Overlay field lines via contours of the flux function ψ.
+        n_field_lines : int
+            Number of field line contours to draw.
+        ax : matplotlib Axes, optional
+            Axes to draw on. Creates new figure if None.
+        cmap : str
+            Matplotlib colormap.
+        figsize : tuple
+            Figure size when creating a new figure.
+
+        Returns
+        -------
+        fig, ax
+            Matplotlib figure and axes.
+        """
+        try:
+            import matplotlib.pyplot as plt
+        except ImportError as exc:
+            raise ImportError("matplotlib is required for BField.plot()") from exc
+
+        if ax is None:
+            fig, ax = plt.subplots(figsize=figsize)
+        else:
+            fig = ax.get_figure()
+
+        Z, R = np.meshgrid(self.z, self.r)
+
+        if component == "Bz":
+            values = self.Bz
+            label = "$B_z$ (T)"
+        elif component == "Br":
+            values = self.Br
+            label = "$B_r$ (T)"
+        elif component == "Bmag":
+            values = np.sqrt(self.Br**2 + self.Bz**2)
+            label = "$|B|$ (T)"
+        else:
+            raise ValueError(f"Unknown component {component!r}. Use 'Bz', 'Br', or 'Bmag'.")
+
+        pcm = ax.pcolormesh(Z, R, values, cmap=cmap, shading="auto")
+        fig.colorbar(pcm, ax=ax, label=label)
+
+        if field_lines:
+            # Flux function ψ(r,z) = cumulative integral of r*B_z over r (up to sign)
+            dr = self.r[1] - self.r[0] if len(self.r) > 1 else 1.0
+            psi = np.cumsum(self.r[:, None] * self.Bz, axis=0) * dr
+            try:
+                ax.contour(Z, R, psi, n_field_lines, colors="k", linewidths=0.6, alpha=0.5)
+            except Exception:
+                pass  # field line drawing is best-effort
+
+        # Mark coil positions
+        for coil in self.coils:
+            ax.plot(coil.z, coil.r, "ko", ms=6, zorder=5)
+            ax.plot(coil.z, -coil.r if min(self.r) < 0 else coil.r, "ko", ms=6, zorder=5)
+
+        ax.set_xlabel("z (m)")
+        ax.set_ylabel("r (m)")
+        ax.set_title(f"Magnetic Field — {component}")
+
+        return fig, ax
+
     # -- HDF5 persistence ---------------------------------------------------
     def save(self, path: str) -> None:
         """Write field data + coil metadata to an HDF5 file."""

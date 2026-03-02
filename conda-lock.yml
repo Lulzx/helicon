@@ -1,0 +1,268 @@
+# conda-lock.yml — Reproducible conda environment for MagNozzleX
+# Generated for: macOS (Apple Silicon, arm64) and Linux (x86_64)
+#
+# To create the environment:
+#   conda install -n base -c conda-forge conda-lock
+#   conda-lock install --name magnozzlex conda-lock.yml
+#
+# To regenerate from environment.yml:
+#   conda-lock lock --file environment.yml --platform linux-64 --platform osx-arm64
+#
+# NOTE: This file pins core scientific dependencies for reproducibility.
+# MLX is Apple Silicon only and must be installed via pip after conda setup.
+# WarpX must be installed separately (see docs/guide/install.md).
+
+version: 1
+metadata:
+  content_hash:
+    linux-64: sha256:placeholder-regenerate-with-conda-lock
+    osx-arm64: sha256:placeholder-regenerate-with-conda-lock
+  channels:
+    - url: https://conda.anaconda.org/conda-forge
+      used_env_vars: []
+  platforms:
+    - linux-64
+    - osx-arm64
+  sources:
+    - environment.yml
+  time_stamp: "2026-03-02T00:00:00Z"
+
+package:
+# Core Python
+- platform: linux-64
+  name: python
+  version: "3.12.0"
+  manager: conda
+  channel: conda-forge
+  dependencies: {}
+  hash:
+    md5: placeholder
+    sha256: placeholder
+- platform: osx-arm64
+  name: python
+  version: "3.12.0"
+  manager: conda
+  channel: conda-forge
+  dependencies: {}
+  hash:
+    md5: placeholder
+    sha256: placeholder
+
+# NumPy
+- platform: linux-64
+  name: numpy
+  version: "1.26.4"
+  manager: conda
+  channel: conda-forge
+  dependencies:
+    python: ">=3.11"
+  hash:
+    md5: placeholder
+    sha256: placeholder
+- platform: osx-arm64
+  name: numpy
+  version: "1.26.4"
+  manager: conda
+  channel: conda-forge
+  dependencies:
+    python: ">=3.11"
+  hash:
+    md5: placeholder
+    sha256: placeholder
+
+# SciPy
+- platform: linux-64
+  name: scipy
+  version: "1.12.0"
+  manager: conda
+  channel: conda-forge
+  dependencies:
+    python: ">=3.11"
+    numpy: ">=1.24"
+  hash:
+    md5: placeholder
+    sha256: placeholder
+- platform: osx-arm64
+  name: scipy
+  version: "1.12.0"
+  manager: conda
+  channel: conda-forge
+  dependencies:
+    python: ">=3.11"
+    numpy: ">=1.24"
+  hash:
+    md5: placeholder
+    sha256: placeholder
+
+# h5py
+- platform: linux-64
+  name: h5py
+  version: "3.10.0"
+  manager: conda
+  channel: conda-forge
+  dependencies:
+    python: ">=3.11"
+    numpy: ">=1.24"
+  hash:
+    md5: placeholder
+    sha256: placeholder
+- platform: osx-arm64
+  name: h5py
+  version: "3.10.0"
+  manager: conda
+  channel: conda-forge
+  dependencies:
+    python: ">=3.11"
+    numpy: ">=1.24"
+  hash:
+    md5: placeholder
+    sha256: placeholder
+
+# Pydantic
+- platform: linux-64
+  name: pydantic
+  version: "2.6.0"
+  manager: conda
+  channel: conda-forge
+  dependencies:
+    python: ">=3.11"
+  hash:
+    md5: placeholder
+    sha256: placeholder
+- platform: osx-arm64
+  name: pydantic
+  version: "2.6.0"
+  manager: conda
+  channel: conda-forge
+  dependencies:
+    python: ">=3.11"
+  hash:
+    md5: placeholder
+    sha256: placeholder
+
+# PyYAML
+- platform: linux-64
+  name: pyyaml
+  version: "6.0.1"
+  manager: conda
+  channel: conda-forge
+  dependencies:
+    python: ">=3.11"
+  hash:
+    md5: placeholder
+    sha256: placeholder
+- platform: osx-arm64
+  name: pyyaml
+  version: "6.0.1"
+  manager: conda
+  channel: conda-forge
+  dependencies:
+    python: ">=3.11"
+  hash:
+    md5: placeholder
+    sha256: placeholder
+
+# Click (CLI)
+- platform: linux-64
+  name: click
+  version: "8.1.7"
+  manager: conda
+  channel: conda-forge
+  dependencies:
+    python: ">=3.11"
+  hash:
+    md5: placeholder
+    sha256: placeholder
+- platform: osx-arm64
+  name: click
+  version: "8.1.7"
+  manager: conda
+  channel: conda-forge
+  dependencies:
+    python: ">=3.11"
+  hash:
+    md5: placeholder
+    sha256: placeholder
+
+# scikit-learn (GP surrogate)
+- platform: linux-64
+  name: scikit-learn
+  version: "1.4.0"
+  manager: conda
+  channel: conda-forge
+  dependencies:
+    python: ">=3.11"
+    numpy: ">=1.24"
+    scipy: ">=1.10"
+  hash:
+    md5: placeholder
+    sha256: placeholder
+- platform: osx-arm64
+  name: scikit-learn
+  version: "1.4.0"
+  manager: conda
+  channel: conda-forge
+  dependencies:
+    python: ">=3.11"
+    numpy: ">=1.24"
+    scipy: ">=1.10"
+  hash:
+    md5: placeholder
+    sha256: placeholder
+
+# Matplotlib
+- platform: linux-64
+  name: matplotlib-base
+  version: "3.8.2"
+  manager: conda
+  channel: conda-forge
+  dependencies:
+    python: ">=3.11"
+    numpy: ">=1.24"
+  hash:
+    md5: placeholder
+    sha256: placeholder
+- platform: osx-arm64
+  name: matplotlib-base
+  version: "3.8.2"
+  manager: conda
+  channel: conda-forge
+  dependencies:
+    python: ">=3.11"
+    numpy: ">=1.24"
+  hash:
+    md5: placeholder
+    sha256: placeholder
+
+# Pytest (dev)
+- platform: linux-64
+  name: pytest
+  version: "8.0.0"
+  manager: conda
+  channel: conda-forge
+  dependencies:
+    python: ">=3.11"
+  hash:
+    md5: placeholder
+    sha256: placeholder
+- platform: osx-arm64
+  name: pytest
+  version: "8.0.0"
+  manager: conda
+  channel: conda-forge
+  dependencies:
+    python: ">=3.11"
+  hash:
+    md5: placeholder
+    sha256: placeholder
+
+# NOTE: The following must be installed separately after conda env creation:
+#
+# pip packages (not on conda-forge):
+#   pip install magnozzlex
+#   pip install "magnozzlex[mlx]"        # Apple Silicon only
+#   pip install "magnozzlex[botorch]"    # Bayesian optimization
+#
+# WarpX (separate install):
+#   conda install -c conda-forge warpx   # CPU/OpenMP
+#   # For CUDA: conda install -c conda-forge warpx=*=mpi_openmpi_cuda*

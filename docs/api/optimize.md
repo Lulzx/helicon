@@ -20,6 +20,16 @@ Optimization: analytical screening, constraints, Gaussian process surrogate, Bay
 
 ::: magnozzlex.optimize.surrogate.GPSurrogate
 
+## Gradient-Based Optimization (MLX)
+
+::: magnozzlex.optimize.gradient.GradientOptimizerConfig
+
+::: magnozzlex.optimize.gradient.GradientResult
+
+::: magnozzlex.optimize.gradient.GradientOptimizer
+
+::: magnozzlex.optimize.gradient.optimize_mirror_ratio
+
 ## Bayesian Optimization
 
 ::: magnozzlex.optimize.bayesian.BayesianOptimizer

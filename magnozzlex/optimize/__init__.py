@@ -4,12 +4,6 @@ analytical pre-screening, Pareto front computation, and engineering
 constraint evaluation.
 """
 
-from magnozzlex.optimize.constraints import (
-    CoilConstraintResult,
-    CoilConstraints,
-    evaluate_constraints,
-    make_constrained_objective,
-)
 from magnozzlex.optimize.analytical import (
     NozzleScreeningResult,
     divergence_half_angle,
@@ -17,6 +11,18 @@ from magnozzlex.optimize.analytical import (
     screen_geometry,
     thrust_coefficient_paraxial,
     thrust_efficiency,
+)
+from magnozzlex.optimize.constraints import (
+    CoilConstraintResult,
+    CoilConstraints,
+    evaluate_constraints,
+    make_constrained_objective,
+)
+from magnozzlex.optimize.gradient import (
+    GradientOptimizer,
+    GradientOptimizerConfig,
+    GradientResult,
+    optimize_mirror_ratio,
 )
 from magnozzlex.optimize.objectives import OptimizationResult, optimize_coils_mlx
 from magnozzlex.optimize.pareto import ParetoResult, hypervolume_indicator, pareto_front
@@ -35,6 +41,9 @@ __all__ = [
     "CoilConstraintResult",
     "CoilConstraints",
     "GPSurrogate",
+    "GradientOptimizer",
+    "GradientOptimizerConfig",
+    "GradientResult",
     "NozzleScreeningResult",
     "OptimizationResult",
     "ParameterRange",
@@ -50,6 +59,7 @@ __all__ = [
     "make_constrained_objective",
     "mirror_ratio",
     "optimize_coils_mlx",
+    "optimize_mirror_ratio",
     "pareto_front",
     "run_scan",
     "saltelli_sample",

@@ -36,6 +36,82 @@ class ParetoResult:
         """Cost values for Pareto-optimal points only."""
         return self.costs[self.front_indices]
 
+    def plot(
+        self,
+        *,
+        labels: tuple[str, str] | None = None,
+        ax=None,
+        figsize: tuple = (6, 5),
+        dominated_color: str = "lightgray",
+        front_color: str = "steelblue",
+    ):
+        """Plot the 2-objective Pareto front (minimization convention).
+
+        Parameters
+        ----------
+        labels : tuple of str, optional
+            Axis labels ``(x_label, y_label)``.
+        ax : matplotlib Axes, optional
+            Axes to draw on. Creates new figure if None.
+        figsize : tuple
+            Figure size when creating a new figure.
+        dominated_color : str
+            Color for dominated (non-Pareto) points.
+        front_color : str
+            Color for Pareto-optimal points.
+
+        Returns
+        -------
+        fig, ax
+        """
+        try:
+            import matplotlib.pyplot as plt
+        except ImportError as exc:
+            raise ImportError("matplotlib is required for ParetoResult.plot()") from exc
+
+        if self.costs.shape[1] != 2:
+            raise ValueError("plot() is only supported for 2-objective problems")
+
+        if ax is None:
+            fig, ax = plt.subplots(figsize=figsize)
+        else:
+            fig = ax.get_figure()
+
+        dominated_mask = self.front_mask == False  # noqa: E712
+        if np.any(dominated_mask):
+            ax.scatter(
+                self.costs[dominated_mask, 0],
+                self.costs[dominated_mask, 1],
+                c=dominated_color,
+                s=30,
+                label="Dominated",
+                zorder=2,
+            )
+
+        front = self.front_costs
+        # Sort by first objective for line connection
+        order = np.argsort(front[:, 0])
+        front_sorted = front[order]
+        ax.plot(
+            front_sorted[:, 0],
+            front_sorted[:, 1],
+            "o-",
+            color=front_color,
+            ms=7,
+            lw=1.5,
+            label="Pareto front",
+            zorder=3,
+        )
+
+        if labels:
+            ax.set_xlabel(labels[0])
+            ax.set_ylabel(labels[1])
+        ax.legend()
+        ax.set_title("Pareto Front")
+        fig.tight_layout()
+
+        return fig, ax
+
 
 def is_dominated(costs: np.ndarray) -> np.ndarray:
     """Return a boolean mask: True if a point is dominated by any other.

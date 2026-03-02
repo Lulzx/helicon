@@ -95,10 +95,17 @@ def run(
 
 @main.command()
 @click.option("--input", "input_dir", required=True, type=click.Path(exists=True))
-@click.option("--metrics", default="thrust", help="Comma-separated metrics: thrust")
+@click.option(
+    "--metrics",
+    default="thrust",
+    help="Comma-separated metrics: thrust,detachment,plume,report",
+)
 @click.option("--output", "output_file", type=click.Path(), help="Output JSON file")
 def postprocess(input_dir: str, metrics: str, output_file: str | None) -> None:
-    """Extract propulsion metrics from WarpX output."""
+    """Extract propulsion metrics from WarpX output.
+
+    Available metrics: thrust, detachment, plume, report
+    """
     metric_list = [m.strip() for m in metrics.split(",")]
 
     results = {}
@@ -119,6 +126,53 @@ def postprocess(input_dir: str, metrics: str, output_file: str | None) -> None:
             click.echo(f"  Thrust:     {thrust.thrust_N:.4f} N")
             click.echo(f"  Isp:        {thrust.isp_s:.0f} s")
             click.echo(f"  v_exhaust:  {thrust.exhaust_velocity_ms:.0f} m/s")
+        except FileNotFoundError as exc:
+            click.echo(f"  Error: {exc}", err=True)
+
+    if "detachment" in metric_list:
+        from magnozzlex.postprocess.detachment import compute_detachment
+
+        click.echo("Computing detachment efficiency...")
+        try:
+            det = compute_detachment(input_dir)
+            results["detachment"] = {
+                "eta_momentum": det.eta_momentum,
+                "eta_particle": det.eta_particle,
+                "eta_energy": det.eta_energy,
+            }
+            click.echo(f"  η_det (momentum): {det.eta_momentum:.3f}")
+            click.echo(f"  η_det (particle): {det.eta_particle:.3f}")
+            click.echo(f"  η_det (energy):   {det.eta_energy:.3f}")
+        except FileNotFoundError as exc:
+            click.echo(f"  Error: {exc}", err=True)
+
+    if "plume" in metric_list:
+        from magnozzlex.postprocess.plume import compute_plume_metrics
+
+        click.echo("Computing plume metrics...")
+        try:
+            plume = compute_plume_metrics(input_dir)
+            results["plume"] = {
+                "half_angle_deg": plume.half_angle_deg,
+                "beam_efficiency": plume.beam_efficiency,
+                "radial_loss_fraction": plume.radial_loss_fraction,
+                "thrust_coefficient": plume.thrust_coefficient,
+            }
+            click.echo(f"  Half-angle:     {plume.half_angle_deg:.1f}°")
+            click.echo(f"  Beam efficiency: {plume.beam_efficiency:.3f}")
+        except FileNotFoundError as exc:
+            click.echo(f"  Error: {exc}", err=True)
+
+    if "report" in metric_list:
+        from magnozzlex.postprocess.report import generate_report, save_report
+
+        click.echo("Generating full report...")
+        try:
+            report = generate_report(input_dir)
+            report_path = Path(input_dir) / "report.json"
+            save_report(report, report_path)
+            results["report"] = {"saved_to": str(report_path)}
+            click.echo(f"  Report saved to: {report_path}")
         except FileNotFoundError as exc:
             click.echo(f"  Error: {exc}", err=True)
 
@@ -181,6 +235,14 @@ def validate(
 )
 @click.option("--dry-run", is_flag=True, help="Skip WarpX; generate configs only")
 @click.option("--seed", default=0, type=int, show_default=True, help="RNG seed (LHC only)")
+@click.option("--prescreen", is_flag=True, help="Run Tier 1 analytical pre-screening before WarpX")
+@click.option(
+    "--min-mirror-ratio",
+    default=1.5,
+    show_default=True,
+    type=float,
+    help="Minimum mirror ratio for prescreening filter",
+)
 def scan(
     config_path: str,
     vary_specs: tuple[str, ...],
@@ -188,6 +250,8 @@ def scan(
     method: str,
     dry_run: bool,
     seed: int,
+    prescreen: bool,
+    min_mirror_ratio: float,
 ) -> None:
     """Run a parameter scan over coil/plasma parameters."""
     from magnozzlex.config.parser import SimConfig
@@ -215,10 +279,16 @@ def scan(
         method=method,
         dry_run=dry_run,
         seed=seed,
+        prescreening=prescreen,
+        min_mirror_ratio=min_mirror_ratio,
     )
 
     n_ok = sum(1 for m in result.metrics if m.get("success"))
     click.echo(f"Done: {n_ok}/{n_points} points succeeded.")
+    if result.n_screened > 0:
+        click.echo(
+            f"  Prescreened: {result.n_screened}/{n_points} filtered by mirror ratio < {min_mirror_ratio}"
+        )
     click.echo(f"Output: {output_dir}/")
 
 

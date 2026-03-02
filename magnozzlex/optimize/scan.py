@@ -58,6 +58,7 @@ class ScanPoint:
     index: int
     params: dict[str, float]
     config: SimConfig
+    screened_out: bool = False
 
 
 @dataclass
@@ -68,6 +69,7 @@ class ScanResult:
     metrics: list[dict[str, Any]]
     param_names: list[str]
     base_config: SimConfig
+    n_screened: int = 0
 
 
 def _set_nested(data: dict, path: str, value: float) -> dict:
@@ -127,12 +129,38 @@ def _apply_params(base_config: SimConfig, params: dict[str, float]) -> SimConfig
     return SimConfig.model_validate(data)
 
 
+def _apply_prescreening(
+    points: list[ScanPoint],
+    base_config: SimConfig,
+    min_mirror_ratio: float,
+) -> None:
+    """Apply Tier 1 analytical prescreening to a list of scan points in-place.
+
+    Sets ``point.screened_out = True`` for any point whose mirror ratio is
+    below ``min_mirror_ratio``.
+    """
+    from magnozzlex.fields.biot_savart import Coil
+    from magnozzlex.optimize.analytical import screen_geometry
+
+    for point in points:
+        coils = [
+            Coil(z=c.z, r=c.r, I=c.I)
+            for c in point.config.nozzle.coils
+        ]
+        z_min = point.config.nozzle.domain.z_min
+        z_max = point.config.nozzle.domain.z_max
+        result = screen_geometry(coils, z_min=z_min, z_max=z_max)
+        point.screened_out = result.mirror_ratio < min_mirror_ratio
+
+
 def generate_scan_points(
     base_config: SimConfig,
     ranges: list[ParameterRange],
     *,
     method: str = "grid",
     seed: int = 0,
+    prescreening: bool = False,
+    min_mirror_ratio: float = 1.5,
 ) -> list[ScanPoint]:
     """Generate scan points from parameter ranges.
 
@@ -147,6 +175,12 @@ def generate_scan_points(
         ``"lhc"`` — Latin Hypercube sampling with total n = product of all n values.
     seed : int
         Random seed for LHC sampling.
+    prescreening : bool
+        If True, run Tier 1 analytical pre-screening after generating points.
+        Points with ``mirror_ratio < min_mirror_ratio`` are marked
+        ``screened_out=True`` but still included in the returned list.
+    min_mirror_ratio : float
+        Minimum acceptable mirror ratio when ``prescreening=True``.
 
     Returns
     -------
@@ -160,7 +194,6 @@ def generate_scan_points(
             params = {r.path: float(v) for r, v in zip(ranges, combo)}
             config = _apply_params(base_config, params)
             points.append(ScanPoint(index=i, params=params, config=config))
-        return points
 
     elif method == "lhc":
         n_total = math.prod(r.n for r in ranges)
@@ -177,10 +210,14 @@ def generate_scan_points(
                 params[r.path] = float(r.low + lhc[i, j] * (r.high - r.low))
             config = _apply_params(base_config, params)
             points.append(ScanPoint(index=i, params=params, config=config))
-        return points
 
     else:
         raise ValueError(f"Unknown scan method {method!r}. Use 'grid' or 'lhc'.")
+
+    if prescreening:
+        _apply_prescreening(points, base_config, min_mirror_ratio)
+
+    return points
 
 
 def run_scan(
@@ -191,6 +228,8 @@ def run_scan(
     method: str = "grid",
     dry_run: bool = False,
     seed: int = 0,
+    prescreening: bool = False,
+    min_mirror_ratio: float = 1.5,
 ) -> ScanResult:
     """Run a full parameter scan.
 
@@ -210,6 +249,12 @@ def run_scan(
         Generate configs and B-fields without launching WarpX.
     seed : int
         RNG seed for LHC sampling.
+    prescreening : bool
+        If True, run Tier 1 analytical pre-screening before WarpX.  Points
+        with ``mirror_ratio < min_mirror_ratio`` are skipped and recorded as
+        ``{"screened_out": True, ...}`` in the metrics list.
+    min_mirror_ratio : float
+        Minimum mirror ratio threshold for prescreening.
 
     Returns
     -------
@@ -218,10 +263,35 @@ def run_scan(
     from magnozzlex.runner.launch import run_simulation
 
     output_base = Path(output_base)
-    points = generate_scan_points(base_config, ranges, method=method, seed=seed)
+    points = generate_scan_points(
+        base_config,
+        ranges,
+        method=method,
+        seed=seed,
+        prescreening=prescreening,
+        min_mirror_ratio=min_mirror_ratio,
+    )
     metrics: list[dict[str, Any]] = []
 
     for point in points:
+        if prescreening and point.screened_out:
+            # Compute mirror ratio for the record without running WarpX
+            from magnozzlex.fields.biot_savart import Coil
+            from magnozzlex.optimize.analytical import mirror_ratio as _mirror_ratio
+
+            coils = [Coil(z=c.z, r=c.r, I=c.I) for c in point.config.nozzle.coils]
+            z_min = point.config.nozzle.domain.z_min
+            z_max = point.config.nozzle.domain.z_max
+            mr = _mirror_ratio(coils, z_min=z_min, z_max=z_max)
+            metrics.append(
+                {
+                    "screened_out": True,
+                    "mirror_ratio": mr,
+                    **point.params,
+                }
+            )
+            continue
+
         point_dir = output_base / f"point_{point.index:04d}"
         result = run_simulation(point.config, output_dir=point_dir, dry_run=dry_run)
         metrics.append(
@@ -233,9 +303,12 @@ def run_scan(
             }
         )
 
+    n_screened = sum(1 for point in points if point.screened_out)
+
     return ScanResult(
         points=points,
         metrics=metrics,
         param_names=[r.path for r in ranges],
         base_config=base_config,
+        n_screened=n_screened,
     )
