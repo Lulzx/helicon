@@ -297,6 +297,20 @@ def validate(
     type=float,
     help="Minimum mirror ratio for prescreening filter",
 )
+@click.option(
+    "--cloud",
+    type=click.Choice(["local", "lambda", "aws"]),
+    default=None,
+    help="Submit scan to cloud HPC backend (local runs inline)",
+)
+@click.option(
+    "--cloud-gpus",
+    default=1,
+    show_default=True,
+    type=int,
+    help="Number of GPUs to request (cloud backends)",
+)
+@click.option("--cloud-instance", default=None, help="Cloud instance type override")
 def scan(
     config_path: str,
     vary_specs: tuple[str, ...],
@@ -306,6 +320,9 @@ def scan(
     seed: int,
     prescreen: bool,
     min_mirror_ratio: float,
+    cloud: str | None,
+    cloud_gpus: int,
+    cloud_instance: str | None,
 ) -> None:
     """Run a parameter scan over coil/plasma parameters."""
     from helicon.config.parser import SimConfig
@@ -325,6 +342,25 @@ def scan(
     click.echo(f"Scan: {n_points} points, method={method}")
     for r in ranges:
         click.echo(f"  {r.path}: [{r.low}, {r.high}] n={r.n}")
+
+    if cloud is not None:
+        from helicon.cloud.submit import submit_cloud_scan
+
+        click.echo(f"Submitting to cloud backend: {cloud}")
+        job = submit_cloud_scan(
+            config_path,
+            ranges,
+            output_dir=output_dir,
+            backend=cloud,
+            method=method,
+            dry_run=dry_run,
+            seed=seed,
+            n_gpus=cloud_gpus,
+            instance_type=cloud_instance,
+        )
+        click.echo(f"Job ID: {job.job_id}  Status: {job.status}")
+        click.echo(f"Manifest: {Path(output_dir) / 'cloud_job.json'}")
+        return
 
     result = run_scan(
         config,
@@ -515,6 +551,156 @@ def benchmark(repeat: int, output_path: str | None) -> None:
         ]
         Path(output_path).write_text(json.dumps(data, indent=2))
         click.echo(f"Results written to: {output_path}")
+
+
+@main.command("throttle-map")
+@click.option("--preset", type=str, help="Built-in preset name")
+@click.option("--config", "config_path", type=click.Path(exists=True), help="YAML config file")
+@click.option("--power-min", default=1e3, show_default=True, type=float, help="Min power [W]")
+@click.option("--power-max", default=1e7, show_default=True, type=float, help="Max power [W]")
+@click.option(
+    "--mdot-min", default=1e-6, show_default=True, type=float, help="Min mass flow [kg/s]"
+)
+@click.option(
+    "--mdot-max", default=1e-3, show_default=True, type=float, help="Max mass flow [kg/s]"
+)
+@click.option("--n-power", default=20, show_default=True, type=int, help="Power grid points")
+@click.option("--n-mdot", default=20, show_default=True, type=int, help="Mdot grid points")
+@click.option(
+    "--eta-thermal",
+    default=0.65,
+    show_default=True,
+    type=float,
+    help="Thermal coupling efficiency",
+)
+@click.option(
+    "--output",
+    "output_path",
+    default="throttle_map.json",
+    type=click.Path(),
+    help="Output JSON path",
+)
+@click.option("--backend", default="auto", show_default=True, help="Biot-Savart backend")
+def throttle_map(
+    preset: str | None,
+    config_path: str | None,
+    power_min: float,
+    power_max: float,
+    mdot_min: float,
+    mdot_max: float,
+    n_power: int,
+    n_mdot: int,
+    eta_thermal: float,
+    output_path: str,
+    backend: str,
+) -> None:
+    """Generate a thrust/Isp throttle curve over (power, mdot) grid."""
+    from helicon.config.parser import SimConfig
+    from helicon.mission.throttle import generate_throttle_map
+
+    if preset and config_path:
+        click.echo("Error: specify --preset or --config, not both.", err=True)
+        sys.exit(1)
+    if not preset and not config_path:
+        click.echo("Error: specify --preset or --config.", err=True)
+        sys.exit(1)
+
+    config = SimConfig.from_preset(preset) if preset else SimConfig.from_yaml(config_path)
+
+    click.echo(
+        f"Generating throttle map: {n_power}×{n_mdot} grid "
+        f"P=[{power_min:.0f}, {power_max:.0f}] W  "
+        f"ṁ=[{mdot_min:.2e}, {mdot_max:.2e}] kg/s"
+    )
+
+    tm = generate_throttle_map(
+        config,
+        power_range_W=(power_min, power_max),
+        mdot_range_kgs=(mdot_min, mdot_max),
+        n_power=n_power,
+        n_mdot=n_mdot,
+        eta_thermal=eta_thermal,
+        backend=backend,
+    )
+
+    path = tm.save_json(output_path)
+    click.echo(f"Mirror ratio:   {tm.mirror_ratio:.2f}")
+    click.echo(f"Detachment η_d: {float(tm.eta_d.mean()):.3f}")
+    isp_range = (float(tm.isp_s.min()), float(tm.isp_s.max()))
+    thrust_range = (float(tm.thrust_N.min()), float(tm.thrust_N.max()))
+    click.echo(f"Isp range:      {isp_range[0]:.0f} – {isp_range[1]:.0f} s")
+    click.echo(f"Thrust range:   {thrust_range[0]:.4f} – {thrust_range[1]:.4f} N")
+    click.echo(f"Saved to: {path}")
+
+
+@main.command()
+@click.option(
+    "--throttle-map",
+    "throttle_path",
+    required=True,
+    type=click.Path(exists=True),
+    help="Throttle map JSON (from helicon throttle-map)",
+)
+@click.option("--dry-mass", "dry_mass_kg", required=True, type=float, help="Dry mass [kg]")
+@click.option(
+    "--delta-v",
+    "delta_v_ms",
+    required=True,
+    type=float,
+    help="ΔV budget [m/s]",
+)
+@click.option(
+    "--power",
+    "power_W",
+    default=None,
+    type=float,
+    help="Operating power [W] (defaults to map centre)",
+)
+@click.option(
+    "--mdot",
+    "mdot_kgs",
+    default=None,
+    type=float,
+    help="Mass flow rate [kg/s] (defaults to map centre)",
+)
+@click.option("--output", "output_file", type=click.Path(), help="Output JSON file")
+def mission(
+    throttle_path: str,
+    dry_mass_kg: float,
+    delta_v_ms: float,
+    power_W: float | None,
+    mdot_kgs: float | None,
+    output_file: str | None,
+) -> None:
+    """Estimate propellant budget and burn time for a ΔV manoeuvre."""
+    from helicon.mission.throttle import ThrottleMap
+    from helicon.mission.trajectory import MissionLeg, analyze_mission
+
+    tm = ThrottleMap.load_json(throttle_path)
+
+    # Default to centre of throttle map
+    if power_W is None:
+        power_W = float(tm.power_grid_W[len(tm.power_grid_W) // 2])
+    if mdot_kgs is None:
+        mdot_kgs = float(tm.mdot_grid_kgs[len(tm.mdot_grid_kgs) // 2])
+
+    legs = [MissionLeg("main burn", delta_v_ms, power_W, mdot_kgs)]
+    result = analyze_mission(legs, tm, dry_mass_kg)
+
+    click.echo(f"ΔV:              {result.total_delta_v_ms:.0f} m/s")
+    click.echo(f"Isp:             {result.isp_s:.0f} s")
+    click.echo(f"Propellant:      {result.propellant_mass_kg:.2f} kg")
+    click.echo(f"Wet mass:        {result.wet_mass_kg:.2f} kg")
+    click.echo(f"Payload fraction:{result.payload_fraction:.3f}")
+    burn_h = result.burn_time_s / 3600
+    click.echo(f"Burn time:       {result.burn_time_s:.0f} s ({burn_h:.2f} h)")
+
+    if output_file:
+        import dataclasses
+
+        data = dataclasses.asdict(result)
+        Path(output_file).write_text(json.dumps(data, indent=2))
+        click.echo(f"Results written to: {output_file}")
 
 
 if __name__ == "__main__":
