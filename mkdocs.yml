@@ -90,5 +90,8 @@ extra:
     - icon: fontawesome/brands/github
       link: https://github.com/helicon/helicon
 
+docs_dir: docs_src
+site_dir: docs
+
 watch:
   - helicon/

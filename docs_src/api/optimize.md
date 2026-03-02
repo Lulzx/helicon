@@ -6,7 +6,7 @@ Optimization: analytical screening, constraints, Gaussian process surrogate, Bay
 
 ::: helicon.optimize.analytical.screen_geometry
 
-::: helicon.optimize.analytical.GeometryScreenResult
+::: helicon.optimize.analytical.NozzleScreeningResult
 
 ## Constraints
 
@@ -16,9 +16,11 @@ Optimization: analytical screening, constraints, Gaussian process surrogate, Bay
 
 ::: helicon.optimize.constraints.make_constrained_objective
 
-## GP Surrogate
+## GP Surrogate & Bayesian Optimization
 
 ::: helicon.optimize.surrogate.GPSurrogate
+
+::: helicon.optimize.surrogate.BayesianOptimizer
 
 ## Gradient-Based Optimization (MLX)
 
@@ -30,20 +32,18 @@ Optimization: analytical screening, constraints, Gaussian process surrogate, Bay
 
 ::: helicon.optimize.gradient.optimize_mirror_ratio
 
-## Bayesian Optimization
-
-::: helicon.optimize.bayesian.BayesianOptimizer
-
-::: helicon.optimize.bayesian.SearchSpace
-
 ## Pareto Front
 
-::: helicon.optimize.pareto.ParetoFront
+::: helicon.optimize.pareto.ParetoResult
 
-::: helicon.optimize.pareto.dominates
+::: helicon.optimize.pareto.pareto_front
+
+::: helicon.optimize.pareto.is_dominated
 
 ## Parameter Scans
 
-::: helicon.optimize.scan.ScanConfig
+::: helicon.optimize.scan.ParameterRange
 
-::: helicon.optimize.scan.build_scan_configs
+::: helicon.optimize.scan.ScanResult
+
+::: helicon.optimize.scan.generate_scan_points

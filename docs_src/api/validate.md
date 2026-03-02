@@ -6,17 +6,13 @@ Validation suite: physics benchmark cases and comparison reporting.
 
 ::: helicon.validate.runner.run_validation
 
-::: helicon.validate.runner.run_all_validations
-
-::: helicon.validate.runner.ValidationResult
-
 ## Validation Cases
 
 ::: helicon.validate.cases.free_expansion.FreeExpansionCase
 
 ::: helicon.validate.cases.merino_ahedo.MerinoAhedoCase
 
-::: helicon.validate.cases.vasimr_plume.VasimrPlumeCase
+::: helicon.validate.cases.vasimr_plume.VASIMRPlumeCase
 
 ::: helicon.validate.cases.resistive_dimov.ResistiveDimovCase
 
