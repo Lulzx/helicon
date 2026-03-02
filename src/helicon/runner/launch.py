@@ -282,6 +282,7 @@ def run_simulation(
                 output_dir=out,
                 inputs_content=_inputs_text,
                 timeout_s=3600 * 24,
+                progress=True,
             )
             wall = time.monotonic() - t0
             meta["wall_time_seconds"] = wall

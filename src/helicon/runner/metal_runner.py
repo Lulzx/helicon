@@ -536,6 +536,7 @@ def run_warpx_metal(
     diag_interval: int = 4,
     timeout_s: float = 3600.0,
     extra_params: dict[str, Any] | None = None,
+    progress: bool = False,
 ) -> MetalRunResult:
     """Launch WarpX on Apple Silicon GPU via the Metal SYCL backend.
 
@@ -605,33 +606,63 @@ def run_warpx_metal(
     steps_completed = 0
     error: str | None = None
 
+    # Infer max_step from inputs for the progress bar total
+    import re
+    _ms = re.search(r"^\s*max_step\s*=\s*(\d+)", inputs_content or "", re.MULTILINE)
+    _max_step = int(_ms.group(1)) if _ms else None
+
     try:
         with log_path.open("w") as log_fh:
-            proc = subprocess.run(
+            proc = subprocess.Popen(
                 [str(metal_info.exe_2d), str(inputs_path)],
                 cwd=str(out),
                 env=env,
-                stdout=log_fh,
+                stdout=subprocess.PIPE,
                 stderr=subprocess.STDOUT,
-                timeout=timeout_s,
+                text=True,
             )
-        exit_code = proc.returncode
-    except subprocess.TimeoutExpired:
-        error = f"WarpX Metal timed out after {timeout_s:.0f} s"
-        exit_code = -2
+
+            _step_re = re.compile(r"STEP\s+(\d+)\s+ends")
+
+            if progress:
+                from tqdm import tqdm
+                bar = tqdm(
+                    total=_max_step,
+                    unit="step",
+                    desc="WarpX Metal",
+                    dynamic_ncols=True,
+                )
+            else:
+                bar = None
+
+            deadline = time.monotonic() + timeout_s
+            for line in proc.stdout:  # type: ignore[union-attr]
+                log_fh.write(line)
+                log_fh.flush()
+                m = _step_re.search(line)
+                if m:
+                    step = int(m.group(1))
+                    if bar is not None:
+                        bar.update(step - bar.n)
+                    steps_completed = step
+                if time.monotonic() > deadline:
+                    proc.kill()
+                    error = f"WarpX Metal timed out after {timeout_s:.0f} s"
+                    exit_code = -2
+                    break
+
+            if bar is not None:
+                bar.close()
+
+            if exit_code != -2:
+                proc.wait()
+                exit_code = proc.returncode
+
     except Exception as exc:
         error = str(exc)
         exit_code = -3
 
     wall_time_s = time.monotonic() - t0
-
-    # Count steps from log
-    if log_path.exists():
-        log_text = log_path.read_text()
-        import re
-        matches = re.findall(r"STEP\s+(\d+)", log_text)
-        if matches:
-            steps_completed = int(matches[-1])
 
     # Collect diagnostics
     diags = find_diag_dirs(out)
