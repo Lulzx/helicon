@@ -211,14 +211,16 @@ def analyze_mission(
         isp_weighted_sum += isp * prop_leg
         isp_weight += prop_leg
 
-        leg_results.append({
-            "name": leg.name,
-            "delta_v_ms": leg.delta_v_ms,
-            "isp_s": isp,
-            "thrust_N": thrust,
-            "propellant_kg": prop_leg,
-            "burn_time_s": burn_s,
-        })
+        leg_results.append(
+            {
+                "name": leg.name,
+                "delta_v_ms": leg.delta_v_ms,
+                "isp_s": isp,
+                "thrust_N": thrust,
+                "propellant_kg": prop_leg,
+                "burn_time_s": burn_s,
+            }
+        )
         # Dry mass increases by this propellant for earlier legs
         # (conservative: treat independently rather than chaining)
 

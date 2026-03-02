@@ -116,19 +116,21 @@ class TestGenerateThrottleMap:
     def _make_config(self):
         from helicon.config.parser import SimConfig
 
-        return SimConfig.model_validate({
-            "nozzle": {
-                "type": "solenoid",
-                "coils": [{"z": 0.0, "r": 0.1, "I": 40000}],
-                "domain": {"z_min": -0.3, "z_max": 2.0, "r_max": 0.5},
-            },
-            "plasma": {
-                "n0": 1e18,
-                "T_i_eV": 100,
-                "T_e_eV": 100,
-                "v_injection_ms": 50000,
-            },
-        })
+        return SimConfig.model_validate(
+            {
+                "nozzle": {
+                    "type": "solenoid",
+                    "coils": [{"z": 0.0, "r": 0.1, "I": 40000}],
+                    "domain": {"z_min": -0.3, "z_max": 2.0, "r_max": 0.5},
+                },
+                "plasma": {
+                    "n0": 1e18,
+                    "T_i_eV": 100,
+                    "T_e_eV": 100,
+                    "v_injection_ms": 50000,
+                },
+            }
+        )
 
     def test_generate_small_grid(self):
         config = self._make_config()
@@ -239,12 +241,8 @@ class TestCircularTransfer:
 
     def test_higher_dv_more_propellant(self):
         tm = _make_minimal_throttle_map()
-        r_low = circular_transfer(
-            6371e3 + 400e3, 6371e3 + 500e3, tm, 1e5, 1e-5, 500.0
-        )
-        r_high = circular_transfer(
-            6371e3 + 400e3, 6371e3 + 3000e3, tm, 1e5, 1e-5, 500.0
-        )
+        r_low = circular_transfer(6371e3 + 400e3, 6371e3 + 500e3, tm, 1e5, 1e-5, 500.0)
+        r_high = circular_transfer(6371e3 + 400e3, 6371e3 + 3000e3, tm, 1e5, 1e-5, 500.0)
         assert r_high.propellant_mass_kg > r_low.propellant_mass_kg
 
 
@@ -258,9 +256,7 @@ class TestEarthMarsDV:
 class TestPoliastroTrajectory:
     def test_returns_dict(self):
         tm = _make_minimal_throttle_map()
-        result = poliastro_trajectory(
-            tm, 1e5, 1e-5, 6371e3 + 400e3, 6371e3 + 2000e3, 500.0
-        )
+        result = poliastro_trajectory(tm, 1e5, 1e-5, 6371e3 + 400e3, 6371e3 + 2000e3, 500.0)
         assert "method" in result
         assert "delta_v_ms" in result
         assert result["delta_v_ms"] > 0
@@ -268,9 +264,7 @@ class TestPoliastroTrajectory:
     def test_method_field(self):
         """Should fall back to 'edelbaum' if poliastro not installed."""
         tm = _make_minimal_throttle_map()
-        result = poliastro_trajectory(
-            tm, 1e5, 1e-5, 6371e3 + 400e3, 6371e3 + 2000e3, 500.0
-        )
+        result = poliastro_trajectory(tm, 1e5, 1e-5, 6371e3 + 400e3, 6371e3 + 2000e3, 500.0)
         assert result["method"] in ("edelbaum", "poliastro+edelbaum")
 
 

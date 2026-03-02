@@ -250,8 +250,9 @@ def test_mirror_force_downstream_positive():
 
 
 def _typical_state(**kwargs):
-    defaults = dict(n_m3=1e18, Te_eV=50.0, Ti_eV=50.0, B_T=0.05,
-                    dBdz_T_per_m=-2.0, vz_ms=4e4, mass_amu=1.0)
+    defaults = dict(
+        n_m3=1e18, Te_eV=50.0, Ti_eV=50.0, B_T=0.05, dBdz_T_per_m=-2.0, vz_ms=4e4, mass_amu=1.0
+    )
     defaults.update(kwargs)
     return PlasmaState(**defaults)
 
@@ -337,8 +338,15 @@ def test_assess_onset_B_formula():
 def test_assess_to_dict_keys():
     model = DetachmentOnsetModel()
     d = model.assess(_typical_state()).to_dict()
-    for key in ("alfven_mach", "electron_beta", "ion_magnetization",
-                "detachment_score", "is_detached", "is_imminent", "onset_B_T"):
+    for key in (
+        "alfven_mach",
+        "electron_beta",
+        "ion_magnetization",
+        "detachment_score",
+        "is_detached",
+        "is_imminent",
+        "onset_B_T",
+    ):
         assert key in d
 
 
@@ -378,8 +386,8 @@ def test_scan_z_finds_onset():
     model = DetachmentOnsetModel()
     # Build states progressing from attached to detached
     states = [
-        _typical_state(B_T=0.05),   # attached
-        _typical_state(B_T=0.01),   # possibly imminent
+        _typical_state(B_T=0.05),  # attached
+        _typical_state(B_T=0.01),  # possibly imminent
         _typical_state(B_T=0.0002, vz_ms=2e5),  # detached
     ]
     z = [0.0, 0.5, 1.0]
@@ -413,8 +421,14 @@ def test_scan_z_no_onset_when_all_attached():
 def test_control_recommendation_keys():
     model = DetachmentOnsetModel()
     rec = model.control_recommendation(_typical_state())
-    for key in ("score", "control_signal", "is_detached", "is_imminent",
-                "onset_B_T", "recommended_action"):
+    for key in (
+        "score",
+        "control_signal",
+        "is_detached",
+        "is_imminent",
+        "onset_B_T",
+        "recommended_action",
+    ):
         assert key in rec
 
 
@@ -438,23 +452,37 @@ def test_control_recommendation_increase_B_when_detached():
 # ---------------------------------------------------------------------------
 
 _ATTACHED_ARGS = [
-    "detach", "assess",
-    "--n", "1e18",
-    "--Te", "50",
-    "--Ti", "50",
-    "--B", "0.05",
-    "--dBdz", "-2",
-    "--vz", "40000",
+    "detach",
+    "assess",
+    "--n",
+    "1e18",
+    "--Te",
+    "50",
+    "--Ti",
+    "50",
+    "--B",
+    "0.05",
+    "--dBdz",
+    "-2",
+    "--vz",
+    "40000",
 ]
 
 _DETACHED_ARGS = [
-    "detach", "assess",
-    "--n", "1e18",
-    "--Te", "50",
-    "--Ti", "50",
-    "--B", "0.0001",
-    "--dBdz", "-50",
-    "--vz", "100000",
+    "detach",
+    "assess",
+    "--n",
+    "1e18",
+    "--Te",
+    "50",
+    "--Ti",
+    "50",
+    "--B",
+    "0.0001",
+    "--dBdz",
+    "-50",
+    "--vz",
+    "100000",
 ]
 
 

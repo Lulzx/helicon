@@ -128,6 +128,7 @@ def detect_hardware() -> HardwareInfo:
     if info.is_apple_silicon:
         try:
             from helicon.runner.metal_runner import detect_warpx_metal
+
             metal = detect_warpx_metal()
             if metal.valid:
                 info.has_warpx_metal = True

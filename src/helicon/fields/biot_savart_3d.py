@@ -170,9 +170,13 @@ def _compute_bfield_numpy(
         # Sum over quadrature
         Bx += prefactor * dphi * np.sum(cos_phi * dz / r3, axis=-1)
         By += prefactor * dphi * np.sum(sin_phi * dz / r3, axis=-1)
-        Bz += prefactor * dphi * np.sum(
-            (R - X[..., np.newaxis] * cos_phi - Y[..., np.newaxis] * sin_phi) / r3,
-            axis=-1,
+        Bz += (
+            prefactor
+            * dphi
+            * np.sum(
+                (R - X[..., np.newaxis] * cos_phi - Y[..., np.newaxis] * sin_phi) / r3,
+                axis=-1,
+            )
         )
 
     return BField3D(

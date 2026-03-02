@@ -210,16 +210,13 @@ class LyapunovController:
         grad = self._grad_S_B(state, ds)
 
         # Lyapunov control law: ΔB/Δt = −α · error / (∂S/∂B)
-        delta_B = (
-            0.0 if abs(grad) < 1e-30
-            else -self.decay_rate * error / grad * dt_s
-        )
+        delta_B = 0.0 if abs(grad) < 1e-30 else -self.decay_rate * error / grad * dt_s
 
         delta_I = delta_B / self.dB_dI
         new_I = max(self.I_min, min(self.I_max, ctrl_state.I_coil_A + delta_I))
         actual_delta_I = new_I - ctrl_state.I_coil_A
 
-        V = 0.5 * error ** 2
+        V = 0.5 * error**2
         dV_dt = -2.0 * self.decay_rate * V  # theoretical (exact in linear regime)
 
         ctrl_state.t_s += dt_s
@@ -252,12 +249,12 @@ class LyapunovController:
         ds = self.model.assess(state)
         error = ds.detachment_score - self.setpoint
         grad = self._grad_S_B(state, ds)
-        V = 0.5 * error ** 2
+        V = 0.5 * error**2
 
         if abs(grad) > 1e-30:
             # Actual V̇ from applying the control law
             delta_B_rate = -self.decay_rate * error / grad  # [T/s]
-            dV_dt_actual = error * grad * delta_B_rate       # = -α·x² ≤ 0
+            dV_dt_actual = error * grad * delta_B_rate  # = -α·x² ≤ 0
         else:
             dV_dt_actual = 0.0
 

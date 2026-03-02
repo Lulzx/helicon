@@ -68,9 +68,7 @@ class PluginRegistry:
     # Registration
     # ------------------------------------------------------------------
 
-    def register(
-        self, namespace: str, name: str, *, force: bool = False
-    ) -> Callable:
+    def register(self, namespace: str, name: str, *, force: bool = False) -> Callable:
         """Decorator that registers a callable under *namespace/name*.
 
         Parameters
@@ -234,9 +232,7 @@ def register(namespace: str, name: str, *, force: bool = False) -> Callable:
     return _default().register(namespace, name, force=force)
 
 
-def register_instance(
-    namespace: str, name: str, fn: Callable, *, force: bool = False
-) -> None:
+def register_instance(namespace: str, name: str, fn: Callable, *, force: bool = False) -> None:
     """Register a callable in the default registry."""
     _default().register_instance(namespace, name, fn, force=force)
 

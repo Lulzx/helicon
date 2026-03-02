@@ -48,9 +48,7 @@ def test_sensitivity_json_s1_length():
 
 def test_sensitivity_preset_highpower():
     runner = CliRunner()
-    result = runner.invoke(
-        main, ["sensitivity", "--preset", "highpower", "--n-samples", "8"]
-    )
+    result = runner.invoke(main, ["sensitivity", "--preset", "highpower", "--n-samples", "8"])
     assert result.exit_code == 0, result.output
 
 
@@ -69,8 +67,6 @@ def test_sensitivity_json_to_file(tmp_path):
 def test_sensitivity_text_to_file(tmp_path):
     runner = CliRunner()
     out = str(tmp_path / "sens.txt")
-    result = runner.invoke(
-        main, ["sensitivity", "--n-samples", "8", "--output", out]
-    )
+    result = runner.invoke(main, ["sensitivity", "--n-samples", "8", "--output", out])
     assert result.exit_code == 0, result.output
     assert (tmp_path / "sens.txt").exists()

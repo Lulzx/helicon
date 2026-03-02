@@ -439,7 +439,7 @@ def _vectorized_coil_block(
     N_phi = n_phi
 
     z_c = coil_params[:, 0]  # (N_c,)
-    a = coil_params[:, 1]    # (N_c,)
+    a = coil_params[:, 1]  # (N_c,)
     I_c = coil_params[:, 2]  # (N_c,)
 
     # Expand to (N_c, N_pts, N_phi)
@@ -453,17 +453,11 @@ def _vectorized_coil_block(
     R_sq = mx.maximum(R_sq, 1e-20)
     R_inv3 = R_sq ** (-1.5)
 
-    prefactor = mx.reshape(
-        MU_0 * I_c * a / (2.0 * N_phi), (N_c, 1, 1)
-    )
+    prefactor = mx.reshape(MU_0 * I_c * a / (2.0 * N_phi), (N_c, 1, 1))
 
     # Sum over phi (axis=2), then over coils (axis=0)
-    Br_total = mx.sum(
-        mx.sum(prefactor * cos_3d * dz_3d * R_inv3, axis=2), axis=0
-    )
-    Bz_total = mx.sum(
-        mx.sum(prefactor * (a_3d - r_3d * cos_3d) * R_inv3, axis=2), axis=0
-    )
+    Br_total = mx.sum(mx.sum(prefactor * cos_3d * dz_3d * R_inv3, axis=2), axis=0)
+    Bz_total = mx.sum(mx.sum(prefactor * (a_3d - r_3d * cos_3d) * R_inv3, axis=2), axis=0)
     return Br_total, Bz_total
 
 
@@ -493,8 +487,10 @@ def _biot_savart_compiled(
     N_pts = int(grid_r.shape[0])
     key = (N_c, N_pts, n_phi)
     if key not in _compiled_cache:
+
         def _fn(cp, gr, gz):
             return _compute_bfield_mlx_vectorized(cp, gr, gz, n_phi=n_phi)
+
         _compiled_cache[key] = mx.compile(_fn)
     return _compiled_cache[key](coil_params, grid_r, grid_z)
 

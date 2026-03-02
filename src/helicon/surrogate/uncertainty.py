@@ -204,8 +204,8 @@ def sensitivity_indices(
     mean_f = mean_features.astype(np.float32)
     std_f = std_features.astype(np.float32)
 
-    A = (mean_f + std_f * rng.standard_normal((n_samples, N_FEATURES)).astype(np.float32))
-    B = (mean_f + std_f * rng.standard_normal((n_samples, N_FEATURES)).astype(np.float32))
+    A = mean_f + std_f * rng.standard_normal((n_samples, N_FEATURES)).astype(np.float32)
+    B = mean_f + std_f * rng.standard_normal((n_samples, N_FEATURES)).astype(np.float32)
 
     f_A = surrogate.predict_batch(A)
     f_B = surrogate.predict_batch(B)

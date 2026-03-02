@@ -43,7 +43,7 @@ from helicon.detach.invariants import EV_TO_J, M_PROTON, ion_magnetization
 # Physical constants
 _EPSILON_0: float = 8.8541878128e-12  # F/m
 _M_ELECTRON: float = 9.1093837015e-31  # kg
-_EL_CHARGE: float = EV_TO_J            # C (= 1 eV in J)
+_EL_CHARGE: float = EV_TO_J  # C (= 1 eV in J)
 
 
 def debye_length(n_m3: float, Te_eV: float) -> float:
@@ -66,7 +66,7 @@ def debye_length(n_m3: float, Te_eV: float) -> float:
     """
     if n_m3 <= 0 or Te_eV <= 0:
         return math.inf
-    return math.sqrt(_EPSILON_0 * Te_eV * EV_TO_J / (n_m3 * _EL_CHARGE ** 2))
+    return math.sqrt(_EPSILON_0 * Te_eV * EV_TO_J / (n_m3 * _EL_CHARGE**2))
 
 
 def sheath_potential(Te_eV: float, mass_amu: float) -> float:
@@ -136,7 +136,7 @@ def electric_to_mirror_ratio(
     Lambda_i = ion_magnetization(Ti_eV, B_T, dBdz_T_per_m, mass_amu)
     if Lambda_i <= 0 or math.isinf(Lambda_i):
         return 0.0
-    return (Te_eV / Ti_eV) / (Lambda_i ** 2)
+    return (Te_eV / Ti_eV) / (Lambda_i**2)
 
 
 @dataclass

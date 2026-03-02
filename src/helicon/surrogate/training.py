@@ -347,8 +347,7 @@ def _train_numpy(
     rng = np.random.default_rng(0)
     weights = [
         {
-            "weight": rng.standard_normal((sizes[i + 1], sizes[i])).astype(np.float32)
-            * 0.1,
+            "weight": rng.standard_normal((sizes[i + 1], sizes[i])).astype(np.float32) * 0.1,
             "bias": np.zeros(sizes[i + 1], dtype=np.float32),
         }
         for i in range(len(sizes) - 1)

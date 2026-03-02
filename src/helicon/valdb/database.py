@@ -48,9 +48,7 @@ class ValidationDatabase:
 
     def _write_all(self, records: list[dict]) -> None:
         self._path.write_text(
-            "\n".join(json.dumps(r, default=str) for r in records) + "\n"
-            if records
-            else "",
+            "\n".join(json.dumps(r, default=str) for r in records) + "\n" if records else "",
             encoding="utf-8",
         )
 

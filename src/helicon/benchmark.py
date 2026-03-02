@@ -114,6 +114,7 @@ def bench_biot_savart(suite: BenchmarkSuite) -> None:
         def _make_np_fn(g):
             def np_fn():
                 return _compute_numpy(coils, g)
+
             return np_fn
 
         t_np = _time_fn(_make_np_fn(_grid))
@@ -125,6 +126,7 @@ def bench_biot_savart(suite: BenchmarkSuite) -> None:
                 def mlx_fn():
                     Br, Bz, _r, _z = _compute_mlx(coils, g, n_phi=64)
                     return Br, Bz
+
                 return mlx_fn
 
             t_mlx = _time_mlx_fn(_make_mlx_fn(_grid))
@@ -179,6 +181,7 @@ def bench_electron_magnetization(suite: BenchmarkSuite) -> None:
     t_np = _time_fn(np_fn)
 
     if HAS_MLX:
+
         def mlx_fn():
             return compute_electron_magnetization(Br, Bz, n_e, T_e_eV, backend="mlx")
 
@@ -208,6 +211,7 @@ def bench_analytical_screening(suite: BenchmarkSuite) -> None:
     t_np = _time_fn(np_fn)
 
     if HAS_MLX:
+
         def mlx_fn():
             e = thrust_efficiency_batch(R_B, backend="mlx")
             c = thrust_coefficient_batch(R_B, backend="mlx")

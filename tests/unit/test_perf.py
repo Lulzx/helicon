@@ -109,32 +109,24 @@ def test_openmp_env_snippet_contains_all():
 
 
 def test_mlx_rec_no_mlx():
-    rec = AppleSiliconProfiler._mlx_rec(
-        p_cores=8, gpu_cores=16, mlx_avail=False, mem_gb=16.0
-    )
+    rec = AppleSiliconProfiler._mlx_rec(p_cores=8, gpu_cores=16, mlx_avail=False, mem_gb=16.0)
     assert not rec.compile_enabled
     assert "pip install mlx" in rec.rationale.lower() or "mlx" in rec.rationale.lower()
 
 
 def test_mlx_rec_with_mlx_small_gpu():
-    rec = AppleSiliconProfiler._mlx_rec(
-        p_cores=8, gpu_cores=10, mlx_avail=True, mem_gb=16.0
-    )
+    rec = AppleSiliconProfiler._mlx_rec(p_cores=8, gpu_cores=10, mlx_avail=True, mem_gb=16.0)
     assert rec.compile_enabled
     assert rec.suggested_batch_size >= 256
 
 
 def test_mlx_rec_with_mlx_large_gpu():
-    rec = AppleSiliconProfiler._mlx_rec(
-        p_cores=14, gpu_cores=40, mlx_avail=True, mem_gb=48.0
-    )
+    rec = AppleSiliconProfiler._mlx_rec(p_cores=14, gpu_cores=40, mlx_avail=True, mem_gb=48.0)
     assert rec.suggested_batch_size >= 2048
 
 
 def test_mlx_rec_rationale_nonempty():
-    rec = AppleSiliconProfiler._mlx_rec(
-        p_cores=8, gpu_cores=20, mlx_avail=True, mem_gb=32.0
-    )
+    rec = AppleSiliconProfiler._mlx_rec(p_cores=8, gpu_cores=20, mlx_avail=True, mem_gb=32.0)
     assert len(rec.rationale) > 10
 
 

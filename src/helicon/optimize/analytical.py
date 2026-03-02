@@ -208,7 +208,7 @@ def thrust_efficiency_batch(
         valid = r_mx > 1.0
         inf_mask = mx.isinf(r_mx)
         ratio = mx.where(valid & ~inf_mask, one / r_mx, one)
-        eta = mx.where(valid & ~inf_mask, one - ratio**float(exponent), one)
+        eta = mx.where(valid & ~inf_mask, one - ratio ** float(exponent), one)
         eta = mx.where(valid, eta, mx.zeros_like(eta))
         return to_np(eta)
 
@@ -319,10 +319,12 @@ def screen_geometry_batch(
     -------
     list of NozzleScreeningResult
     """
-    R_B_values = np.array([
-        mirror_ratio(cfg, z_min=z_min, z_max=z_max, n_pts=n_pts, backend=backend)
-        for cfg in coil_configs
-    ])
+    R_B_values = np.array(
+        [
+            mirror_ratio(cfg, z_min=z_min, z_max=z_max, n_pts=n_pts, backend=backend)
+            for cfg in coil_configs
+        ]
+    )
     etas = thrust_efficiency_batch(R_B_values, gamma=gamma, backend=backend)
     cts = thrust_coefficient_batch(R_B_values, gamma=gamma, backend=backend)
     thetas = divergence_half_angle_batch(R_B_values, backend=backend)
@@ -428,9 +430,7 @@ def little_choueiri_ct_mlx(
     # Normalised the same way — the Little-Choueiri model has the same
     # analytical form; electron cooling affects the effective gamma only.
     # Here we use the user-supplied gamma as the effective polytropic index.
-    return breizman_arefiev_ct_mlx(
-        coil_params, z_eval, gamma=gamma, n_phi=n_phi
-    )
+    return breizman_arefiev_ct_mlx(coil_params, z_eval, gamma=gamma, n_phi=n_phi)
 
 
 def screen_geometry(

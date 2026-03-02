@@ -236,9 +236,7 @@ class MCCCollider:
             return self._step_mlx(
                 neutrals, n_ion_m3, T_ion_eV, T_e_eV, domain_r, domain_z, seed
             )
-        return self._step_numpy(
-            neutrals, n_ion_m3, T_ion_eV, T_e_eV, domain_r, domain_z, seed
-        )
+        return self._step_numpy(neutrals, n_ion_m3, T_ion_eV, T_e_eV, domain_r, domain_z, seed)
 
     def _step_numpy(
         self,
@@ -557,12 +555,8 @@ class NeutralDynamics:
         dr = r_grid[1] - r_grid[0] if nr > 1 else 1.0
         dz = z_grid[1] - z_grid[0] if nz > 1 else 1.0
 
-        r_idx = np.clip(
-            np.floor((r - r_grid[0]) / dr).astype(int), 0, nr - 1
-        )
-        z_idx = np.clip(
-            np.floor((z - z_grid[0]) / dz).astype(int), 0, nz - 1
-        )
+        r_idx = np.clip(np.floor((r - r_grid[0]) / dr).astype(int), 0, nr - 1)
+        z_idx = np.clip(np.floor((z - z_grid[0]) / dz).astype(int), 0, nz - 1)
 
         density = np.zeros((nr, nz))
         np.add.at(density, (r_idx, z_idx), w)

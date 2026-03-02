@@ -178,8 +178,11 @@ class DetachmentCalibrator:
         x0 = np.array([0.45, 0.30, 0.25, 0.50])
 
         result = minimize(
-            loss, x0, method="SLSQP",
-            constraints=constraints, bounds=bounds,
+            loss,
+            x0,
+            method="SLSQP",
+            constraints=constraints,
+            bounds=bounds,
             options={"ftol": 1e-10, "maxiter": 2000},
         )
 

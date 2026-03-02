@@ -36,6 +36,7 @@ _ACPP_BIN = "opt/adaptivecpp/bin"
 # Discovery
 # ---------------------------------------------------------------------------
 
+
 @dataclass
 class WarpXMetalInfo:
     """Paths and availability for a warpx-metal build."""
@@ -116,7 +117,10 @@ def detect_warpx_metal(hint: str | Path | None = None) -> WarpXMetalInfo:
     if root is None:
         return WarpXMetalInfo(
             root=Path("."),
-            exe_2d=None, exe_3d=None, acpp_bin=None, valid=False,
+            exe_2d=None,
+            exe_3d=None,
+            acpp_bin=None,
+            valid=False,
         )
 
     def _find_exe(name: str) -> Path | None:
@@ -141,6 +145,7 @@ def detect_warpx_metal(hint: str | Path | None = None) -> WarpXMetalInfo:
 # ---------------------------------------------------------------------------
 # AMReX plotfile parser
 # ---------------------------------------------------------------------------
+
 
 @dataclass
 class WarpXMetalDiag:
@@ -223,14 +228,13 @@ class WarpXMetalDiag:
         n_cells: tuple[int, ...] = ()
         if box_line:
             import re
+
             nums = re.findall(r"\d+", box_line)
             # AMReX box format: ((lo_x,lo_y) (hi_x,hi_y) (type_x,type_y))
             # nums has 3*ndim values: lo coords, then hi coords, then cell types
             if len(nums) >= 4 and len(nums) % 3 == 0:
                 ndim = len(nums) // 3
-                n_cells = tuple(
-                    int(nums[ndim + i]) - int(nums[i]) + 1 for i in range(ndim)
-                )
+                n_cells = tuple(int(nums[ndim + i]) - int(nums[i]) + 1 for i in range(ndim))
 
         # Infer step from directory name (diag<step>)
         stem = diag_dir.name  # e.g. "diag1000004"
@@ -297,8 +301,7 @@ class WarpXMetalDiag:
             for m in re.finditer(r"\(\((\d+),(\d+)\)\s*\((\d+),(\d+)\)", cell_h_text)
         ]
         fab_offsets = [
-            int(m.group(1))
-            for m in re.finditer(r"FabOnDisk:\s+\S+\s+(\d+)", cell_h_text)
+            int(m.group(1)) for m in re.finditer(r"FabOnDisk:\s+\S+\s+(\d+)", cell_h_text)
         ]
 
         n_fabs = len(fab_offsets)
@@ -370,6 +373,7 @@ def find_diag_dirs(output_dir: str | Path) -> list[WarpXMetalDiag]:
 # ---------------------------------------------------------------------------
 # Input file generation
 # ---------------------------------------------------------------------------
+
 
 def generate_metal_inputs(
     *,
@@ -498,6 +502,7 @@ def generate_metal_inputs(
 # Runner
 # ---------------------------------------------------------------------------
 
+
 @dataclass
 class MetalRunResult:
     """Result of a warpx-metal native GPU simulation."""
@@ -569,10 +574,13 @@ def run_warpx_metal(
     if not metal_info.valid or metal_info.exe_2d is None:
         _out = Path(output_dir).resolve()
         return MetalRunResult(
-            success=False, exit_code=-1,
+            success=False,
+            exit_code=-1,
             output_dir=_out,
             log_path=_out / "warpx_metal.log",
-            wall_time_s=0.0, steps_completed=0, diags=[],
+            wall_time_s=0.0,
+            steps_completed=0,
+            diags=[],
             error="warpx-metal 2D executable not found — run warpx-metal build scripts first",
         )
 
@@ -608,6 +616,7 @@ def run_warpx_metal(
 
     # Infer max_step from inputs for the progress bar total
     import re
+
     _ms = re.search(r"^\s*max_step\s*=\s*(\d+)", inputs_content or "", re.MULTILINE)
     _max_step = int(_ms.group(1)) if _ms else None
 
@@ -626,6 +635,7 @@ def run_warpx_metal(
 
             if progress:
                 from tqdm import tqdm
+
                 bar = tqdm(
                     total=_max_step,
                     unit="step",
@@ -670,7 +680,7 @@ def run_warpx_metal(
         # Also check default diags/ subdir
         diags = find_diag_dirs(out / "diags")
 
-    success = (exit_code == 0)
+    success = exit_code == 0
     return MetalRunResult(
         success=success,
         exit_code=exit_code,

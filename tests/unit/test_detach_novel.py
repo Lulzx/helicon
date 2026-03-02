@@ -58,16 +58,22 @@ from helicon.detach.sheath import (
 # Helpers
 # ---------------------------------------------------------------------------
 
+
 def _plasma_state(n=1e18, Te=30.0, Ti=15.0, B=0.05, dBdz=-1.0, vz=4e4):
     return PlasmaState(
-        n_m3=n, Te_eV=Te, Ti_eV=Ti,
-        B_T=B, dBdz_T_per_m=dBdz, vz_ms=vz,
+        n_m3=n,
+        Te_eV=Te,
+        Ti_eV=Ti,
+        B_T=B,
+        dBdz_T_per_m=dBdz,
+        vz_ms=vz,
     )
 
 
 # ---------------------------------------------------------------------------
 # 1. Calibration
 # ---------------------------------------------------------------------------
+
 
 class TestCalibrationRecord:
     def test_fields(self):
@@ -186,6 +192,7 @@ class TestDetachmentCalibrator:
 # 2. Kinetic FLR corrections
 # ---------------------------------------------------------------------------
 
+
 class TestKineticFLR:
     # larmor_radius_maxwellian
     def test_larmor_maxwellian_positive(self):
@@ -295,6 +302,7 @@ class TestKineticFLR:
 # 3. Inverse problem
 # ---------------------------------------------------------------------------
 
+
 class TestThrustObservation:
     def test_defaults(self):
         obs = ThrustObservation(
@@ -400,6 +408,7 @@ class TestThrustInverter:
 # ---------------------------------------------------------------------------
 # 4. Lyapunov control
 # ---------------------------------------------------------------------------
+
 
 class TestLyapunovController:
     def test_bad_setpoint_low(self):
@@ -511,6 +520,7 @@ class TestLyapunovController:
 # 5. Sheath coupling
 # ---------------------------------------------------------------------------
 
+
 class TestSheathPhysics:
     # debye_length
     def test_debye_positive(self):
@@ -567,7 +577,7 @@ class TestSheathPhysics:
         # For known Lambda_i, check formula: ε_ES = (Te/Ti) / Lambda_i²
         Te, Ti, B, dBdz, m = 30.0, 15.0, 0.05, -2.0, 1.0
         Lambda_i = ion_magnetization(Ti, B, dBdz, m)
-        expected = (Te / Ti) / (Lambda_i ** 2)
+        expected = (Te / Ti) / (Lambda_i**2)
         eps = electric_to_mirror_ratio(Te, Ti, B, dBdz, m)
         assert eps == pytest.approx(expected, rel=1e-6)
 
@@ -575,16 +585,24 @@ class TestSheathPhysics:
     def test_correction_returns_state(self):
         state = apply_sheath_correction(
             score_raw=0.6,
-            n_m3=1e18, Te_eV=30.0, Ti_eV=15.0,
-            B_T=0.05, dBdz_T_per_m=-1.0, mass_amu=1.0,
+            n_m3=1e18,
+            Te_eV=30.0,
+            Ti_eV=15.0,
+            B_T=0.05,
+            dBdz_T_per_m=-1.0,
+            mass_amu=1.0,
         )
         assert isinstance(state, SheathCorrectedState)
 
     def test_correction_reduces_score(self):
         state = apply_sheath_correction(
             score_raw=0.6,
-            n_m3=1e18, Te_eV=30.0, Ti_eV=15.0,
-            B_T=0.05, dBdz_T_per_m=-1.0, mass_amu=1.0,
+            n_m3=1e18,
+            Te_eV=30.0,
+            Ti_eV=15.0,
+            B_T=0.05,
+            dBdz_T_per_m=-1.0,
+            mass_amu=1.0,
         )
         # With ε_ES > 0, S_corr ≤ S_raw
         assert state.score_corrected <= state.score_raw + 1e-10
@@ -592,16 +610,24 @@ class TestSheathPhysics:
     def test_correction_score_in_range(self):
         state = apply_sheath_correction(
             score_raw=0.8,
-            n_m3=1e18, Te_eV=30.0, Ti_eV=15.0,
-            B_T=0.05, dBdz_T_per_m=-1.0, mass_amu=1.0,
+            n_m3=1e18,
+            Te_eV=30.0,
+            Ti_eV=15.0,
+            B_T=0.05,
+            dBdz_T_per_m=-1.0,
+            mass_amu=1.0,
         )
         assert 0.0 <= state.score_corrected <= 1.0
 
     def test_correction_zero_coupling(self):
         state = apply_sheath_correction(
             score_raw=0.5,
-            n_m3=1e18, Te_eV=20.0, Ti_eV=10.0,
-            B_T=0.05, dBdz_T_per_m=-1.0, mass_amu=1.0,
+            n_m3=1e18,
+            Te_eV=20.0,
+            Ti_eV=10.0,
+            B_T=0.05,
+            dBdz_T_per_m=-1.0,
+            mass_amu=1.0,
             coupling_factor=0.0,
         )
         # No coupling → no correction
@@ -610,16 +636,24 @@ class TestSheathPhysics:
     def test_correction_fraction_in_range(self):
         state = apply_sheath_correction(
             score_raw=0.7,
-            n_m3=1e18, Te_eV=30.0, Ti_eV=10.0,
-            B_T=0.05, dBdz_T_per_m=-2.0, mass_amu=1.0,
+            n_m3=1e18,
+            Te_eV=30.0,
+            Ti_eV=10.0,
+            B_T=0.05,
+            dBdz_T_per_m=-2.0,
+            mass_amu=1.0,
         )
         assert 0.0 <= state.correction_fraction <= 1.0
 
     def test_correction_zero_score_raw(self):
         state = apply_sheath_correction(
             score_raw=0.0,
-            n_m3=1e18, Te_eV=30.0, Ti_eV=15.0,
-            B_T=0.05, dBdz_T_per_m=-1.0, mass_amu=1.0,
+            n_m3=1e18,
+            Te_eV=30.0,
+            Ti_eV=15.0,
+            B_T=0.05,
+            dBdz_T_per_m=-1.0,
+            mass_amu=1.0,
         )
         assert state.score_corrected == pytest.approx(0.0)
         assert state.correction_fraction == pytest.approx(0.0)
@@ -627,24 +661,36 @@ class TestSheathPhysics:
     def test_correction_debye_length_stored(self):
         state = apply_sheath_correction(
             score_raw=0.5,
-            n_m3=1e18, Te_eV=20.0, Ti_eV=10.0,
-            B_T=0.05, dBdz_T_per_m=-1.0, mass_amu=1.0,
+            n_m3=1e18,
+            Te_eV=20.0,
+            Ti_eV=10.0,
+            B_T=0.05,
+            dBdz_T_per_m=-1.0,
+            mass_amu=1.0,
         )
         assert state.debye_length_m == pytest.approx(debye_length(1e18, 20.0), rel=1e-6)
 
     def test_correction_sheath_potential_stored(self):
         state = apply_sheath_correction(
             score_raw=0.5,
-            n_m3=1e18, Te_eV=20.0, Ti_eV=10.0,
-            B_T=0.05, dBdz_T_per_m=-1.0, mass_amu=1.0,
+            n_m3=1e18,
+            Te_eV=20.0,
+            Ti_eV=10.0,
+            B_T=0.05,
+            dBdz_T_per_m=-1.0,
+            mass_amu=1.0,
         )
         assert state.sheath_potential_V == pytest.approx(sheath_potential(20.0, 1.0), rel=1e-6)
 
     def test_correction_lambda_i_corrected_le_raw(self):
         state = apply_sheath_correction(
             score_raw=0.6,
-            n_m3=1e18, Te_eV=40.0, Ti_eV=10.0,
-            B_T=0.05, dBdz_T_per_m=-2.0, mass_amu=1.0,
+            n_m3=1e18,
+            Te_eV=40.0,
+            Ti_eV=10.0,
+            B_T=0.05,
+            dBdz_T_per_m=-2.0,
+            mass_amu=1.0,
         )
         lambda_raw = ion_magnetization(10.0, 0.05, -2.0, 1.0)
         # Effective Λ after correction should be ≤ raw Λ
@@ -663,6 +709,7 @@ class TestSheathPhysics:
 # ---------------------------------------------------------------------------
 # Integration: chain calibration → kinetic → control
 # ---------------------------------------------------------------------------
+
 
 class TestIntegration:
     def test_calibrate_then_control(self):
@@ -683,8 +730,10 @@ class TestIntegration:
     def test_inverse_then_sheath(self):
         """Infer state from thrust, then apply sheath correction."""
         obs = ThrustObservation(
-            F_thrust_N=0.05, m_dot_kg_s=1e-5,
-            B_throat_T=0.03, A_throat_m2=5e-4,
+            F_thrust_N=0.05,
+            m_dot_kg_s=1e-5,
+            B_throat_T=0.03,
+            A_throat_m2=5e-4,
         )
         inferred = ThrustInverter().invert(obs)
         state = apply_sheath_correction(
@@ -709,8 +758,10 @@ class TestIntegration:
 
         # Step 2: infer from thrust
         obs = ThrustObservation(
-            F_thrust_N=0.05, m_dot_kg_s=1e-5,
-            B_throat_T=0.03, A_throat_m2=5e-4,
+            F_thrust_N=0.05,
+            m_dot_kg_s=1e-5,
+            B_throat_T=0.03,
+            A_throat_m2=5e-4,
         )
         inferred = ThrustInverter().invert(obs)
 

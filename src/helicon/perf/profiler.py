@@ -64,6 +64,7 @@ def _total_memory_gb() -> float:
         return int(mem_bytes) / 1e9
     except (ValueError, TypeError):
         import psutil  # type: ignore[import-untyped]
+
         return psutil.virtual_memory().total / 1e9
 
 
@@ -90,7 +91,9 @@ def _gpu_cores() -> int:
     try:
         result = subprocess.run(
             ["system_profiler", "SPDisplaysDataType"],
-            capture_output=True, text=True, timeout=10,
+            capture_output=True,
+            text=True,
+            timeout=10,
         )
         for line in result.stdout.splitlines():
             line_low = line.lower()
@@ -106,6 +109,7 @@ def _gpu_cores() -> int:
 def _mlx_available() -> bool:
     try:
         import mlx.core  # noqa: F401
+
         return True
     except ImportError:
         return False
@@ -114,6 +118,7 @@ def _mlx_available() -> bool:
 def _mlx_version() -> str | None:
     try:
         import mlx
+
         return mlx.__version__
     except Exception:
         return None
@@ -122,6 +127,7 @@ def _mlx_version() -> str | None:
 def _numpy_version() -> str:
     try:
         import numpy as np
+
         return np.__version__
     except Exception:
         return "unknown"
@@ -276,11 +282,7 @@ class HardwareProfile:
 
     def summary(self) -> str:
         """Human-readable hardware summary."""
-        bw = (
-            f"{self.memory_bandwidth_gbs:.1f} GB/s"
-            if self.memory_bandwidth_gbs
-            else "N/A"
-        )
+        bw = f"{self.memory_bandwidth_gbs:.1f} GB/s" if self.memory_bandwidth_gbs else "N/A"
         lines = [
             "=" * 60,
             "Helicon Apple Silicon Performance Profile",
@@ -451,9 +453,7 @@ class AppleSiliconProfiler:
             omp_threads = max(1, (p_cores + e_cores) - 1)  # leave 1 for system
             places = "cores"
             bind = "close"
-            rationale = (
-                "Non-Apple-Silicon: use all but one core to keep system responsive."
-            )
+            rationale = "Non-Apple-Silicon: use all but one core to keep system responsive."
 
         env_snippet = (
             f"export OMP_NUM_THREADS={omp_threads}\n"

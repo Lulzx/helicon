@@ -191,9 +191,7 @@ class TestComputeSpeciesMoments:
         dr = r_grid[1] - r_grid[0]
         dz = z_grid[1] - z_grid[0]
 
-        moments = compute_species_moments(
-            positions, pz, weights, 2.0 * _MP, r_grid, z_grid
-        )
+        moments = compute_species_moments(positions, pz, weights, 2.0 * _MP, r_grid, z_grid)
 
         # Density × cell volume → total particles
         r_2d = r_grid[:, None]

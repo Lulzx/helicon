@@ -152,9 +152,7 @@ class CoilConstraintSet:
     thermal: list[CoilThermalConstraint] = field(default_factory=list)
     structural: list[CoilStructuralConstraint] = field(default_factory=list)
 
-    def check_all(
-        self, coils: list[Any]
-    ) -> tuple[bool, list[str]]:
+    def check_all(self, coils: list[Any]) -> tuple[bool, list[str]]:
         """Check all constraints against a list of coils.
 
         Parameters
@@ -187,8 +185,10 @@ class CoilConstraintSet:
             if self.structural:
                 sc = self.structural[i] if i < len(self.structural) else self.structural[-1]
                 tc_for_area = (
-                    self.thermal[i] if self.thermal and i < len(self.thermal)
-                    else self.thermal[-1] if self.thermal
+                    self.thermal[i]
+                    if self.thermal and i < len(self.thermal)
+                    else self.thermal[-1]
+                    if self.thermal
                     else None
                 )
                 if tc_for_area is not None:
@@ -199,7 +199,7 @@ class CoilConstraintSet:
                     v = sc.violation(coil, j)
                     messages.append(
                         f"Coil {i}: structural violation {v:.2%} above limit "
-                        f"(σ_hoop > {sc.max_stress_Pa/sc.safety_factor:.2e} Pa)"
+                        f"(σ_hoop > {sc.max_stress_Pa / sc.safety_factor:.2e} Pa)"
                     )
                     satisfied = False
 
@@ -215,8 +215,10 @@ class CoilConstraintSet:
             if self.structural:
                 sc = self.structural[i] if i < len(self.structural) else self.structural[-1]
                 tc_for_area = (
-                    self.thermal[i] if self.thermal and i < len(self.thermal)
-                    else self.thermal[-1] if self.thermal
+                    self.thermal[i]
+                    if self.thermal and i < len(self.thermal)
+                    else self.thermal[-1]
+                    if self.thermal
                     else None
                 )
                 j = tc_for_area.current_density(coil) if tc_for_area else abs(coil.I) / 1e-4
@@ -281,20 +283,24 @@ def _load_json(path: Path) -> CoilConstraintSet:
     data = json.loads(path.read_text())
     thermal = []
     for td in data.get("thermal", []):
-        thermal.append(CoilThermalConstraint(
-            max_current_A=float(td["max_current_A"]),
-            max_current_density_Am2=float(td.get("max_current_density_Am2", 1e8)),
-            max_temp_K=float(td.get("max_temp_K", 20.0)),
-            coil_cross_section_m2=float(td.get("coil_cross_section_m2", 1e-4)),
-            name=td.get("name", "thermal"),
-        ))
+        thermal.append(
+            CoilThermalConstraint(
+                max_current_A=float(td["max_current_A"]),
+                max_current_density_Am2=float(td.get("max_current_density_Am2", 1e8)),
+                max_temp_K=float(td.get("max_temp_K", 20.0)),
+                coil_cross_section_m2=float(td.get("coil_cross_section_m2", 1e-4)),
+                name=td.get("name", "thermal"),
+            )
+        )
     structural = []
     for sd in data.get("structural", []):
-        structural.append(CoilStructuralConstraint(
-            max_stress_Pa=float(sd["max_stress_Pa"]),
-            safety_factor=float(sd.get("safety_factor", 2.0)),
-            name=sd.get("name", "structural"),
-        ))
+        structural.append(
+            CoilStructuralConstraint(
+                max_stress_Pa=float(sd["max_stress_Pa"]),
+                safety_factor=float(sd.get("safety_factor", 2.0)),
+                name=sd.get("name", "structural"),
+            )
+        )
     return CoilConstraintSet(thermal=thermal, structural=structural)
 
 
@@ -304,15 +310,19 @@ def _load_csv(path: Path) -> CoilConstraintSet:
     with path.open() as f:
         reader = csv.DictReader(f)
         for row in reader:
-            thermal.append(CoilThermalConstraint(
-                max_current_A=float(row["max_current_A"]),
-                max_current_density_Am2=float(row.get("max_current_density_Am2", 1e8)),
-                max_temp_K=float(row.get("max_temp_K", 20.0)),
-                coil_cross_section_m2=float(row.get("coil_cross_section_m2", 1e-4)),
-            ))
+            thermal.append(
+                CoilThermalConstraint(
+                    max_current_A=float(row["max_current_A"]),
+                    max_current_density_Am2=float(row.get("max_current_density_Am2", 1e8)),
+                    max_temp_K=float(row.get("max_temp_K", 20.0)),
+                    coil_cross_section_m2=float(row.get("coil_cross_section_m2", 1e-4)),
+                )
+            )
             if "max_stress_Pa" in row:
-                structural.append(CoilStructuralConstraint(
-                    max_stress_Pa=float(row["max_stress_Pa"]),
-                    safety_factor=float(row.get("safety_factor", 2.0)),
-                ))
+                structural.append(
+                    CoilStructuralConstraint(
+                        max_stress_Pa=float(row["max_stress_Pa"]),
+                        safety_factor=float(row.get("safety_factor", 2.0)),
+                    )
+                )
     return CoilConstraintSet(thermal=thermal, structural=structural)

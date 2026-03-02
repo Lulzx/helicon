@@ -198,14 +198,12 @@ class MultiFidelityPipeline:
 
             # Promote to Tier 3
             tier3_cands = sorted(t2_results, key=lambda r: r.score, reverse=True)
-            tier3_cands = [
-                r for r in tier3_cands if r.score >= self.cfg.tier3_threshold
-            ][: self.cfg.top_k_to_tier3]
+            tier3_cands = [r for r in tier3_cands if r.score >= self.cfg.tier3_threshold][
+                : self.cfg.top_k_to_tier3
+            ]
 
             if tier3_cands:
-                t3_results = self._run_tier3(
-                    tier3_cands, candidates, objective
-                )
+                t3_results = self._run_tier3(tier3_cands, candidates, objective)
                 result.tier3_results = t3_results
         else:
             result.tier2_results = []

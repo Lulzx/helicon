@@ -205,7 +205,5 @@ def test_record_with_notes():
 
 
 def test_record_tags_default_empty():
-    rec = ValidationRecord(
-        case_id="x", source="s", contributor="me", data_type="analytical"
-    )
+    rec = ValidationRecord(case_id="x", source="s", contributor="me", data_type="analytical")
     assert rec.tags == []

@@ -746,8 +746,7 @@ def run_3d(
     )
 
     click.echo(
-        f"Running 3D simulation: {n_particles} particles × {n_steps} steps "
-        f"[backend={backend}]"
+        f"Running 3D simulation: {n_particles} particles × {n_steps} steps [backend={backend}]"
     )
     result = run_3d_simulation(config, sim_cfg)
     click.echo(result.summary())
@@ -774,9 +773,7 @@ def app(port: int, no_browser: bool) -> None:
     """Launch the interactive nozzle design explorer (Streamlit)."""
     from helicon.app.launcher import launch_app
 
-    click.echo(
-        f"Launching Helicon design app on http://localhost:{port} ..."
-    )
+    click.echo(f"Launching Helicon design app on http://localhost:{port} ...")
     launch_app(port=port, browser=not no_browser)
 
 
@@ -852,12 +849,32 @@ _DATA_TYPE_CHOICE = click.Choice(["experimental", "simulation", "analytical"])
 
 
 @main.command("array")
-@click.option("--n", "n_thrusters", type=int, default=2, show_default=True, help="Number of thrusters")  # noqa: E501
-@click.option("--sep", "separation_m", type=float, default=0.5, show_default=True, help="Centre-to-centre separation [m]")  # noqa: E501
-@click.option("--thrust", "thrust_n", type=float, multiple=True, help="Per-thruster thrust [N]")  # noqa: E501
+@click.option(
+    "--n", "n_thrusters", type=int, default=2, show_default=True, help="Number of thrusters"
+)
+@click.option(
+    "--sep",
+    "separation_m",
+    type=float,
+    default=0.5,
+    show_default=True,
+    help="Centre-to-centre separation [m]",
+)
+@click.option(
+    "--thrust", "thrust_n", type=float, multiple=True, help="Per-thruster thrust [N]"
+)
 @click.option("--isp", "isp_s", type=float, multiple=True, help="Per-thruster Isp [s]")
-@click.option("--angle", "half_angle_deg", type=float, multiple=True, help="Plume half-angle [deg]")  # noqa: E501
-@click.option("--ref-z", "reference_z_m", type=float, default=1.0, show_default=True, help="Evaluation plane [m]")  # noqa: E501
+@click.option(
+    "--angle", "half_angle_deg", type=float, multiple=True, help="Plume half-angle [deg]"
+)
+@click.option(
+    "--ref-z",
+    "reference_z_m",
+    type=float,
+    default=1.0,
+    show_default=True,
+    help="Evaluation plane [m]",
+)
 def array_cmd(
     n_thrusters: int,
     separation_m: float,
@@ -889,15 +906,15 @@ def array_cmd(
     result = ThrusterArray(cfg).compute()
 
     click.echo(f"Array: {n_thrusters} thrusters, separation={separation_m}m")
-    click.echo(f"  Nominal thrust:      {result.nominal_thrust_N*1e3:.2f} mN")
-    click.echo(f"  Effective thrust:    {result.total_thrust_N*1e3:.2f} mN")
-    click.echo(f"  Interaction penalty: {result.interaction_penalty*100:.1f}%")
+    click.echo(f"  Nominal thrust:      {result.nominal_thrust_N * 1e3:.2f} mN")
+    click.echo(f"  Effective thrust:    {result.total_thrust_N * 1e3:.2f} mN")
+    click.echo(f"  Interaction penalty: {result.interaction_penalty * 100:.1f}%")
     click.echo(f"  Effective Isp:       {result.effective_isp_s:.0f} s")
-    click.echo(f"  Mass flow rate:      {result.total_mass_flow_kgs*1e6:.3f} mg/s")
+    click.echo(f"  Mass flow rate:      {result.total_mass_flow_kgs * 1e6:.3f} mg/s")
     for pr in result.pair_interactions:
         click.echo(
             f"  Pair ({pr.i},{pr.j}): sep={pr.separation_m:.2f}m  "
-            f"overlap={pr.overlap_factor:.3f}  penalty={pr.thrust_penalty_fraction*100:.1f}%"
+            f"overlap={pr.overlap_factor:.3f}  penalty={pr.thrust_penalty_fraction * 100:.1f}%"
         )
 
 
@@ -929,7 +946,9 @@ def plugins_cmd(namespace: str | None) -> None:
 
 
 @main.group("valdb")
-@click.option("--db", "db_path", type=click.Path(), default="~/.helicon/valdb", show_default=True)  # noqa: E501
+@click.option(
+    "--db", "db_path", type=click.Path(), default="~/.helicon/valdb", show_default=True
+)
 @click.pass_context
 def valdb_group(ctx: click.Context, db_path: str) -> None:
     """Manage the collaborative validation database."""
@@ -996,14 +1015,15 @@ def valdb_query(
     click.echo(f"Found {len(results)} record(s):")
     for r in results:
         click.echo(
-            f"  [{r.data_type:12s}] {r.case_id}"
-            f"  contributor={r.contributor}  tags={r.tags}"
+            f"  [{r.data_type:12s}] {r.case_id}  contributor={r.contributor}  tags={r.tags}"
         )
 
 
 @valdb_group.command("export")
 @click.option("--output", "output_path", required=True, type=click.Path())
-@click.option("--format", "fmt", type=click.Choice(["json", "csv"]), default="json", show_default=True)  # noqa: E501
+@click.option(
+    "--format", "fmt", type=click.Choice(["json", "csv"]), default="json", show_default=True
+)
 @click.pass_context
 def valdb_export(ctx: click.Context, output_path: str, fmt: str) -> None:
     """Export the validation database."""
@@ -1050,7 +1070,13 @@ def regression_group() -> None:
 
 
 @regression_group.command("save-baseline")
-@click.option("--output", "baseline_path", default="results/baseline.json", show_default=True, type=click.Path())  # noqa: E501
+@click.option(
+    "--output",
+    "baseline_path",
+    default="results/baseline.json",
+    show_default=True,
+    type=click.Path(),
+)
 def regression_save_baseline(baseline_path: str) -> None:
     """Save current validation results as the regression baseline."""
     from helicon.validate import run_validation, save_baseline
@@ -1062,8 +1088,20 @@ def regression_save_baseline(baseline_path: str) -> None:
 
 
 @regression_group.command("run")
-@click.option("--baseline", "baseline_path", default="results/baseline.json", show_default=True, type=click.Path(exists=True))  # noqa: E501
-@click.option("--output", "output_dir", default="results/regression", show_default=True, type=click.Path())  # noqa: E501
+@click.option(
+    "--baseline",
+    "baseline_path",
+    default="results/baseline.json",
+    show_default=True,
+    type=click.Path(exists=True),
+)
+@click.option(
+    "--output",
+    "output_dir",
+    default="results/regression",
+    show_default=True,
+    type=click.Path(),
+)
 @click.option("--case", "cases", multiple=True, help="Limit to specific case names")
 def regression_run(baseline_path: str, output_dir: str, cases: tuple[str, ...]) -> None:
     """Run regression comparison against the saved baseline."""
@@ -1318,8 +1356,7 @@ def provenance_list(ctx: click.Context, tail: int) -> None:
     click.echo(f"Showing {len(shown)} of {len(records)} record(s):")
     for r in shown:
         click.echo(
-            f"  [{r.fidelity_tier}] {r.record_id[:8]}…  {r.source:<24}"
-            f"  {r.timestamp[:19]}"
+            f"  [{r.fidelity_tier}] {r.record_id[:8]}…  {r.source:<24}  {r.timestamp[:19]}"
         )
 
 
@@ -1389,13 +1426,15 @@ def detach_group() -> None:
 
 # -- detach assess -----------------------------------------------------------
 
+
 @detach_group.command("assess")
 @click.option("--n", "n_m3", type=float, required=True, help="Plasma density [m^-3]")
 @click.option("--Te", "Te_eV", type=float, required=True, help="Electron temperature [eV]")
 @click.option("--Ti", "Ti_eV", type=float, required=True, help="Ion temperature [eV]")
 @click.option("--B", "B_T", type=float, required=True, help="Magnetic field [T]")
-@click.option("--dBdz", "dBdz", type=float, default=-1.0, show_default=True,
-              help="B gradient [T/m]")
+@click.option(
+    "--dBdz", "dBdz", type=float, default=-1.0, show_default=True, help="B gradient [T/m]"
+)
 @click.option("--vz", "vz_ms", type=float, required=True, help="Axial bulk velocity [m/s]")
 @click.option("--species", type=_SPECIES_CHOICES, default="H+", show_default=True)
 @click.option("--json", "output_json", is_flag=True, help="Machine-readable JSON output")
@@ -1419,8 +1458,12 @@ def detach_assess_cmd(
     from helicon.detach.invariants import species_mass
 
     state = PlasmaState(
-        n_m3=n_m3, Te_eV=Te_eV, Ti_eV=Ti_eV,
-        B_T=B_T, dBdz_T_per_m=dBdz, vz_ms=vz_ms,
+        n_m3=n_m3,
+        Te_eV=Te_eV,
+        Ti_eV=Ti_eV,
+        B_T=B_T,
+        dBdz_T_per_m=dBdz,
+        vz_ms=vz_ms,
         mass_amu=species_mass(species),
     )
     model = DetachmentOnsetModel()
@@ -1442,14 +1485,25 @@ def detach_assess_cmd(
 
 # -- detach calibrate --------------------------------------------------------
 
+
 @detach_group.command("calibrate")
-@click.option("--n-samples", default=500, show_default=True,
-              help="Synthetic training samples.")
+@click.option(
+    "--n-samples", default=500, show_default=True, help="Synthetic training samples."
+)
 @click.option("--seed", default=0, show_default=True, help="Random seed.")
-@click.option("--sharpness", default=10.0, show_default=True,
-              help="Logistic decision boundary sharpness.")
-@click.option("--output", "output_path", type=click.Path(), default=None,
-              help="Save calibration result to JSON file.")
+@click.option(
+    "--sharpness",
+    default=10.0,
+    show_default=True,
+    help="Logistic decision boundary sharpness.",
+)
+@click.option(
+    "--output",
+    "output_path",
+    type=click.Path(),
+    default=None,
+    help="Save calibration result to JSON file.",
+)
 @click.option("--json", "output_json", is_flag=True, help="Print JSON summary.")
 def detach_calibrate_cmd(
     n_samples: int,
@@ -1476,36 +1530,55 @@ def detach_calibrate_cmd(
     result = cal.fit(records)
 
     if output_json:
-        click.echo(json.dumps(result.to_model_kwargs() | {
-            "n_samples": result.n_samples,
-            "log_loss": result.log_loss,
-            "accuracy": result.accuracy,
-        }, indent=2))
+        click.echo(
+            json.dumps(
+                result.to_model_kwargs()
+                | {
+                    "n_samples": result.n_samples,
+                    "log_loss": result.log_loss,
+                    "accuracy": result.accuracy,
+                },
+                indent=2,
+            )
+        )
     else:
         click.echo(result.summary())
 
     if output_path:
         import pathlib
-        pathlib.Path(output_path).write_text(
-            json.dumps(result.to_model_kwargs(), indent=2)
-        )
+
+        pathlib.Path(output_path).write_text(json.dumps(result.to_model_kwargs(), indent=2))
         click.echo(f"Saved to {output_path}")
 
 
 # -- detach invert ------------------------------------------------------------
+
 
 @detach_group.command("invert")
 @click.option("--F", "F_N", type=float, required=True, help="Measured thrust [N]")
 @click.option("--mdot", type=float, required=True, help="Mass flow rate [kg/s]")
 @click.option("--B", "B_T", type=float, required=True, help="Throat B-field [T]")
 @click.option("--area", type=float, required=True, help="Throat area [m^2]")
-@click.option("--mirror-ratio", default=5.0, show_default=True,
-              help="Mirror ratio R_B = B_throat/B_exit")
+@click.option(
+    "--mirror-ratio", default=5.0, show_default=True, help="Mirror ratio R_B = B_throat/B_exit"
+)
 @click.option("--species", type=_SPECIES_CHOICES, default="H+", show_default=True)
-@click.option("--Te", "Te_eV", type=float, default=50.0, show_default=True,
-              help="Nominal electron temperature [eV]")
-@click.option("--dBdz", "dBdz", type=float, default=-2.0, show_default=True,
-              help="Axial B gradient at throat [T/m]")
+@click.option(
+    "--Te",
+    "Te_eV",
+    type=float,
+    default=50.0,
+    show_default=True,
+    help="Nominal electron temperature [eV]",
+)
+@click.option(
+    "--dBdz",
+    "dBdz",
+    type=float,
+    default=-2.0,
+    show_default=True,
+    help="Axial B gradient at throat [T/m]",
+)
 @click.option("--json", "output_json", is_flag=True, help="Machine-readable JSON output")
 def detach_invert_cmd(
     F_N: float,
@@ -1538,15 +1611,20 @@ def detach_invert_cmd(
     state = inv.invert(obs)
 
     if output_json:
-        click.echo(json.dumps({
-            "n_m3": state.n_m3,
-            "vz_ms": state.vz_ms,
-            "Ti_eV_est": state.Ti_eV_est,
-            "alfven_mach": state.alfven_mach,
-            "detachment_score": state.detachment_score,
-            "confidence": state.confidence,
-            "residual": state.residual,
-        }, indent=2))
+        click.echo(
+            json.dumps(
+                {
+                    "n_m3": state.n_m3,
+                    "vz_ms": state.vz_ms,
+                    "Ti_eV_est": state.Ti_eV_est,
+                    "alfven_mach": state.alfven_mach,
+                    "detachment_score": state.detachment_score,
+                    "confidence": state.confidence,
+                    "residual": state.residual,
+                },
+                indent=2,
+            )
+        )
     else:
         click.echo(f"  density        n = {state.n_m3:.3e} m⁻³")
         click.echo(f"  exhaust vel    vz = {state.vz_ms:.3e} m/s")
@@ -1557,21 +1635,25 @@ def detach_invert_cmd(
 
 # -- detach simulate ----------------------------------------------------------
 
+
 @detach_group.command("simulate")
 @click.option("--n", "n_m3", type=float, required=True, help="Plasma density [m^-3]")
 @click.option("--Te", "Te_eV", type=float, required=True, help="Electron temperature [eV]")
 @click.option("--Ti", "Ti_eV", type=float, required=True, help="Ion temperature [eV]")
 @click.option("--B", "B_T", type=float, required=True, help="Magnetic field [T]")
-@click.option("--dBdz", "dBdz", type=float, default=-1.0, show_default=True,
-              help="B gradient [T/m]")
+@click.option(
+    "--dBdz", "dBdz", type=float, default=-1.0, show_default=True, help="B gradient [T/m]"
+)
 @click.option("--vz", "vz_ms", type=float, required=True, help="Axial bulk velocity [m/s]")
 @click.option("--species", type=_SPECIES_CHOICES, default="H+", show_default=True)
-@click.option("--setpoint", default=0.35, show_default=True,
-              help="Target detachment score S* ∈ (0,1)")
+@click.option(
+    "--setpoint", default=0.35, show_default=True, help="Target detachment score S* ∈ (0,1)"
+)
 @click.option("--steps", default=20, show_default=True, help="Number of control timesteps")
 @click.option("--dt", "dt_s", default=0.01, show_default=True, help="Timestep [s]")
-@click.option("--decay-rate", default=1.0, show_default=True,
-              help="Lyapunov decay rate α [1/s]")
+@click.option(
+    "--decay-rate", default=1.0, show_default=True, help="Lyapunov decay rate α [1/s]"
+)
 @click.option("--json", "output_json", is_flag=True, help="Output full JSON trace")
 def detach_simulate_cmd(
     n_m3: float,
@@ -1598,8 +1680,12 @@ def detach_simulate_cmd(
     from helicon.detach.invariants import species_mass
 
     state = PlasmaState(
-        n_m3=n_m3, Te_eV=Te_eV, Ti_eV=Ti_eV,
-        B_T=B_T, dBdz_T_per_m=dBdz, vz_ms=vz_ms,
+        n_m3=n_m3,
+        Te_eV=Te_eV,
+        Ti_eV=Ti_eV,
+        B_T=B_T,
+        dBdz_T_per_m=dBdz,
+        vz_ms=vz_ms,
         mass_amu=species_mass(species),
     )
     ctrl = LyapunovController(setpoint=setpoint, decay_rate=decay_rate)
@@ -1607,9 +1693,15 @@ def detach_simulate_cmd(
 
     if output_json:
         trace = [
-            {"step": i + 1, "score": u.score, "error": u.error,
-             "V": u.lyapunov_V, "dV_dt": u.lyapunov_dV_dt,
-             "delta_I_A": u.delta_I_coil_A, "I_coil_A": u.new_I_coil_A}
+            {
+                "step": i + 1,
+                "score": u.score,
+                "error": u.error,
+                "V": u.lyapunov_V,
+                "dV_dt": u.lyapunov_dV_dt,
+                "delta_I_A": u.delta_I_coil_A,
+                "I_coil_A": u.new_I_coil_A,
+            }
             for i, u in enumerate(updates)
         ]
         click.echo(json.dumps({"setpoint": setpoint, "trace": trace}, indent=2))
@@ -1626,23 +1718,25 @@ def detach_simulate_cmd(
                 f"  {i + 1:>4}  {u.score:>7.4f}  {u.error:>+8.4f}"
                 f"  {u.lyapunov_V:>10.2e}  {u.delta_I_coil_A:>+10.1f}"
             )
-        click.echo(f"\n  Stable: {cert['is_stable']}  "
-                   f"grad_S_B = {cert['grad_S_B']:.3e} T⁻¹")
+        click.echo(f"\n  Stable: {cert['is_stable']}  grad_S_B = {cert['grad_S_B']:.3e} T⁻¹")
 
 
 # -- detach report ------------------------------------------------------------
+
 
 @detach_group.command("report")
 @click.option("--n", "n_m3", type=float, required=True, help="Plasma density [m^-3]")
 @click.option("--Te", "Te_eV", type=float, required=True, help="Electron temperature [eV]")
 @click.option("--Ti", "Ti_eV", type=float, required=True, help="Ion temperature [eV]")
 @click.option("--B", "B_T", type=float, required=True, help="Magnetic field [T]")
-@click.option("--dBdz", "dBdz", type=float, default=-1.0, show_default=True,
-              help="B gradient [T/m]")
+@click.option(
+    "--dBdz", "dBdz", type=float, default=-1.0, show_default=True, help="B gradient [T/m]"
+)
 @click.option("--vz", "vz_ms", type=float, required=True, help="Axial bulk velocity [m/s]")
 @click.option("--species", type=_SPECIES_CHOICES, default="H+", show_default=True)
-@click.option("--coupling", default=0.30, show_default=True,
-              help="Sheath coupling factor ξ ∈ [0,1]")
+@click.option(
+    "--coupling", default=0.30, show_default=True, help="Sheath coupling factor ξ ∈ [0,1]"
+)
 @click.option("--json", "output_json", is_flag=True, help="Machine-readable JSON output")
 def detach_report_cmd(
     n_m3: float,
@@ -1676,8 +1770,12 @@ def detach_report_cmd(
 
     mass = species_mass(species)
     state = PlasmaState(
-        n_m3=n_m3, Te_eV=Te_eV, Ti_eV=Ti_eV,
-        B_T=B_T, dBdz_T_per_m=dBdz, vz_ms=vz_ms,
+        n_m3=n_m3,
+        Te_eV=Te_eV,
+        Ti_eV=Ti_eV,
+        B_T=B_T,
+        dBdz_T_per_m=dBdz,
+        vz_ms=vz_ms,
         mass_amu=mass,
     )
 
@@ -1692,8 +1790,12 @@ def detach_report_cmd(
     # 3. Sheath
     sheath = apply_sheath_correction(
         score_raw=ds.detachment_score,
-        n_m3=n_m3, Te_eV=Te_eV, Ti_eV=Ti_eV,
-        B_T=B_T, dBdz_T_per_m=dBdz, mass_amu=mass,
+        n_m3=n_m3,
+        Te_eV=Te_eV,
+        Ti_eV=Ti_eV,
+        B_T=B_T,
+        dBdz_T_per_m=dBdz,
+        mass_amu=mass,
         coupling_factor=coupling,
     )
 
@@ -1702,21 +1804,26 @@ def detach_report_cmd(
     cert = ctrl.stability_certificate(state)
 
     if output_json:
-        click.echo(json.dumps({
-            "mhd": ds.to_dict(),
-            "kinetic": {
-                "lambda_i_flr": lambda_flr if lambda_flr != float("inf") else "inf",
-                "alfven_mach_kinetic": m_kaw,
-            },
-            "sheath": {
-                "debye_length_m": sheath.debye_length_m,
-                "sheath_potential_V": sheath.sheath_potential_V,
-                "epsilon_ES": sheath.epsilon_ES,
-                "score_corrected": sheath.score_corrected,
-                "correction_fraction": sheath.correction_fraction,
-            },
-            "lyapunov": cert,
-        }, indent=2))
+        click.echo(
+            json.dumps(
+                {
+                    "mhd": ds.to_dict(),
+                    "kinetic": {
+                        "lambda_i_flr": lambda_flr if lambda_flr != float("inf") else "inf",
+                        "alfven_mach_kinetic": m_kaw,
+                    },
+                    "sheath": {
+                        "debye_length_m": sheath.debye_length_m,
+                        "sheath_potential_V": sheath.sheath_potential_V,
+                        "epsilon_ES": sheath.epsilon_ES,
+                        "score_corrected": sheath.score_corrected,
+                        "correction_fraction": sheath.correction_fraction,
+                    },
+                    "lyapunov": cert,
+                },
+                indent=2,
+            )
+        )
     else:
         click.echo("── MHD Assessment ─────────────────────────────────────────")
         click.echo(ds.summary())
@@ -1728,12 +1835,15 @@ def detach_report_cmd(
         click.echo(f"  Debye length  λ_D = {sheath.debye_length_m:.3e} m")
         click.echo(f"  Sheath potential Φ_s = {sheath.sheath_potential_V:.2f} V")
         click.echo(f"  ε_ES (electric/mirror) = {sheath.epsilon_ES:.4f}")
-        click.echo(f"  Score: {sheath.score_raw:.4f} → {sheath.score_corrected:.4f} "
-                   f"(−{sheath.correction_fraction:.1%})")
+        click.echo(
+            f"  Score: {sheath.score_raw:.4f} → {sheath.score_corrected:.4f} "
+            f"(−{sheath.correction_fraction:.1%})"
+        )
         click.echo("\n── Lyapunov Stability Certificate ──────────────────────────")
         click.echo(f"  V = {cert['V']:.4e}   dV/dt = {cert['dV_dt']:.4e}")
-        click.echo(f"  Stable: {cert['is_stable']}   "
-                   f"τ_conv = {cert['convergence_time_s']:.3f} s")
+        click.echo(
+            f"  Stable: {cert['is_stable']}   τ_conv = {cert['convergence_time_s']:.3f} s"
+        )
 
 
 if __name__ == "__main__":

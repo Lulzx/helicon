@@ -112,6 +112,7 @@ def save_baseline(
     if helicon_version is None:
         try:
             from helicon import __version__
+
             helicon_version = __version__
         except Exception:
             helicon_version = "unknown"
@@ -205,6 +206,7 @@ def compare_to_baseline(
 
     try:
         from helicon import __version__
+
         helicon_version = __version__
     except Exception:
         helicon_version = "unknown"

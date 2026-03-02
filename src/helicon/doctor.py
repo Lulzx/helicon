@@ -142,6 +142,7 @@ def _pkg_version(name: str) -> str | None:
     """Return installed version of *name*, or None."""
     try:
         from importlib.metadata import version
+
         return version(name)
     except Exception:
         return None

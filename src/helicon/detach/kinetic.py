@@ -59,7 +59,7 @@ _MAXWELLIAN_FACTOR: float = math.sqrt(math.pi / 4.0)
 
 # Physical constants needed for ion inertial length
 _EPSILON_0: float = 8.8541878128e-12  # F/m
-_C_LIGHT: float = 2.99792458e8        # m/s
+_C_LIGHT: float = 2.99792458e8  # m/s
 
 
 def larmor_radius_maxwellian(Ti_eV: float, B_T: float, mass_amu: float) -> float:
@@ -129,7 +129,7 @@ def ion_magnetization_flr(
     if L_B == 0 or math.isinf(L_B):
         return math.inf if L_B == 0 else 0.0
     Lambda_0 = r_Li / L_B
-    return Lambda_0 * math.sqrt(1.0 + 0.75 * Lambda_0 ** 2)
+    return Lambda_0 * math.sqrt(1.0 + 0.75 * Lambda_0**2)
 
 
 def alfven_mach_kinetic(
@@ -180,7 +180,7 @@ def alfven_mach_kinetic(
     r_Li = larmor_radius_maxwellian(Ti_eV, B_T, mass_amu)
     L_B = field_scale_length(B_T, dBdz_T_per_m)
     Lambda_i = r_Li / L_B if (math.isfinite(L_B) and L_B > 0) else 0.0
-    v_kAW = va * math.sqrt(1.0 + Lambda_i ** 2)
+    v_kAW = va * math.sqrt(1.0 + Lambda_i**2)
     return vz_ms / v_kAW
 
 
@@ -235,7 +235,7 @@ def ion_inertial_length(n_m3: float, mass_amu: float) -> float:
         Ion inertial length [m].
     """
     m_i = mass_amu * M_PROTON
-    omega_pi_sq = n_m3 * EV_TO_J ** 2 / (_EPSILON_0 * m_i)
+    omega_pi_sq = n_m3 * EV_TO_J**2 / (_EPSILON_0 * m_i)
     if omega_pi_sq <= 0:
         return math.inf
     return _C_LIGHT / math.sqrt(omega_pi_sq)
@@ -259,4 +259,4 @@ def flr_correction_factor(Lambda_i: float) -> float:
     """
     if math.isinf(Lambda_i):
         return math.inf
-    return math.sqrt(1.0 + 0.75 * Lambda_i ** 2)
+    return math.sqrt(1.0 + 0.75 * Lambda_i**2)

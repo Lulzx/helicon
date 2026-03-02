@@ -40,9 +40,9 @@ CURRENT_RESULTS_NO_CHANGE = [
 ]
 
 CURRENT_RESULTS_WITH_REGRESSION = [
-    _r("free_expansion", False, {"eta_d": 0.60}),   # REGRESSION
+    _r("free_expansion", False, {"eta_d": 0.60}),  # REGRESSION
     _r("guiding_center", True, {"drift_error": 0.01}),
-    _r("merino_ahedo", True, {"eta_d": 0.72}),       # FIXED
+    _r("merino_ahedo", True, {"eta_d": 0.72}),  # FIXED
 ]
 
 
@@ -213,7 +213,10 @@ def test_markdown_metric_changes():
         helicon_version="2.1.0",
         cases=[
             CaseDiff(
-                "case_a", True, True, False,
+                "case_a",
+                True,
+                True,
+                False,
                 metric_diffs=[
                     MetricDiff("eta_d", 0.72, 0.68, changed=True, relative_change=-0.056)
                 ],

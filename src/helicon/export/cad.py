@@ -130,6 +130,7 @@ def export_coils_step(
 # Minimal IGES writer
 # ---------------------------------------------------------------------------
 
+
 def export_coils_iges(
     config: Any,
     path: str | Path,
@@ -178,7 +179,7 @@ def export_coils_iges(
         # Entity type 100 = Circular Arc
         # Parameters: z_plane, x1, y1, x2, y2, x3, y3
         # Full circle: start = end = (z+r, 0), centre = (z, 0) in XZ plane
-        param_str = f"100,{z*1000:.6f},{(z+r)*1000:.6f},0.0,{(z+r)*1000:.6f},0.0;"
+        param_str = f"100,{z * 1000:.6f},{(z + r) * 1000:.6f},0.0,{(z + r) * 1000:.6f},0.0;"
         param_line = f"{param_str:<72}     {de_seq}P {pd_seq:>6}".ljust(80)
         parameter_lines.append(param_line)
 
@@ -188,7 +189,7 @@ def export_coils_iges(
         ).ljust(80)
         de_line2 = (
             f"     100       0       0       1       0"
-            f"Coil{i:02d}                                 D {de_seq+1:>6}"
+            f"Coil{i:02d}                                 D {de_seq + 1:>6}"
         ).ljust(80)
         directory_lines.extend([de_line1, de_line2])
 

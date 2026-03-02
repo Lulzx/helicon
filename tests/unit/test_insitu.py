@@ -40,7 +40,6 @@ class TestCallbackFactory:
         """Calling the callback outside WarpX should raise ImportError."""
         import pytest
 
-
         acc = InsituTimeSeries()
         # Use backend="numpy" to avoid MLX ImportError before pywarpx check
         cb = make_thrust_callback(acc, backend="numpy")

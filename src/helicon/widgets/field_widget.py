@@ -59,9 +59,7 @@ class FieldTopologyWidget:
         from helicon.config.parser import SimConfig
 
         config = SimConfig.from_preset(name)
-        coils = [
-            CoilSpec(z=c.z, r=c.r, I=c.I) for c in config.nozzle.coils
-        ]
+        coils = [CoilSpec(z=c.z, r=c.r, I=c.I) for c in config.nozzle.coils]
         return cls(
             coils=coils,
             domain_z=(config.nozzle.domain.z_min, config.nozzle.domain.z_max),

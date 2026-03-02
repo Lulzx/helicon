@@ -15,16 +15,16 @@ from __future__ import annotations
 import math
 
 # Physical constants (SI)
-MU0: float = 1.2566370614359173e-6   # permeability of free space [H/m]
-EV_TO_J: float = 1.602176634e-19     # electron-volt to joule
+MU0: float = 1.2566370614359173e-6  # permeability of free space [H/m]
+EV_TO_J: float = 1.602176634e-19  # electron-volt to joule
 M_PROTON: float = 1.67262192369e-27  # proton mass [kg]
-KB: float = 1.380649e-23             # Boltzmann constant [J/K]
+KB: float = 1.380649e-23  # Boltzmann constant [J/K]
 
 # Ion species mass table [amu]
 SPECIES_MASS_AMU: dict[str, float] = {
-    "H+":  1.00794,
+    "H+": 1.00794,
     "He+": 4.00260,
-    "N+":  14.0067,
+    "N+": 14.0067,
     "Ar+": 39.9480,
     "Kr+": 83.7980,
     "Xe+": 131.293,
@@ -109,8 +109,8 @@ def electron_beta(n_m3: float, Te_eV: float, B_T: float) -> float:
     float
         Dimensionless electron β.
     """
-    p_e = n_m3 * Te_eV * EV_TO_J      # electron pressure [Pa]
-    p_B = B_T ** 2 / (2.0 * MU0)      # magnetic pressure [Pa]
+    p_e = n_m3 * Te_eV * EV_TO_J  # electron pressure [Pa]
+    p_B = B_T**2 / (2.0 * MU0)  # magnetic pressure [Pa]
     if p_B <= 0:
         return math.inf
     return p_e / p_B
@@ -138,7 +138,7 @@ def ion_larmor_radius(Ti_eV: float, B_T: float, mass_amu: float) -> float:
     """
     m_i = mass_amu * M_PROTON
     v_th = math.sqrt(2.0 * Ti_eV * EV_TO_J / m_i)
-    q = EV_TO_J   # elementary charge [C]
+    q = EV_TO_J  # elementary charge [C]
     if B_T <= 0:
         return math.inf
     return m_i * v_th / (q * B_T)
@@ -266,7 +266,7 @@ def magnetic_moment(
         Magnetic moment [J/T = A·m²].
     """
     m_i = mass_amu * M_PROTON
-    v_th_sq = 2.0 * Ti_eV * EV_TO_J / m_i   # thermal speed² for one degree
+    v_th_sq = 2.0 * Ti_eV * EV_TO_J / m_i  # thermal speed² for one degree
     if B_T <= 0:
         return math.inf
     return m_i * v_th_sq / (2.0 * B_T)

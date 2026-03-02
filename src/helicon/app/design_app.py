@@ -44,6 +44,7 @@ def _require_streamlit() -> None:
 # Cached surrogate loader
 # ---------------------------------------------------------------------------
 
+
 def _load_or_train_surrogate(n_samples: int = 300):  # type: ignore[return]
     """Load a cached surrogate or train a quick one."""
     from helicon.surrogate.training import generate_training_data, train_surrogate
@@ -55,6 +56,7 @@ def _load_or_train_surrogate(n_samples: int = 300):  # type: ignore[return]
 # ---------------------------------------------------------------------------
 # Main Streamlit app
 # ---------------------------------------------------------------------------
+
 
 def main() -> None:
     """Entry point for the Streamlit design app."""
@@ -78,9 +80,7 @@ def main() -> None:
     st.sidebar.header("Coil Parameters")
     coil_z = st.sidebar.slider("Coil axial position z [m]", -0.2, 0.2, 0.0, 0.01)
     coil_r = st.sidebar.slider("Coil radius r [m]", 0.03, 0.30, 0.10, 0.01)
-    coil_I = st.sidebar.slider(
-        "Coil current I [kA]", 1.0, 150.0, 10.0, 0.5
-    ) * 1000.0
+    coil_I = st.sidebar.slider("Coil current I [kA]", 1.0, 150.0, 10.0, 0.5) * 1000.0
     z_max = st.sidebar.slider("Domain z_max [m]", 0.5, 3.0, 1.5, 0.1)
 
     st.sidebar.header("Plasma Parameters")
@@ -157,8 +157,8 @@ def main() -> None:
         uq_col1, uq_col2, uq_col3 = st.columns(3)
         uq_col1.metric(
             "Thrust 95 % CI [mN]",
-            f"{uq.mean[0]*1000:.2f}",
-            f"± {uq.std[0]*1000:.2f}",
+            f"{uq.mean[0] * 1000:.2f}",
+            f"± {uq.std[0] * 1000:.2f}",
         )
         uq_col2.metric(
             "η_d 95 % CI",

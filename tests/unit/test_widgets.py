@@ -68,10 +68,12 @@ def test_coil_editor_no_callback():
 
 def test_coil_editor_display_no_ipywidgets():
     import unittest.mock as mock
+
     with mock.patch.dict("sys.modules", {"ipywidgets": None}):
         import importlib
 
         import helicon.widgets.coil_editor as _mod
+
         importlib.reload(_mod)
         editor2 = _mod.CoilEditorWidget(coils=[_mod.CoilSpec(z=0.0, r=0.3, I=1e3)])
         with pytest.raises(ImportError, match="ipywidgets"):
@@ -133,6 +135,7 @@ def test_field_widget_from_preset():
 
 def test_field_widget_display_no_ipywidgets():
     import unittest.mock as mock
+
     with mock.patch.dict(
         "sys.modules",
         {"ipywidgets": None, "IPython": None, "IPython.display": None},
@@ -140,6 +143,7 @@ def test_field_widget_display_no_ipywidgets():
         import importlib
 
         import helicon.widgets.field_widget as _mod
+
         importlib.reload(_mod)
         widget2 = _mod.FieldTopologyWidget(
             coils=[_mod.CoilSpec(z=0.0, r=0.2, I=1e4)],  # type: ignore[attr-defined]

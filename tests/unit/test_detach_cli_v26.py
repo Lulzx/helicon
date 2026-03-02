@@ -15,12 +15,18 @@ from helicon.cli import main
 # ---------------------------------------------------------------------------
 
 _PLASMA = [
-    "--n", "1e18",
-    "--Te", "30",
-    "--Ti", "15",
-    "--B", "0.05",
-    "--dBdz", "-1.0",
-    "--vz", "40000",
+    "--n",
+    "1e18",
+    "--Te",
+    "30",
+    "--Ti",
+    "15",
+    "--B",
+    "0.05",
+    "--dBdz",
+    "-1.0",
+    "--vz",
+    "40000",
 ]
 
 # ---------------------------------------------------------------------------
@@ -41,6 +47,7 @@ def test_detach_group_help():
 # ---------------------------------------------------------------------------
 # helicon detach assess (renamed from old 'helicon detach')
 # ---------------------------------------------------------------------------
+
 
 class TestDetachAssess:
     def test_assess_attached(self):
@@ -68,29 +75,48 @@ class TestDetachAssess:
 # helicon detach calibrate
 # ---------------------------------------------------------------------------
 
+
 class TestDetachCalibrate:
     def test_calibrate_runs(self):
-        r = CliRunner().invoke(main, [
-            "detach", "calibrate",
-            "--n-samples", "100",
-            "--seed", "42",
-        ])
+        r = CliRunner().invoke(
+            main,
+            [
+                "detach",
+                "calibrate",
+                "--n-samples",
+                "100",
+                "--seed",
+                "42",
+            ],
+        )
         assert r.exit_code == 0, r.output
 
     def test_calibrate_output_contains_weights(self):
-        r = CliRunner().invoke(main, [
-            "detach", "calibrate", "--n-samples", "50",
-        ])
+        r = CliRunner().invoke(
+            main,
+            [
+                "detach",
+                "calibrate",
+                "--n-samples",
+                "50",
+            ],
+        )
         assert r.exit_code == 0
         assert "w_" in r.output or "weight" in r.output.lower()
 
     def test_calibrate_json_flag(self):
-        r = CliRunner().invoke(main, [
-            "detach", "calibrate",
-            "--n-samples", "50",
-            "--seed", "0",
-            "--json",
-        ])
+        r = CliRunner().invoke(
+            main,
+            [
+                "detach",
+                "calibrate",
+                "--n-samples",
+                "50",
+                "--seed",
+                "0",
+                "--json",
+            ],
+        )
         assert r.exit_code == 0
         data = json.loads(r.output)
         assert "w_alfven" in data
@@ -103,23 +129,47 @@ class TestDetachCalibrate:
 
     def test_calibrate_saves_file(self, tmp_path):
         out = tmp_path / "cal.json"
-        r = CliRunner().invoke(main, [
-            "detach", "calibrate",
-            "--n-samples", "50",
-            "--output", str(out),
-        ])
+        r = CliRunner().invoke(
+            main,
+            [
+                "detach",
+                "calibrate",
+                "--n-samples",
+                "50",
+                "--output",
+                str(out),
+            ],
+        )
         assert r.exit_code == 0
         assert out.exists()
         data = json.loads(out.read_text())
         assert "w_alfven" in data
 
     def test_calibrate_different_seeds_differ(self):
-        r0 = CliRunner().invoke(main, [
-            "detach", "calibrate", "--n-samples", "80", "--seed", "0", "--json",
-        ])
-        r1 = CliRunner().invoke(main, [
-            "detach", "calibrate", "--n-samples", "80", "--seed", "99", "--json",
-        ])
+        r0 = CliRunner().invoke(
+            main,
+            [
+                "detach",
+                "calibrate",
+                "--n-samples",
+                "80",
+                "--seed",
+                "0",
+                "--json",
+            ],
+        )
+        r1 = CliRunner().invoke(
+            main,
+            [
+                "detach",
+                "calibrate",
+                "--n-samples",
+                "80",
+                "--seed",
+                "99",
+                "--json",
+            ],
+        )
         d0 = json.loads(r0.output)
         d1 = json.loads(r1.output)
         # Different seeds may give slightly different weights
@@ -134,13 +184,19 @@ class TestDetachCalibrate:
 # helicon detach invert
 # ---------------------------------------------------------------------------
 
+
 class TestDetachInvert:
     _INVERT: ClassVar[list[str]] = [
-        "detach", "invert",
-        "--F", "0.05",
-        "--mdot", "1e-5",
-        "--B", "0.03",
-        "--area", "5e-4",
+        "detach",
+        "invert",
+        "--F",
+        "0.05",
+        "--mdot",
+        "1e-5",
+        "--B",
+        "0.03",
+        "--area",
+        "5e-4",
     ]
 
     def test_invert_runs(self):
@@ -187,30 +243,49 @@ class TestDetachInvert:
 # helicon detach simulate
 # ---------------------------------------------------------------------------
 
+
 class TestDetachSimulate:
     def test_simulate_runs(self):
-        r = CliRunner().invoke(main, [
-            "detach", "simulate", *_PLASMA,
-            "--steps", "5",
-        ])
+        r = CliRunner().invoke(
+            main,
+            [
+                "detach",
+                "simulate",
+                *_PLASMA,
+                "--steps",
+                "5",
+            ],
+        )
         assert r.exit_code == 0, r.output
 
     def test_simulate_output_has_steps(self):
-        r = CliRunner().invoke(main, [
-            "detach", "simulate", *_PLASMA,
-            "--steps", "5",
-        ])
+        r = CliRunner().invoke(
+            main,
+            [
+                "detach",
+                "simulate",
+                *_PLASMA,
+                "--steps",
+                "5",
+            ],
+        )
         assert r.exit_code == 0
         # Should show step numbers 1..5
         assert "1" in r.output
         assert "5" in r.output
 
     def test_simulate_json_flag(self):
-        r = CliRunner().invoke(main, [
-            "detach", "simulate", *_PLASMA,
-            "--steps", "3",
-            "--json",
-        ])
+        r = CliRunner().invoke(
+            main,
+            [
+                "detach",
+                "simulate",
+                *_PLASMA,
+                "--steps",
+                "3",
+                "--json",
+            ],
+        )
         assert r.exit_code == 0
         data = json.loads(r.output)
         assert "setpoint" in data
@@ -218,47 +293,88 @@ class TestDetachSimulate:
         assert len(data["trace"]) == 3
 
     def test_simulate_json_trace_keys(self):
-        r = CliRunner().invoke(main, [
-            "detach", "simulate", *_PLASMA, "--steps", "2", "--json",
-        ])
+        r = CliRunner().invoke(
+            main,
+            [
+                "detach",
+                "simulate",
+                *_PLASMA,
+                "--steps",
+                "2",
+                "--json",
+            ],
+        )
         data = json.loads(r.output)
         step = data["trace"][0]
         for key in ("step", "score", "error", "V", "dV_dt", "delta_I_A", "I_coil_A"):
             assert key in step
 
     def test_simulate_V_in_trace(self):
-        r = CliRunner().invoke(main, [
-            "detach", "simulate", *_PLASMA, "--steps", "5", "--json",
-        ])
+        r = CliRunner().invoke(
+            main,
+            [
+                "detach",
+                "simulate",
+                *_PLASMA,
+                "--steps",
+                "5",
+                "--json",
+            ],
+        )
         data = json.loads(r.output)
         for step in data["trace"]:
             assert step["V"] >= 0.0
 
     def test_simulate_setpoint(self):
-        r = CliRunner().invoke(main, [
-            "detach", "simulate", *_PLASMA,
-            "--steps", "3", "--setpoint", "0.4", "--json",
-        ])
+        r = CliRunner().invoke(
+            main,
+            [
+                "detach",
+                "simulate",
+                *_PLASMA,
+                "--steps",
+                "3",
+                "--setpoint",
+                "0.4",
+                "--json",
+            ],
+        )
         data = json.loads(r.output)
         assert data["setpoint"] == pytest.approx(0.4)
 
     def test_simulate_decay_rate(self):
-        r = CliRunner().invoke(main, [
-            "detach", "simulate", *_PLASMA,
-            "--steps", "3", "--decay-rate", "2.0",
-        ])
+        r = CliRunner().invoke(
+            main,
+            [
+                "detach",
+                "simulate",
+                *_PLASMA,
+                "--steps",
+                "3",
+                "--decay-rate",
+                "2.0",
+            ],
+        )
         assert r.exit_code == 0
 
     def test_simulate_mentions_stable(self):
-        r = CliRunner().invoke(main, [
-            "detach", "simulate", *_PLASMA, "--steps", "3",
-        ])
+        r = CliRunner().invoke(
+            main,
+            [
+                "detach",
+                "simulate",
+                *_PLASMA,
+                "--steps",
+                "3",
+            ],
+        )
         assert "stable" in r.output.lower()
 
 
 # ---------------------------------------------------------------------------
 # helicon detach report
 # ---------------------------------------------------------------------------
+
 
 class TestDetachReport:
     def test_report_runs(self):
@@ -307,9 +423,17 @@ class TestDetachReport:
         assert "alfven_mach_kinetic" in data["kinetic"]
 
     def test_report_coupling_flag(self):
-        r = CliRunner().invoke(main, [
-            "detach", "report", *_PLASMA, "--coupling", "0.0", "--json",
-        ])
+        r = CliRunner().invoke(
+            main,
+            [
+                "detach",
+                "report",
+                *_PLASMA,
+                "--coupling",
+                "0.0",
+                "--json",
+            ],
+        )
         data = json.loads(r.output)
         # zero coupling → no correction
         assert data["sheath"]["score_corrected"] == pytest.approx(
@@ -317,7 +441,14 @@ class TestDetachReport:
         )
 
     def test_report_species_xenon(self):
-        r = CliRunner().invoke(main, [
-            "detach", "report", *_PLASMA, "--species", "Xe+",
-        ])
+        r = CliRunner().invoke(
+            main,
+            [
+                "detach",
+                "report",
+                *_PLASMA,
+                "--species",
+                "Xe+",
+            ],
+        )
         assert r.exit_code == 0

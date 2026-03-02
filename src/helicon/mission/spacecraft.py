@@ -26,9 +26,9 @@ from __future__ import annotations
 import math
 from dataclasses import dataclass
 
-_QE = 1.602176634e-19   # C
-_ME = 9.1093837015e-31   # kg
-_K_B = 1.380649e-23      # J/K
+_QE = 1.602176634e-19  # C
+_ME = 9.1093837015e-31  # kg
+_K_B = 1.380649e-23  # J/K
 _EV_TO_J = _QE
 
 
@@ -140,9 +140,9 @@ def compute_backflow(
     n_back_flux = mdot_back / ion_mass_kg  # [#/s]
     ion_return_current = n_back_flux * _QE
     # Electrons have higher thermal velocity but are electrostatically confined
-    electron_return_current = ion_return_current * math.sqrt(
-        ion_mass_kg / _ME
-    ) * math.exp(-1.0)  # approximate ambipolar correction
+    electron_return_current = (
+        ion_return_current * math.sqrt(ion_mass_kg / _ME) * math.exp(-1.0)
+    )  # approximate ambipolar correction
 
     return BackflowResult(
         backflow_fraction=backflow_fraction,

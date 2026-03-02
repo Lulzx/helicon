@@ -51,8 +51,6 @@ class ValidationRecord(BaseModel):
     helicon_version: str | None = None
     warpx_version: str | None = None
     notes: str = ""
-    created_at: datetime = Field(
-        default_factory=lambda: datetime.now(tz=UTC)
-    )
+    created_at: datetime = Field(default_factory=lambda: datetime.now(tz=UTC))
 
     model_config = {"frozen": False}

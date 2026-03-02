@@ -187,24 +187,16 @@ def compute_species_moments(
         nz_i = int(nz)
 
         # Clip indices
-        r_idx_mx = mx.clip(
-            ((r_mx - r0) / dr_f).astype(mx.int32), 0, nr_i - 1
-        )
-        z_idx_mx = mx.clip(
-            ((z_mx - z0) / dz_f).astype(mx.int32), 0, nz_i - 1
-        )
+        r_idx_mx = mx.clip(((r_mx - r0) / dr_f).astype(mx.int32), 0, nr_i - 1)
+        z_idx_mx = mx.clip(((z_mx - z0) / dz_f).astype(mx.int32), 0, nz_i - 1)
         mx.eval(r_idx_mx, z_idx_mx)
         r_idx = to_np(r_idx_mx).astype(int)
         z_idx = to_np(z_idx_mx).astype(int)
         w_np = to_np(w_mx)
         pz_np = to_np(pz_mx)
     else:
-        r_idx = np.clip(
-            np.floor((r - r_grid[0]) / dr).astype(int), 0, nr - 1
-        )
-        z_idx = np.clip(
-            np.floor((z - z_grid[0]) / dz).astype(int), 0, nz - 1
-        )
+        r_idx = np.clip(np.floor((r - r_grid[0]) / dr).astype(int), 0, nr - 1)
+        z_idx = np.clip(np.floor((z - z_grid[0]) / dz).astype(int), 0, nz - 1)
         w_np = weights
         pz_np = pz
 

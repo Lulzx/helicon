@@ -23,6 +23,7 @@ from helicon.runner.metal_runner import (
 # Helpers
 # ---------------------------------------------------------------------------
 
+
 def _make_fake_header(tmp_dir: Path, *, step: int = 4, n_comp: int = 3) -> Path:
     """Write a minimal AMReX-style Header file into tmp_dir/diag<step>/."""
     diag_dir = tmp_dir / f"diag{step}"
@@ -32,9 +33,9 @@ def _make_fake_header(tmp_dir: Path, *, step: int = 4, n_comp: int = 3) -> Path:
         "HyperCLaw-V1.1",
         str(n_comp),
         *field_names,
-        "1",          # n_levels
+        "1",  # n_levels
         "1.234e-12",  # time
-        "0",          # finest_level
+        "0",  # finest_level
         "-1.0e-05 -1.0e-05",  # prob_lo
         " 1.0e-05  1.0e-05",  # prob_hi
         "",
@@ -213,9 +214,9 @@ class TestWarpXMetalDiag:
             "HyperCLaw-V1.1",
             str(n_comp),
             *field_vars,
-            "1",          # n_levels
-            "1.0e-12",    # time
-            "0",          # finest_level
+            "1",  # n_levels
+            "1.0e-12",  # time
+            "0",  # finest_level
             "-1.28e-1 -6.4e-2",  # prob_lo
             " 1.28e-1  6.4e-2",  # prob_hi
             "",

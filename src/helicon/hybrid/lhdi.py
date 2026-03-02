@@ -32,11 +32,11 @@ import numpy as np
 
 from helicon._mlx_utils import resolve_backend, to_mx, to_np
 
-_QE = 1.6021766340e-19   # C
-_ME = 9.1093837015e-31   # kg
+_QE = 1.6021766340e-19  # C
+_ME = 9.1093837015e-31  # kg
 _MP = 1.6726219236951e-27  # kg
 _MU0 = 4.0 * np.pi * 1e-7  # H/m
-_EPS0 = 8.8541878128e-12   # F/m
+_EPS0 = 8.8541878128e-12  # F/m
 
 
 @dataclass

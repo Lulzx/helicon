@@ -185,8 +185,7 @@ class ThrusterArray:
 
         # Clamp penalties to [0, 1]
         effective_thrusts = [
-            plumes[i].thrust_N * max(0.0, 1.0 - penalty_accumulator[i])
-            for i in range(n)
+            plumes[i].thrust_N * max(0.0, 1.0 - penalty_accumulator[i]) for i in range(n)
         ]
 
         nominal = sum(p.thrust_N for p in plumes)

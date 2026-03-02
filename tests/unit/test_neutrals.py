@@ -157,7 +157,10 @@ class TestNeutralParticles:
 
     def test_positions_in_domain(self):
         p = NeutralParticles.create(
-            100, "D", 1e18, 0.025,
+            100,
+            "D",
+            1e18,
+            0.025,
             domain_r=(0.0, 0.5),
             domain_z=(-0.5, 2.0),
         )
@@ -187,7 +190,10 @@ class TestMCCCollider:
         T_e_arr = np.full(neutrals.n_alive, 20.0)
 
         result = collider.step(
-            neutrals, n_arr, T_i_arr, T_e_arr,
+            neutrals,
+            n_arr,
+            T_i_arr,
+            T_e_arr,
             domain_r=(0.0, 0.5),
             domain_z=(-0.5, 2.0),
         )
@@ -216,7 +222,10 @@ class TestMCCCollider:
         T_e_arr = np.full(neutrals.n_alive, 50.0)
 
         collider.step(
-            neutrals, n_arr, T_i_arr, T_e_arr,
+            neutrals,
+            n_arr,
+            T_i_arr,
+            T_e_arr,
             domain_r=(0.0, 0.5),
             domain_z=(-0.5, 2.0),
             seed=42,
@@ -237,7 +246,10 @@ class TestMCCCollider:
         T_e_arr = np.full(neutrals.n_alive, 1.0)
 
         collider.step(
-            neutrals, n_arr, T_i_arr, T_e_arr,
+            neutrals,
+            n_arr,
+            T_i_arr,
+            T_e_arr,
             domain_r=(0.0, 0.5),
             domain_z=(-0.5, 2.0),
             seed=0,
@@ -305,14 +317,18 @@ class TestNeutralsMlx:
         T_e_arr = np.full(neutrals.n_alive, 20.0)
 
         result = collider.step(
-            neutrals, n_arr, T_i_arr, T_e_arr,
+            neutrals,
+            n_arr,
+            T_i_arr,
+            T_e_arr,
             domain_r=(0.0, 0.5),
             domain_z=(-0.5, 2.0),
         )
         assert result.n_cx >= 0
 
     def test_neutral_dynamics_mlx(self):
-        nd = NeutralDynamics("D", dt=1e-9, n_particles=100, n_density_m3=1e18,
-                             T_eV=0.025, backend="mlx")
+        nd = NeutralDynamics(
+            "D", dt=1e-9, n_particles=100, n_density_m3=1e18, T_eV=0.025, backend="mlx"
+        )
         result = nd.step(1e18, 10.0, 20.0)
         assert result.n_cx >= 0

@@ -123,11 +123,18 @@ def test_valdb_add_and_query(tmp_path):
     result = runner.invoke(
         main,
         [
-            "valdb", "--db", str(tmp_path), "add",
-            "--case-id", "test_case",
-            "--source", "unit test",
-            "--contributor", "tester",
-            "--type", "simulation",
+            "valdb",
+            "--db",
+            str(tmp_path),
+            "add",
+            "--case-id",
+            "test_case",
+            "--source",
+            "unit test",
+            "--contributor",
+            "tester",
+            "--type",
+            "simulation",
         ],
     )
     assert result.exit_code == 0
@@ -143,8 +150,18 @@ def test_valdb_export_json(tmp_path):
     runner.invoke(
         main,
         [
-            "valdb", "--db", str(tmp_path), "add",
-            "--case-id", "c1", "--source", "s", "--contributor", "me", "--type", "analytical",
+            "valdb",
+            "--db",
+            str(tmp_path),
+            "add",
+            "--case-id",
+            "c1",
+            "--source",
+            "s",
+            "--contributor",
+            "me",
+            "--type",
+            "analytical",
         ],
     )
     result = runner.invoke(main, ["valdb", "--db", str(tmp_path), "export", "--output", out])

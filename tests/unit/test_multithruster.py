@@ -117,9 +117,7 @@ def test_array_config_default():
 
 def test_array_config_bad_n_thrusters():
     with pytest.raises(ValueError, match="n_thrusters"):
-        ArrayConfig(
-            n_thrusters=1, thrust_N=[0.1], isp_s=[3000.0], plume_half_angle_deg=[15.0]
-        )
+        ArrayConfig(n_thrusters=1, thrust_N=[0.1], isp_s=[3000.0], plume_half_angle_deg=[15.0])
 
 
 def test_array_config_mismatched_lengths():
@@ -145,8 +143,13 @@ def test_array_config_max_thrusters():
 
 
 def test_array_config_linear_positions_symmetric():
-    cfg = ArrayConfig(n_thrusters=2, separation_m=1.0, thrust_N=[0.1, 0.1],
-                      isp_s=[3000.0, 3000.0], plume_half_angle_deg=[15.0, 15.0])
+    cfg = ArrayConfig(
+        n_thrusters=2,
+        separation_m=1.0,
+        thrust_N=[0.1, 0.1],
+        isp_s=[3000.0, 3000.0],
+        plume_half_angle_deg=[15.0, 15.0],
+    )
     positions = cfg.get_positions()
     # Should be symmetric about 0
     assert positions[0][0] == pytest.approx(-0.5, rel=1e-6)

@@ -168,17 +168,15 @@ def compute_detachment(
         r_max = r_pos.max() * 0.95
 
     if use_mlx:
-        pz_exit, ke_directed, n_downstream, n_radial, n_reflected_count = (
-            _classify_reduce_mlx(
-                z_pos,
-                r_pos,
-                momenta_final,
-                weights_final,
-                species_mass,
-                z_inject,
-                z_exit,
-                r_max,
-            )
+        pz_exit, ke_directed, n_downstream, n_radial, n_reflected_count = _classify_reduce_mlx(
+            z_pos,
+            r_pos,
+            momenta_final,
+            weights_final,
+            species_mass,
+            z_inject,
+            z_exit,
+            r_max,
         )
     else:
         downstream = z_pos >= z_exit
@@ -187,9 +185,7 @@ def compute_detachment(
 
         n_downstream = int(np.sum(weights_final[downstream]))
         n_radial = int(np.sum(weights_final[radial_loss & ~downstream]))
-        n_reflected_count = int(
-            np.sum(weights_final[reflected & ~downstream & ~radial_loss])
-        )
+        n_reflected_count = int(np.sum(weights_final[reflected & ~downstream & ~radial_loss]))
 
         pz_exit = float(np.sum(weights_final[downstream] * momenta_final[downstream]))
         vz_down = momenta_final[downstream] / species_mass

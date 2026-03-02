@@ -82,21 +82,28 @@ def _adapt_inputs_for_metal(inputs_text: str) -> str:
         # Map RZ field component names to 2D Cartesian equivalents
         # r-component (radial/transverse) → x; theta-component → y
         if "fields_to_plot" in s:
-            adapted = (line
-                       .replace("Br", "Bx").replace("Er", "Ex").replace("jr", "jx")
-                       .replace("Bt", "By").replace("Et", "Ey").replace("jt", "jy"))
+            adapted = (
+                line.replace("Br", "Bx")
+                .replace("Er", "Ex")
+                .replace("jr", "jx")
+                .replace("Bt", "By")
+                .replace("Et", "Ey")
+                .replace("jt", "jy")
+            )
             out.append(adapted)
             continue
 
         # NUniformPerCell in 2D needs num_particles_per_cell_each_dim
         if re.search(r"num_particles_per_cell\s*=\s*\d+", s) and "each_dim" not in s:
             n = int(re.search(r"=\s*(\d+)", s).group(1))
-            n_each = max(1, int(n ** 0.5))
-            out.append(re.sub(
-                r"num_particles_per_cell\s*=\s*\d+",
-                f"num_particles_per_cell_each_dim = {n_each} {n_each}",
-                line,
-            ))
+            n_each = max(1, int(n**0.5))
+            out.append(
+                re.sub(
+                    r"num_particles_per_cell\s*=\s*\d+",
+                    f"num_particles_per_cell_each_dim = {n_each} {n_each}",
+                    line,
+                )
+            )
             continue
 
         out.append(line)

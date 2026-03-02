@@ -173,7 +173,7 @@ def check_manufacturability(
         )
     elif n_turns_req > 0.9 * n_turns_avail:
         warnings.append(
-            f"Winding pack utilisation {100*n_turns_req/n_turns_avail:.0f}% — "
+            f"Winding pack utilisation {100 * n_turns_req / n_turns_avail:.0f}% — "
             "consider a larger pack for quench margin"
         )
 
@@ -189,8 +189,8 @@ def check_manufacturability(
     # 5. Inner radius sanity check
     if winding.inner_radius_m > coil_radius_m:
         violations.append(
-            f"Winding pack inner radius {winding.inner_radius_m*100:.1f} cm > "
-            f"coil mean radius {coil_radius_m*100:.1f} cm"
+            f"Winding pack inner radius {winding.inner_radius_m * 100:.1f} cm > "
+            f"coil mean radius {coil_radius_m * 100:.1f} cm"
         )
 
     return ManufacturabilityResult(

@@ -116,9 +116,7 @@ class Sim3DResult:
     n_exited: int
     wall_time_s: float
     bfield: BField3D
-    exit_positions: np.ndarray = field(
-        default_factory=lambda: np.zeros((0, 3))
-    )
+    exit_positions: np.ndarray = field(default_factory=lambda: np.zeros((0, 3)))
 
     def summary(self) -> str:
         lines = [
@@ -179,11 +177,11 @@ def _make_grid_params(bfield: BField3D) -> tuple:
 
 
 def _boris_step(
-    pos: np.ndarray,   # (3, N) float32
-    vel: np.ndarray,   # (3, N) float32
+    pos: np.ndarray,  # (3, N) float32
+    vel: np.ndarray,  # (3, N) float32
     gp: tuple,
     dt: np.float32,
-    hqm: np.float32,   # q/(2m) * dt  (pre-multiplied)
+    hqm: np.float32,  # q/(2m) * dt  (pre-multiplied)
 ) -> tuple[np.ndarray, np.ndarray]:
     """Single Boris push step for N particles.
 
@@ -220,24 +218,42 @@ def _boris_step(
     # 8 trilinear weights — computed ONCE, reused for Bx / By / Bz
     w0 = omtx * omty * omtz
     w1 = omtx * omty * tz
-    w2 = omtx * ty   * omtz
-    w3 = omtx * ty   * tz
-    w4 = tx   * omty * omtz
-    w5 = tx   * omty * tz
-    w6 = tx   * ty   * omtz
-    w7 = tx   * ty   * tz
+    w2 = omtx * ty * omtz
+    w3 = omtx * ty * tz
+    w4 = tx * omty * omtz
+    w5 = tx * omty * tz
+    w6 = tx * ty * omtz
+    w7 = tx * ty * tz
 
     Bx_p = (
-        w0 * Bxf[i000] + w1 * Bxf[i001] + w2 * Bxf[i010] + w3 * Bxf[i011]
-        + w4 * Bxf[i100] + w5 * Bxf[i101] + w6 * Bxf[i110] + w7 * Bxf[i111]
+        w0 * Bxf[i000]
+        + w1 * Bxf[i001]
+        + w2 * Bxf[i010]
+        + w3 * Bxf[i011]
+        + w4 * Bxf[i100]
+        + w5 * Bxf[i101]
+        + w6 * Bxf[i110]
+        + w7 * Bxf[i111]
     )
     By_p = (
-        w0 * Byf[i000] + w1 * Byf[i001] + w2 * Byf[i010] + w3 * Byf[i011]
-        + w4 * Byf[i100] + w5 * Byf[i101] + w6 * Byf[i110] + w7 * Byf[i111]
+        w0 * Byf[i000]
+        + w1 * Byf[i001]
+        + w2 * Byf[i010]
+        + w3 * Byf[i011]
+        + w4 * Byf[i100]
+        + w5 * Byf[i101]
+        + w6 * Byf[i110]
+        + w7 * Byf[i111]
     )
     Bz_p = (
-        w0 * Bzf[i000] + w1 * Bzf[i001] + w2 * Bzf[i010] + w3 * Bzf[i011]
-        + w4 * Bzf[i100] + w5 * Bzf[i101] + w6 * Bzf[i110] + w7 * Bzf[i111]
+        w0 * Bzf[i000]
+        + w1 * Bzf[i001]
+        + w2 * Bzf[i010]
+        + w3 * Bzf[i011]
+        + w4 * Bzf[i100]
+        + w5 * Bzf[i101]
+        + w6 * Bzf[i110]
+        + w7 * Bzf[i111]
     )
 
     # Boris rotation (inline cross products — avoids np.cross overhead)
@@ -309,10 +325,7 @@ def run_3d_simulation(
     # ------------------------------------------------------------------
     # 1. Build 3D coils and grid
     # ------------------------------------------------------------------
-    coils = [
-        Coil3D(z=float(c.z), r=float(c.r), I=float(c.I))
-        for c in sim_config.nozzle.coils
-    ]
+    coils = [Coil3D(z=float(c.z), r=float(c.r), I=float(c.I)) for c in sim_config.nozzle.coils]
     domain = sim_config.nozzle.domain
     r_max = float(domain.r_max)
     z_min = float(domain.z_min)
@@ -324,9 +337,12 @@ def run_3d_simulation(
     nz = getattr(res, "nz", cfg.grid_nz)
 
     grid = Grid3D(
-        x_min=-r_max, x_max=r_max,
-        y_min=-r_max, y_max=r_max,
-        z_min=z_min, z_max=z_max,
+        x_min=-r_max,
+        x_max=r_max,
+        y_min=-r_max,
+        y_max=r_max,
+        z_min=z_min,
+        z_max=z_max,
         nx=min(nx, 24),
         ny=min(ny, 24),
         nz=min(nz, 48),
@@ -335,9 +351,7 @@ def run_3d_simulation(
     # ------------------------------------------------------------------
     # 2. Compute 3D B-field
     # ------------------------------------------------------------------
-    bfield = compute_bfield_3d(
-        coils, grid, backend=cfg.backend, n_phi=cfg.n_phi
-    )
+    bfield = compute_bfield_3d(coils, grid, backend=cfg.backend, n_phi=cfg.n_phi)
     mirror_r = bfield.mirror_ratio()
 
     # ------------------------------------------------------------------
@@ -368,20 +382,24 @@ def run_3d_simulation(
 
     T_eV = float(plasma.T_i_eV)
     v_th = math.sqrt(2.0 * T_eV * _E / ion_mass)
-    v_th_reduced = v_th * 0.1   # small pitch angle → mostly axial
+    v_th_reduced = v_th * 0.1  # small pitch angle → mostly axial
 
     # (3, N) float32 — row 0=x, 1=y, 2=z
-    pos = np.vstack([
-        r_rnd * np.cos(phi_rnd),
-        r_rnd * np.sin(phi_rnd),
-        np.full(N, z_inject),
-    ]).astype(np.float32)
+    pos = np.vstack(
+        [
+            r_rnd * np.cos(phi_rnd),
+            r_rnd * np.sin(phi_rnd),
+            np.full(N, z_inject),
+        ]
+    ).astype(np.float32)
 
-    vel = np.vstack([
-        rng.normal(0.0, v_th_reduced, N),
-        rng.normal(0.0, v_th_reduced, N),
-        np.full(N, v_inj),
-    ]).astype(np.float32)
+    vel = np.vstack(
+        [
+            rng.normal(0.0, v_th_reduced, N),
+            rng.normal(0.0, v_th_reduced, N),
+            np.full(N, v_inj),
+        ]
+    ).astype(np.float32)
 
     # ------------------------------------------------------------------
     # 4. Timestep: transit-time based (Boris is energy-conserving for B-only)
@@ -420,8 +438,8 @@ def run_3d_simulation(
         pos[:, idx] = p_new
         vel[:, idx] = v_new
 
-        out_z  = p_new[2] >= z_max
-        out_r  = p_new[0] ** 2 + p_new[1] ** 2 > np.float32((r_max * 1.1) ** 2)
+        out_z = p_new[2] >= z_max
+        out_r = p_new[0] ** 2 + p_new[1] ** 2 > np.float32((r_max * 1.1) ** 2)
         out_zm = p_new[2] <= z_min
 
         gi = idx[out_z]
@@ -439,16 +457,19 @@ def run_3d_simulation(
     eta_d = n_exited / N
 
     if n_exited > 0:
-        ev = exit_vel[:, exited].T   # (n_exit, 3)
+        ev = exit_vel[:, exited].T  # (n_exit, 3)
         ep = exit_pos_arr[:, exited].T
 
-        mdot = float(plasma.v_injection_ms) * float(plasma.n0) * (
-            math.pi * (0.3 * r_max) ** 2
-        ) * ion_mass
+        mdot = (
+            float(plasma.v_injection_ms)
+            * float(plasma.n0)
+            * (math.pi * (0.3 * r_max) ** 2)
+            * ion_mass
+        )
         vz_exit = ev[:, 2]
         thrust_N = float(mdot * np.mean(vz_exit) * eta_d)
 
-        v_exit_mag = np.sqrt(np.sum(ev ** 2, axis=1))
+        v_exit_mag = np.sqrt(np.sum(ev**2, axis=1))
         mean_exit_speed = float(np.mean(v_exit_mag))
 
         r_exit = np.sqrt(ep[:, 0] ** 2 + ep[:, 1] ** 2)

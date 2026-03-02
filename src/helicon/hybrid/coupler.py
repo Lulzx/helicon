@@ -149,13 +149,13 @@ class HybridCoupler:
         if self.lhdi is not None:
             T_e_eV = cgl_state.T_perp_eV  # use T_perp for LHDI drive
             lhdi_params = self.lhdi.compute_lhdi_params(
-                n_e_new, B_mag, T_e_eV,
+                n_e_new,
+                B_mag,
+                T_e_eV,
                 T_i_eV=np.maximum(ions.p_perp / (np.maximum(ions.density, 1.0) * _QE), 0.1),
                 dr=self.dr,
             )
-            n_e_new = self.lhdi.apply_diffusion(
-                n_e_new, lhdi_params.D_eff, dt, self.dr
-            )
+            n_e_new = self.lhdi.apply_diffusion(n_e_new, lhdi_params.D_eff, dt, self.dr)
 
         # Compute ambipolar potential from generalized Ohm's law (simplified):
         # E_amb = -(1/n_e * e) * ∇p_e  (electron pressure gradient force)
