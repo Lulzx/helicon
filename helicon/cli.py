@@ -112,7 +112,7 @@ def run(
     "--plots",
     is_flag=True,
     default=False,
-    help="Auto-generate matplotlib figures (field topology, thrust convergence, detachment map)",
+    help="Auto-generate matplotlib figures (field topology, thrust convergence, detachment map)",  # noqa: E501
 )
 @click.option(
     "--plot-format",

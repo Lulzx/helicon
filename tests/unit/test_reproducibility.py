@@ -2,13 +2,10 @@
 
 from __future__ import annotations
 
-import pytest
-
 from helicon._reproducibility import collect_metadata
 from helicon.config.parser import (
     CoilConfig,
     DomainConfig,
-    NeutralsConfig,
     NozzleConfig,
     PlasmaSourceConfig,
     SimConfig,
@@ -22,7 +19,10 @@ def _make_config(**plasma_kwargs) -> SimConfig:
             domain=DomainConfig(z_min=0.0, z_max=1.0, r_max=0.5),
         ),
         plasma=PlasmaSourceConfig(
-            n0=1e19, T_i_eV=100.0, T_e_eV=50.0, v_injection_ms=50000.0,
+            n0=1e19,
+            T_i_eV=100.0,
+            T_e_eV=50.0,
+            v_injection_ms=50000.0,
             **plasma_kwargs,
         ),
     )

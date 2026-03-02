@@ -17,10 +17,10 @@ import math
 from dataclasses import dataclass
 
 # Physical constants (SI)
-_C: float = 2.997924e8      # speed of light [m/s]
+_C: float = 2.997924e8  # speed of light [m/s]
 _E: float = 1.602176634e-19  # elementary charge [C]
 _EPS0: float = 8.854187817e-12  # vacuum permittivity [F/m]
-_MU0: float = 4e-7 * math.pi   # vacuum permeability [T·m/A]
+_MU0: float = 4e-7 * math.pi  # vacuum permeability [T·m/A]
 _ME: float = 9.1093837015e-31  # electron mass [kg]
 _AMU: float = 1.66053906660e-27  # atomic mass unit [kg]
 
@@ -78,8 +78,8 @@ def compute_plasma_scales(
         All four characteristic scales plus intermediate frequencies.
     """
     m_i = ion_mass_amu * _AMU  # [kg]
-    q_i = charge_number * _E   # [C]
-    T_e_J = T_e_eV * _E        # [J]
+    q_i = charge_number * _E  # [C]
+    T_e_J = T_e_eV * _E  # [J]
 
     # Ion plasma frequency ω_pi = √(n q²/(ε₀ m_i))
     omega_pi = math.sqrt(n0 * q_i**2 / (_EPS0 * m_i))

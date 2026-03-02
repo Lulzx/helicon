@@ -86,7 +86,10 @@ class TestNeutralsInWarpXInput:
                 domain=DomainConfig(z_min=-0.5, z_max=2.0, r_max=0.8),
             ),
             plasma=PlasmaSourceConfig(
-                n0=1e19, T_i_eV=5000, T_e_eV=2000, v_injection_ms=200000,
+                n0=1e19,
+                T_i_eV=5000,
+                T_e_eV=2000,
+                v_injection_ms=200000,
                 neutrals=neutrals,
             ),
         )

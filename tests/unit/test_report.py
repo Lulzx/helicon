@@ -201,8 +201,11 @@ class TestMassRatioReduced:
                 domain=DomainConfig(z_min=0.0, z_max=1.0, r_max=0.5),
             ),
             plasma=PlasmaSourceConfig(
-                n0=1e19, T_i_eV=100.0, T_e_eV=50.0,
-                v_injection_ms=50000.0, mass_ratio=100.0,
+                n0=1e19,
+                T_i_eV=100.0,
+                T_e_eV=50.0,
+                v_injection_ms=50000.0,
+                mass_ratio=100.0,
             ),
         )
         report = generate_report(tmp_path, config=config)
@@ -223,8 +226,11 @@ class TestMassRatioReduced:
                 domain=DomainConfig(z_min=0.0, z_max=1.0, r_max=0.5),
             ),
             plasma=PlasmaSourceConfig(
-                n0=1e19, T_i_eV=100.0, T_e_eV=50.0,
-                v_injection_ms=50000.0, mass_ratio=None,
+                n0=1e19,
+                T_i_eV=100.0,
+                T_e_eV=50.0,
+                v_injection_ms=50000.0,
+                mass_ratio=None,
             ),
         )
         report = generate_report(tmp_path, config=config)
@@ -249,7 +255,10 @@ class TestValidationProximityInReport:
                 domain=DomainConfig(z_min=0.0, z_max=1.0, r_max=0.5),
             ),
             plasma=PlasmaSourceConfig(
-                n0=1e18, T_i_eV=100.0, T_e_eV=50.0, v_injection_ms=50000.0,
+                n0=1e18,
+                T_i_eV=100.0,
+                T_e_eV=50.0,
+                v_injection_ms=50000.0,
             ),
         )
         report = _make_report()
@@ -268,7 +277,13 @@ class TestValidationProximityInReport:
         assert d["validation_proximity"] is None
 
     def test_persists_if_already_set(self) -> None:
-        prox_data = {"nearest_case": "vasimr", "distance": 0.5, "in_validated_region": True, "parameter_distances": {}, "warning": None}
+        prox_data = {
+            "nearest_case": "vasimr",
+            "distance": 0.5,
+            "in_validated_region": True,
+            "parameter_distances": {},
+            "warning": None,
+        }
         report = _make_report(validation_proximity=prox_data)
         d = report.to_spec_dict()
         assert d["validation_proximity"]["nearest_case"] == "vasimr"
@@ -293,9 +308,15 @@ class TestSpecDictResultsFields:
         report = _make_report()
         d = report.to_spec_dict()
         required = [
-            "thrust_N", "isp_s", "exhaust_velocity_ms", "mass_flow_rate_kgs",
-            "detachment_efficiency", "plume_half_angle_deg", "beam_efficiency",
-            "radial_loss_fraction", "convergence",
+            "thrust_N",
+            "isp_s",
+            "exhaust_velocity_ms",
+            "mass_flow_rate_kgs",
+            "detachment_efficiency",
+            "plume_half_angle_deg",
+            "beam_efficiency",
+            "radial_loss_fraction",
+            "convergence",
         ]
         for key in required:
             assert key in d["results"], f"Missing required key: {key}"
@@ -362,21 +383,25 @@ class TestAutoPlots:
 
     def test_import(self) -> None:
         from helicon.postprocess.plots import generate_all_plots
+
         assert callable(generate_all_plots)
 
     def test_empty_dir_returns_empty_list(self, tmp_path: Path) -> None:
         from helicon.postprocess.plots import generate_all_plots
+
         result = generate_all_plots(tmp_path)
         assert isinstance(result, list)
 
     def test_missing_bfield_skips_topology(self, tmp_path: Path) -> None:
         from helicon.postprocess.plots import generate_all_plots
+
         # No bfield file → topology plot skipped gracefully
         result = generate_all_plots(tmp_path, bfield_file=tmp_path / "nonexistent.h5")
         assert all("bfield_topology" not in str(p) for p in result)
 
     def test_plots_dir_created(self, tmp_path: Path) -> None:
         from helicon.postprocess.plots import generate_all_plots
+
         generate_all_plots(tmp_path)
         assert (tmp_path / "plots").exists()
 
@@ -387,14 +412,14 @@ class TestAutoPlots:
         except ImportError:
             pytest.skip("matplotlib not available")
 
-        from helicon.config.parser import CoilConfig, DomainConfig, NozzleConfig
-        from helicon.fields.biot_savart import BField, Coil, Grid
+        from helicon.fields.biot_savart import Coil, Grid
         from helicon.postprocess.plots import generate_all_plots
 
         coils = [Coil(z=0.0, r=0.1, I=10000)]
         grid = Grid(z_min=0.0, z_max=1.0, r_max=0.5, nz=32, nr=16)
 
         from helicon.fields import compute_bfield
+
         bf = compute_bfield(coils, grid)
         bf_path = tmp_path / "applied_bfield.h5"
         bf.save(str(bf_path))

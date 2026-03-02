@@ -80,7 +80,11 @@ class NeutralsConfig(BaseModel):
     )
     ionization_cross_section_m2: Annotated[
         float | None,
-        Field(default=None, gt=0, description="Electron-impact ionization cross section [m²]. None = disabled."),
+        Field(
+            default=None,
+            gt=0,
+            description="Electron-impact ionization cross section [m²]. None = disabled.",
+        ),
     ] = None
 
 

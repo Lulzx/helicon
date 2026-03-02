@@ -169,9 +169,7 @@ def compute_pulsed_metrics(
             from helicon.postprocess.fieldline_classify import classify_particles
 
             bfield = BField.load(str(bfield_path))
-            classification = classify_particles(
-                output_dir, bfield, species_name=species_name
-            )
+            classification = classify_particles(output_dir, bfield, species_name=species_name)
             # Detachment efficiency = fraction of particles on open field lines
             eta = (
                 classification.n_open / classification.n_total

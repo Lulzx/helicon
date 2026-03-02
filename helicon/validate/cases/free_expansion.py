@@ -100,11 +100,7 @@ class FreeExpansionCase:
                             if "momentum" not in sp or "z" not in sp["momentum"]:
                                 continue
                             pz = sp["momentum"]["z"][:]
-                            w = (
-                                sp["weighting"][:]
-                                if "weighting" in sp
-                                else np.ones_like(pz)
-                            )
+                            w = sp["weighting"][:] if "weighting" in sp else np.ones_like(pz)
                             total_pz += float(np.sum(w * pz))
                         pz_series.append(total_pz)
                 except Exception:

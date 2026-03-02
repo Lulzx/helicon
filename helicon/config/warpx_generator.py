@@ -18,6 +18,7 @@ from helicon.config.parser import SimConfig
 def _helicon_version() -> str:
     return helicon.__version__
 
+
 log = logging.getLogger(__name__)
 
 # Species mass table [kg]
@@ -59,6 +60,15 @@ def _config_hash(config: SimConfig) -> str:
     """SHA-256 hash of the configuration for reproducibility."""
     data = config.model_dump_json().encode()
     return hashlib.sha256(data).hexdigest()[:12]
+
+
+def _neutral_vth(neutrals: object, eV_to_J: float) -> float:
+    """Thermal velocity for a neutral gas species [m/s]."""
+    from helicon.config.parser import NeutralsConfig
+
+    assert isinstance(neutrals, NeutralsConfig)
+    m = SPECIES_MASS.get(neutrals.species + "+", 3.34e-27)
+    return math.sqrt(neutrals.T_neutral_eV * eV_to_J / m)
 
 
 def generate_warpx_input(config: SimConfig) -> str:
@@ -226,19 +236,25 @@ def generate_warpx_input(config: SimConfig) -> str:
                 f"# Background {neutrals.species} neutral gas: Monte Carlo Collision (MCC)",
                 f"particles.species_names += {neutral_name}",
                 f"{neutral_name}.species_type = neutral",
-                f"{neutral_name}.mass = {SPECIES_MASS.get(neutrals.species + '+', 3.34e-27):.10e}",
+                f"{neutral_name}.mass = "
+                f"{SPECIES_MASS.get(neutrals.species + '+', 3.34e-27):.10e}",
                 f"{neutral_name}.charge = 0.0",
                 f"{neutral_name}.injection_style = NUniformPerCell",
                 f"{neutral_name}.num_particles_per_cell = 16",
                 f"{neutral_name}.profile = constant",
                 f"{neutral_name}.density = {neutrals.n_neutral_m3:.6e}",
                 f"{neutral_name}.momentum_distribution_type = gaussian",
-                f"{neutral_name}.ux_th = {math.sqrt(neutrals.T_neutral_eV * eV_to_J / SPECIES_MASS.get(neutrals.species + '+', 3.34e-27)):.6e}",
-                f"{neutral_name}.uy_th = {math.sqrt(neutrals.T_neutral_eV * eV_to_J / SPECIES_MASS.get(neutrals.species + '+', 3.34e-27)):.6e}",
-                f"{neutral_name}.uz_th = {math.sqrt(neutrals.T_neutral_eV * eV_to_J / SPECIES_MASS.get(neutrals.species + '+', 3.34e-27)):.6e}",
+                f"{neutral_name}.ux_th = {_neutral_vth(neutrals, eV_to_J):.6e}",
+                f"{neutral_name}.uy_th = {_neutral_vth(neutrals, eV_to_J):.6e}",
+                f"{neutral_name}.uz_th = {_neutral_vth(neutrals, eV_to_J):.6e}",
                 "",
                 "# Charge-exchange collisions",
-                "mcc.species = " + " ".join(s.replace("+", "_plus").replace("-", "_minus") for s in config.plasma.species if "+" in s),
+                "mcc.species = "
+                + " ".join(
+                    s.replace("+", "_plus").replace("-", "_minus")
+                    for s in config.plasma.species
+                    if "+" in s
+                ),
                 f"mcc.neutral_species = {neutral_name}",
                 f"mcc.CX_cross_section = {neutrals.cx_cross_section_m2:.6e}",
             ]
@@ -246,7 +262,8 @@ def generate_warpx_input(config: SimConfig) -> str:
         if neutrals.ionization_cross_section_m2 is not None:
             lines.extend(
                 [
-                    f"mcc.ionization_cross_section = {neutrals.ionization_cross_section_m2:.6e}",
+                    f"mcc.ionization_cross_section = "
+                    f"{neutrals.ionization_cross_section_m2:.6e}",
                     "mcc.do_ionization = 1",
                 ]
             )

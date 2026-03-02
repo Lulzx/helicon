@@ -2,13 +2,6 @@
 
 from helicon.postprocess.detachment import compute_detachment
 from helicon.postprocess.moments import compute_moments
-from helicon.postprocess.plume import compute_plume_metrics
-from helicon.postprocess.propbench import (
-    PropBenchResult,
-    load_propbench,
-    save_propbench,
-    to_propbench,
-)
 from helicon.postprocess.normalize import (
     PlasmaScales,
     compute_plasma_scales,
@@ -20,6 +13,13 @@ from helicon.postprocess.normalize import (
     normalize_velocity,
 )
 from helicon.postprocess.plots import generate_all_plots
+from helicon.postprocess.plume import compute_plume_metrics
+from helicon.postprocess.propbench import (
+    PropBenchResult,
+    load_propbench,
+    save_propbench,
+    to_propbench,
+)
 from helicon.postprocess.pulsed import compute_pulsed_metrics
 from helicon.postprocess.report import generate_report, load_report, save_report
 from helicon.postprocess.thrust import compute_thrust

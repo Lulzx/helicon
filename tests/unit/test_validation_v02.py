@@ -49,7 +49,7 @@ class TestMerinoAhedoCase:
         # Validate physically: eta must strictly increase with beta
         for i in range(len(etas) - 1):
             assert etas[i] < etas[i + 1], (
-                f"η_d({betas[i]}) = {etas[i]} not < η_d({betas[i+1]}) = {etas[i+1]}"
+                f"η_d({betas[i]}) = {etas[i]} not < η_d({betas[i + 1]}) = {etas[i + 1]}"
             )
 
     def test_reference_eta_in_valid_range(self) -> None:

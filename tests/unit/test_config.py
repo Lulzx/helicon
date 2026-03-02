@@ -204,7 +204,6 @@ class TestNeutralsConfig:
 
     def test_sim_config_with_neutrals_roundtrip(self, tmp_path) -> None:
         """SimConfig with neutrals should serialise and deserialise correctly."""
-        import yaml
 
         config = SimConfig(
             nozzle=NozzleConfig(
@@ -212,7 +211,10 @@ class TestNeutralsConfig:
                 domain=DomainConfig(z_min=0.0, z_max=1.0, r_max=0.5),
             ),
             plasma=PlasmaSourceConfig(
-                n0=1e19, T_i_eV=100, T_e_eV=50, v_injection_ms=50000,
+                n0=1e19,
+                T_i_eV=100,
+                T_e_eV=50,
+                v_injection_ms=50000,
                 neutrals=NeutralsConfig(n_neutral_m3=1e17, species="H"),
             ),
         )

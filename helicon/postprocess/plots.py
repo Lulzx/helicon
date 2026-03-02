@@ -90,6 +90,7 @@ def _plot_bfield_topology(
     """
     try:
         import matplotlib.pyplot as plt
+
         from helicon.fields.biot_savart import BField
 
         if not bfield_file.exists():
@@ -121,9 +122,9 @@ def _plot_thrust_convergence(
     Returns the saved path, or None on failure / insufficient data.
     """
     try:
+        import h5py
         import matplotlib.pyplot as plt
         import numpy as np
-        import h5py
 
         h5_files = sorted(output_dir.glob("**/*.h5"))
         # Exclude the bfield file
@@ -138,9 +139,7 @@ def _plot_thrust_convergence(
             try:
                 with h5py.File(h5_path, "r") as f:
                     base = (
-                        f["data"][sorted(f["data"].keys(), key=int)[-1]]
-                        if "data" in f
-                        else f
+                        f["data"][sorted(f["data"].keys(), key=int)[-1]] if "data" in f else f
                     )
                     if "particles" not in base:
                         continue
@@ -169,8 +168,7 @@ def _plot_thrust_convergence(
 
         # Mark last-10% region
         n_last = max(1, len(steps) // 10)
-        ax.axvspan(steps[-n_last], steps[-1], alpha=0.15, color="orange",
-                   label="Last 10%")
+        ax.axvspan(steps[-n_last], steps[-1], alpha=0.15, color="orange", label="Last 10%")
         ax.legend(fontsize=9)
 
         out = plots_dir / f"thrust_convergence.{fmt}"
@@ -195,9 +193,9 @@ def _plot_detachment_map(
     Returns the saved path, or None on failure / insufficient data.
     """
     try:
+        import h5py
         import matplotlib.pyplot as plt
         import numpy as np
-        import h5py
 
         h5_files = sorted(output_dir.glob("**/*.h5"))
         h5_files = [f for f in h5_files if "bfield" not in f.name]
@@ -210,11 +208,7 @@ def _plot_detachment_map(
         detach_frac_list: list[float] = []
 
         with h5py.File(h5_path, "r") as f:
-            base = (
-                f["data"][sorted(f["data"].keys(), key=int)[-1]]
-                if "data" in f
-                else f
-            )
+            base = f["data"][sorted(f["data"].keys(), key=int)[-1]] if "data" in f else f
             if "particles" not in base:
                 return None
 
@@ -240,8 +234,7 @@ def _plot_detachment_map(
                     mask = (z_arr >= edges[j]) & (z_arr < edges[j + 1])
                     if mask.sum() < 10:
                         continue
-                    frac = float(np.sum(w[mask] * (pz_arr[mask] > 0)) /
-                                 np.sum(w[mask]))
+                    frac = float(np.sum(w[mask] * (pz_arr[mask] > 0)) / np.sum(w[mask]))
                     z_bins_list.append(float(centres[j]))
                     detach_frac_list.append(frac)
                 break  # use first ion species only
@@ -250,8 +243,14 @@ def _plot_detachment_map(
             return None
 
         fig, ax = plt.subplots(figsize=(8, 4))
-        ax.plot(z_bins_list, detach_frac_list, "o-", linewidth=1.5,
-                color="darkorange", markersize=4)
+        ax.plot(
+            z_bins_list,
+            detach_frac_list,
+            "o-",
+            linewidth=1.5,
+            color="darkorange",
+            markersize=4,
+        )
         ax.set_xlabel("z (m)")
         ax.set_ylabel("Downstream momentum fraction (detachment proxy)")
         ax.set_title("Detachment map — last snapshot")
