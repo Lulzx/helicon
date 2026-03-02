@@ -5,7 +5,7 @@ from __future__ import annotations
 import contextlib
 from dataclasses import dataclass
 
-__version__ = "2.0.0"
+__version__ = "2.1.0"
 
 
 # ---------------------------------------------------------------------------
@@ -22,6 +22,22 @@ def __getattr__(name: str):
         from helicon import fields as _fields_mod
 
         return _fields_mod
+    if name == "plugins":
+        import helicon.plugins as _plugins_mod
+
+        return _plugins_mod
+    if name == "multithruster":
+        import helicon.multithruster as _mt_mod
+
+        return _mt_mod
+    if name == "valdb":
+        import helicon.valdb as _valdb_mod
+
+        return _valdb_mod
+    if name == "widgets":
+        import helicon.widgets as _widgets_mod
+
+        return _widgets_mod
     raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
 
 
