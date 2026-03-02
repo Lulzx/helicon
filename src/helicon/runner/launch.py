@@ -20,6 +20,140 @@ from helicon.fields.biot_savart import Coil, Grid
 from helicon.runner.hardware_config import HardwareInfo, detect_hardware
 
 
+def _adapt_inputs_for_metal(inputs_text: str) -> str:
+    """Adapt a WarpX input file for the warpx-metal 2D Cartesian build.
+
+    The Metal build (``warpx.2d.NOMPI.SYCL.SP.PSP.EB``) requires:
+    - ``geometry.dims = 2``  (2D Cartesian, not RZ)
+    - ``geometry.coord_sys = 0``  (Cartesian, not cylindrical)
+    - AMReX native diagnostic format  (not openPMD)
+    - No RZ-specific boundary conditions (PEC axis, reflecting particles)
+
+    For RZ inputs the domain is (z, r) with r ≥ 0; we keep the extents and
+    make the x-dimension symmetric around 0 so the domain becomes (z, x)
+    with x ∈ [-r_max, r_max].
+    """
+    import re
+
+    out: list[str] = []
+    prob_lo: list[str] = []
+    prob_hi: list[str] = []
+
+    for line in inputs_text.splitlines():
+        s = line.strip()
+
+        # Capture prob_lo / prob_hi for later symmetrisation
+        if s.startswith("geometry.prob_lo"):
+            vals = re.findall(r"[-\d.e+]+", s.split("=", 1)[1])
+            prob_lo = vals
+        if s.startswith("geometry.prob_hi"):
+            vals = re.findall(r"[-\d.e+]+", s.split("=", 1)[1])
+            prob_hi = vals
+
+        # RZ → 2D Cartesian
+        if s.startswith("geometry.dims"):
+            out.append(re.sub(r"=\s*RZ", "= 2", line))
+            continue
+
+        # Cylindrical → Cartesian coordinate system
+        if s.startswith("geometry.coord_sys"):
+            out.append(re.sub(r"=\s*\d+", "= 0", line))
+            continue
+
+        # Drop openPMD format specifiers
+        if re.search(r"format\s*=\s*openpmd", s) or "openpmd_backend" in s:
+            continue
+
+        # RZ axis boundaries (none, pec) → PML for Cartesian
+        if s.startswith("boundary.field_lo"):
+            adapted = re.sub(r"\b(none|pec)\b", "pml", line)
+            out.append(adapted)
+            continue
+
+        # RZ axis → absorbing; then both boundary blocks become periodic below
+        if s.startswith("boundary.particle_lo"):
+            out.append(re.sub(r"\breflecting\b", "absorbing", line))
+            continue
+
+        # Drop periodic flag (re-added at end)
+        if s.startswith("geometry.is_periodic"):
+            continue
+
+        # Map RZ field component names to 2D Cartesian equivalents
+        # r-component (radial/transverse) → x; theta-component → y
+        if "fields_to_plot" in s:
+            adapted = (line
+                       .replace("Br", "Bx").replace("Er", "Ex").replace("jr", "jx")
+                       .replace("Bt", "By").replace("Et", "Ey").replace("jt", "jy"))
+            out.append(adapted)
+            continue
+
+        # NUniformPerCell in 2D needs num_particles_per_cell_each_dim
+        if re.search(r"num_particles_per_cell\s*=\s*\d+", s) and "each_dim" not in s:
+            n = int(re.search(r"=\s*(\d+)", s).group(1))
+            n_each = max(1, int(n ** 0.5))
+            out.append(re.sub(
+                r"num_particles_per_cell\s*=\s*\d+",
+                f"num_particles_per_cell_each_dim = {n_each} {n_each}",
+                line,
+            ))
+            continue
+
+        out.append(line)
+
+    # Make domain symmetric in the transverse dimension (r → ±r_max)
+    joined = "\n".join(out)
+    if len(prob_lo) == 2 and len(prob_hi) == 2:
+        r_max = prob_hi[1]
+        joined = re.sub(
+            r"geometry\.prob_lo\s*=.*",
+            f"geometry.prob_lo = {prob_lo[0]} -{r_max}",
+            joined,
+        )
+        joined = re.sub(
+            r"geometry\.prob_hi\s*=.*",
+            f"geometry.prob_hi = {prob_hi[0]} {r_max}",
+            joined,
+        )
+
+    # Switch to periodic boundaries — PML kernels trigger a Metal JIT compiler
+    # bug in AdaptiveCpp for complex multi-species simulations.
+    joined = re.sub(
+        r"boundary\.field_lo\s*=.*", "boundary.field_lo = periodic periodic", joined
+    )
+    joined = re.sub(
+        r"boundary\.field_hi\s*=.*", "boundary.field_hi = periodic periodic", joined
+    )
+    joined = re.sub(
+        r"boundary\.particle_lo\s*=.*", "boundary.particle_lo = periodic periodic", joined
+    )
+    joined = re.sub(
+        r"boundary\.particle_hi\s*=.*", "boundary.particle_hi = periodic periodic", joined
+    )
+    joined += "\ngeometry.is_periodic = 1 1"
+
+    # Reduce particle count for Metal (64 ppc is very slow; 4 is enough for structure)
+    joined = re.sub(
+        r"num_particles_per_cell_each_dim\s*=\s*\d+\s+\d+",
+        "num_particles_per_cell_each_dim = 2 2",
+        joined,
+    )
+
+    # Inject fields required by the native executable but set via Python in pywarpx
+    _required = {
+        "algo.particle_shape": "1",
+        "algo.current_deposition": "direct",
+        "algo.field_gathering": "energy-conserving",
+        "warpx.use_filter": "0",
+        "warpx.sort_intervals": "1",
+    }
+    for key, default in _required.items():
+        if key not in joined:
+            joined += f"\n{key} = {default}"
+
+    return joined + "\n"
+
+
 @dataclass
 class RunResult:
     """Result of a WarpX simulation run."""
@@ -124,23 +258,19 @@ def run_simulation(
 
     # Step 4: Launch WarpX
     # Try Metal backend first (Apple Silicon native GPU via SYCL/AdaptiveCpp).
-    # The warpx-metal build is warpx.2d (2D Cartesian, single precision).
-    # Skip if the inputs declare RZ geometry or openPMD diagnostics.
-    _inputs_text = input_path.read_text()
-    _metal_compatible = (
-        "geometry.dims = RZ" not in _inputs_text
-        and "format = openpmd" not in _inputs_text
-    )
-    if hardware.has_warpx_metal and _metal_compatible:
+    # The warpx-metal build is warpx.2d (2D Cartesian, single precision, AMReX format).
+    # If the inputs use RZ geometry or openPMD diagnostics, adapt them automatically.
+    if hardware.has_warpx_metal:
         from helicon.runner.metal_runner import detect_warpx_metal, run_warpx_metal
 
         metal_info = detect_warpx_metal()
         if metal_info.valid and metal_info.exe_2d is not None:
             os.environ["OMP_NUM_THREADS"] = str(hardware.omp_num_threads)
+            _inputs_text = _adapt_inputs_for_metal(input_path.read_text())
             metal_result = run_warpx_metal(
                 metal_info=metal_info,
                 output_dir=out,
-                inputs_content=input_path.read_text(),
+                inputs_content=_inputs_text,
                 timeout_s=3600 * 24,
             )
             wall = time.monotonic() - t0

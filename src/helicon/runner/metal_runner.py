@@ -256,30 +256,87 @@ class WarpXMetalDiag:
         )
 
     def read_fields(self) -> dict[str, Any]:
-        """Read all field arrays from the AMReX FAB binary.
+        """Read all field arrays from multi-box AMReX FAB binary.
+
+        Parses ``Level_0/Cell_H`` for tile box extents and byte offsets,
+        reads each tile from ``Cell_D_00000``, and assembles the full domain.
 
         Returns a dict mapping field name → ``numpy.ndarray`` of shape
-        ``(nx, ny)`` in x-major order (Fortran layout within each component).
+        ``(nx, ny)``, float32, Fortran-order within each tile.
         Requires ``numpy``.
         """
+        import re
+
         import numpy as np
 
-        fab_path = self.diag_dir / "Level_0" / "Cell_D_00000"
-        if not fab_path.exists():
+        level_dir = self.diag_dir / "Level_0"
+        cell_h_path = level_dir / "Cell_H"
+        fab_path = level_dir / "Cell_D_00000"
+
+        if not fab_path.exists() or not cell_h_path.exists():
             return {}
 
-        data = fab_path.read_bytes()
-        nl = data.index(b"\n")
-        raw = np.frombuffer(data[nl + 1 :], dtype="<f4")
-
+        n_comp = len(self.field_vars)
         if not self.n_cells or len(self.n_cells) < 2:
             return {}
         nx, ny = self.n_cells[0], self.n_cells[1]
 
-        fields = {}
-        for i, name in enumerate(self.field_vars):
-            block = raw[i * nx * ny : (i + 1) * nx * ny]
-            fields[name] = block.reshape(nx, ny, order="F")
+        # --- Parse Cell_H ---
+        # Format:
+        #   (N R
+        #   ((lo_x,lo_y) (hi_x,hi_y) (type_x,type_y))
+        #   ...
+        #   )
+        #   N
+        #   FabOnDisk: Cell_D_00000 <byte_offset>
+        #   ...
+        cell_h_text = cell_h_path.read_text()
+
+        boxes = [
+            (int(m.group(1)), int(m.group(2)), int(m.group(3)), int(m.group(4)))
+            for m in re.finditer(r"\(\((\d+),(\d+)\)\s*\((\d+),(\d+)\)", cell_h_text)
+        ]
+        fab_offsets = [
+            int(m.group(1))
+            for m in re.finditer(r"FabOnDisk:\s+\S+\s+(\d+)", cell_h_text)
+        ]
+
+        n_fabs = len(fab_offsets)
+        if n_fabs == 0 or len(boxes) < n_fabs:
+            return {}
+        # Take the last n_fabs boxes (guard against any extra header box)
+        boxes = boxes[-n_fabs:]
+
+        fab_data = fab_path.read_bytes()
+        fields: dict[str, Any] = {
+            name: np.zeros((nx, ny), dtype=np.float32) for name in self.field_vars
+        }
+
+        for (lo_x, lo_y, hi_x, hi_y), byte_offset in zip(boxes, fab_offsets):
+            bx = hi_x - lo_x + 1
+            by = hi_y - lo_y + 1
+
+            # Each FAB in the file starts with an ASCII header line then binary data
+            nl = fab_data.index(b"\n", byte_offset)
+            fab_header = fab_data[byte_offset:nl].decode("ascii", errors="replace")
+
+            # Detect real size from "FAB ((N," prefix (4 = float32, 8 = float64)
+            rs_match = re.search(r"FAB\s+\(\((\d+),", fab_header)
+            real_size = int(rs_match.group(1)) if rs_match else 4
+            dtype = np.dtype("<f4") if real_size == 4 else np.dtype("<f8")
+
+            data_start = nl + 1
+            n_vals = n_comp * bx * by
+            chunk = np.frombuffer(
+                fab_data[data_start : data_start + n_vals * real_size], dtype=dtype
+            ).astype(np.float32)
+
+            for comp_idx, name in enumerate(self.field_vars):
+                tile = chunk[comp_idx * bx * by : (comp_idx + 1) * bx * by]
+                fields[name][lo_x : hi_x + 1, lo_y : hi_y + 1] = tile.reshape(
+                    bx, by, order="F"
+                )
+
         return fields
 
     def summary(self) -> str:

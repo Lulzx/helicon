@@ -195,6 +195,106 @@ class TestWarpXMetalDiag:
         assert "electrons" in diag.species
         assert "positrons" in diag.species
 
+    def test_read_fields_multi_box(self, tmp_path):
+        """read_fields() assembles multi-box AMReX FAB tiles into full domain."""
+        import numpy as np
+
+        # Build a fake diag with 4×2 tiling (512×128 domain, tiles of 128×64)
+        nx, ny = 512, 128
+        bx, by = 128, 64  # tile size
+        n_comp = 2
+        field_vars = ["Ex", "Bz"]
+
+        diag_dir = tmp_path / "diag4"
+        diag_dir.mkdir()
+
+        # Top-level Header
+        header_lines = [
+            "HyperCLaw-V1.1",
+            str(n_comp),
+            *field_vars,
+            "1",          # n_levels
+            "1.0e-12",    # time
+            "0",          # finest_level
+            "-1.28e-1 -6.4e-2",  # prob_lo
+            " 1.28e-1  6.4e-2",  # prob_hi
+            "",
+            f"((0,0) ({nx - 1},{ny - 1}) (0,0))",
+        ]
+        (diag_dir / "Header").write_text("\n".join(header_lines) + "\n")
+
+        # Build tiles: 4 columns × 2 rows = 8 boxes
+        boxes = []
+        for row in range(2):
+            for col in range(4):
+                boxes.append((col * bx, row * by, (col + 1) * bx - 1, (row + 1) * by - 1))
+
+        # Construct Cell_D_00000 and Cell_H
+        level_dir = diag_dir / "Level_0"
+        level_dir.mkdir()
+
+        fab_offsets = []
+        fab_bytes = bytearray()
+
+        rng = np.random.default_rng(42)
+        tile_data: dict[tuple[int, int, int, int], np.ndarray] = {}
+
+        for box in boxes:
+            lo_x, lo_y, hi_x, hi_y = box
+            tbx = hi_x - lo_x + 1
+            tby = hi_y - lo_y + 1
+            fab_offsets.append(len(fab_bytes))
+
+            # ASCII FAB header
+            fab_header = (
+                f"FAB ((4, (32 8 23 0 1 4 0 127)),(4, (32 8 23 0 1 4 0 127)))"
+                f"(({lo_x},{lo_y}) ({hi_x},{hi_y}) (0,0)) {n_comp}\n"
+            )
+            fab_bytes += fab_header.encode()
+
+            # Binary data: n_comp tiles, Fortran-order float32
+            arr = rng.random((n_comp, tbx, tby), dtype=np.float32)
+            tile_data[box] = arr
+            # Fortran order: x varies fastest within each component
+            for c in range(n_comp):
+                fab_bytes += arr[c].flatten(order="F").astype("<f4").tobytes()
+
+        (level_dir / "Cell_D_00000").write_bytes(bytes(fab_bytes))
+
+        # Cell_H
+        cell_h_lines = [f"({len(boxes)} 0"]
+        for lo_x, lo_y, hi_x, hi_y in boxes:
+            cell_h_lines.append(f"(({lo_x},{lo_y}) ({hi_x},{hi_y}) (0,0))")
+        cell_h_lines.append(")")
+        cell_h_lines.append(str(len(boxes)))
+        for offset in fab_offsets:
+            cell_h_lines.append(f"FabOnDisk: Cell_D_00000 {offset}")
+        (level_dir / "Cell_H").write_text("\n".join(cell_h_lines) + "\n")
+
+        diag = WarpXMetalDiag.from_dir(diag_dir)
+        fields = diag.read_fields()
+
+        assert set(fields.keys()) == {"Ex", "Bz"}
+        for f in fields.values():
+            assert f.shape == (nx, ny)
+            assert f.dtype == np.float32
+
+        # Verify tile data was placed at the right location
+        for box in boxes:
+            lo_x, lo_y, hi_x, hi_y = box
+            arr = tile_data[box]
+            np.testing.assert_allclose(
+                fields["Ex"][lo_x : hi_x + 1, lo_y : hi_y + 1],
+                arr[0],
+                rtol=1e-5,
+            )
+
+    def test_read_fields_missing_files(self, tmp_path):
+        diag_dir = _make_fake_header(tmp_path, step=4)
+        diag = WarpXMetalDiag.from_dir(diag_dir)
+        # No Level_0/Cell_H or Cell_D_00000 → returns empty dict
+        assert diag.read_fields() == {}
+
 
 # ---------------------------------------------------------------------------
 # find_diag_dirs
