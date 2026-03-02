@@ -14,7 +14,6 @@ from helicon.neutrals.cross_sections import (
 )
 from helicon.neutrals.monte_carlo import MCCCollider, NeutralDynamics, NeutralParticles
 
-
 # ---------------------------------------------------------------------------
 # cross_sections.py
 # ---------------------------------------------------------------------------
