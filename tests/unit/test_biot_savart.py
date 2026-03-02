@@ -18,6 +18,7 @@ from helicon.fields.biot_savart import (
     Coil,
     Grid,
     compute_bfield,
+    compute_bfield_mlx_differentiable,
 )
 
 if HAS_MLX:
@@ -128,18 +129,19 @@ def test_superposition():
 # Test 5: B_r == 0 on axis (both backends)
 # ---------------------------------------------------------------------------
 class TestBrOnAxis:
-    def _check(self, backend: str):
+    def _check(self, backend: str, tol: float = 1e-10):
         grid = Grid(z_min=-0.5, z_max=0.5, r_max=0.3, nz=50, nr=8)
         bf = compute_bfield([SINGLE_COIL], grid, backend=backend, n_phi=256)
         Br_axis = bf.Br[0, :]
-        assert np.all(np.abs(Br_axis) < 1e-10), f"Br on axis max = {np.abs(Br_axis).max():.2e}"
+        assert np.all(np.abs(Br_axis) < tol), f"Br on axis max = {np.abs(Br_axis).max():.2e}"
 
     def test_numpy(self):
-        self._check("numpy")
+        self._check("numpy", tol=1e-10)
 
     @skip_no_mlx
     def test_mlx(self):
-        self._check("mlx")
+        # MLX uses float32; allow slightly larger numerical residual
+        self._check("mlx", tol=5e-10)
 
 
 # ---------------------------------------------------------------------------
@@ -274,3 +276,40 @@ def test_hdf5_roundtrip():
     assert len(bf.coils) == len(bf2.coils)
     for c1, c2 in zip(bf.coils, bf2.coils, strict=True):
         assert c1.z == c2.z and c1.r == c2.r and c1.I == c2.I
+
+
+# ---------------------------------------------------------------------------
+# New v1.1 tests: compiled path and vectorized coils
+# ---------------------------------------------------------------------------
+@skip_no_mlx
+def test_compiled_matches_differentiable():
+    """Compiled (mx.compile) path must produce same result as differentiable path."""
+    grid = Grid(z_min=-0.3, z_max=0.3, r_max=0.2, nz=32, nr=16)
+    coils = [SINGLE_COIL, Coil(z=0.2, r=0.08, I=2000.0)]
+
+    bf_diff = compute_bfield(coils, grid, backend="mlx", n_phi=128, differentiable=True)
+    bf_comp = compute_bfield(coils, grid, backend="mlx", n_phi=128, differentiable=False)
+
+    mask = np.abs(bf_diff.Bz) > 1e-12
+    if np.any(mask):
+        rel = np.abs((bf_comp.Bz[mask] - bf_diff.Bz[mask]) / bf_diff.Bz[mask])
+        assert np.all(rel < 0.01), f"Max Bz rel err {rel.max():.4e}"
+
+
+@skip_no_mlx
+def test_vectorized_coils():
+    """Vectorized 3-D broadcasting gives same result as loop-based differentiable path."""
+    grid = Grid(z_min=-0.5, z_max=1.0, r_max=0.3, nz=24, nr=12)
+    coils = [
+        Coil(z=0.0, r=0.10, I=50_000.0),
+        Coil(z=0.3, r=0.06, I=20_000.0),
+        Coil(z=0.6, r=0.08, I=15_000.0),
+    ]
+
+    bf_vec = compute_bfield(coils, grid, backend="mlx", n_phi=64, differentiable=False)
+    bf_diff = compute_bfield(coils, grid, backend="mlx", n_phi=64, differentiable=True)
+
+    mask = np.abs(bf_diff.Bz) > 1e-12
+    if np.any(mask):
+        rel = np.abs((bf_vec.Bz[mask] - bf_diff.Bz[mask]) / bf_diff.Bz[mask])
+        assert np.all(rel < 0.01), f"Max Bz rel err {rel.max():.4e}"

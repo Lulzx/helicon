@@ -5,7 +5,8 @@ circular current loops.  Two backends:
 
 * **NumPy/SciPy** — exact elliptic-integral formulae (K, E)
 * **MLX** — numerical azimuthal integration, fully differentiable via
-  ``mlx.core.grad`` for gradient-based coil optimisation
+  ``mlx.core.grad`` for gradient-based coil optimisation; non-differentiable
+  path uses ``mx.compile`` for repeated evaluations
 """
 
 from __future__ import annotations
@@ -29,6 +30,9 @@ try:
     HAS_MLX = True
 except ImportError:
     HAS_MLX = False
+
+# Cache for compiled MLX function (keyed by (N_coils, N_pts, n_phi))
+_compiled_cache: dict[tuple[int, int, int], object] = {}
 
 try:
     import h5py
@@ -374,10 +378,136 @@ def compute_bfield_mlx_differentiable(
     return Br_total, Bz_total
 
 
+def _compute_bfield_mlx_vectorized(
+    coil_params: mx.array,
+    grid_r: mx.array,
+    grid_z: mx.array,
+    n_phi: int = 128,
+) -> tuple[mx.array, mx.array]:
+    """Vectorized Biot-Savart: all coils processed via 3-D broadcasting.
+
+    Shape convention: ``(N_coils, N_pts, N_phi)`` — no Python for-loop over
+    coils.  Chunking is applied when ``N_coils * N_pts * n_phi > 50_000_000``
+    to stay within unified memory limits.
+
+    Parameters
+    ----------
+    coil_params : mx.array, shape (N_coils, 3)
+    grid_r, grid_z : mx.array, shape (N_pts,)
+    n_phi : int
+
+    Returns
+    -------
+    Br, Bz : mx.array, shape (N_pts,)
+    """
+    if not HAS_MLX:
+        raise ImportError("MLX is required")
+
+    N_coils = coil_params.shape[0]
+    N_pts = grid_r.shape[0]
+
+    phi = mx.linspace(0.0, 2.0 * math.pi, n_phi + 1)[:-1]
+    cos_phi = mx.cos(phi)  # (N_phi,)
+
+    # Check memory budget: chunked if too large
+    chunk_threshold = 50_000_000
+    if N_coils * N_pts * n_phi > chunk_threshold:
+        chunk_size = max(1, chunk_threshold // (N_pts * n_phi))
+        Br_total = mx.zeros((N_pts,))
+        Bz_total = mx.zeros((N_pts,))
+        for start in range(0, N_coils, chunk_size):
+            end = min(start + chunk_size, N_coils)
+            chunk = coil_params[start:end]
+            dBr, dBz = _vectorized_coil_block(chunk, grid_r, grid_z, cos_phi, n_phi)
+            Br_total = Br_total + dBr
+            Bz_total = Bz_total + dBz
+        return Br_total, Bz_total
+
+    return _vectorized_coil_block(coil_params, grid_r, grid_z, cos_phi, n_phi)
+
+
+def _vectorized_coil_block(
+    coil_params: mx.array,
+    grid_r: mx.array,
+    grid_z: mx.array,
+    cos_phi: mx.array,
+    n_phi: int,
+) -> tuple[mx.array, mx.array]:
+    """Process one chunk of coils with full 3-D broadcasting."""
+    N_c = coil_params.shape[0]
+    N_pts = grid_r.shape[0]
+    N_phi = n_phi
+
+    z_c = coil_params[:, 0]  # (N_c,)
+    a = coil_params[:, 1]    # (N_c,)
+    I_c = coil_params[:, 2]  # (N_c,)
+
+    # Expand to (N_c, N_pts, N_phi)
+    r_3d = mx.reshape(grid_r, (1, N_pts, 1)) * mx.ones((N_c, 1, 1))
+    z_3d = mx.reshape(grid_z, (1, N_pts, 1)) * mx.ones((N_c, 1, 1))
+    dz_3d = z_3d - mx.reshape(z_c, (N_c, 1, 1))
+    a_3d = mx.reshape(a, (N_c, 1, 1)) * mx.ones((1, N_pts, 1))
+    cos_3d = mx.reshape(cos_phi, (1, 1, N_phi)) * mx.ones((N_c, 1, 1))
+
+    R_sq = r_3d * r_3d + a_3d * a_3d - 2.0 * a_3d * r_3d * cos_3d + dz_3d * dz_3d
+    R_sq = mx.maximum(R_sq, 1e-20)
+    R_inv3 = R_sq ** (-1.5)
+
+    prefactor = mx.reshape(
+        MU_0 * I_c * a / (2.0 * N_phi), (N_c, 1, 1)
+    )
+
+    # Sum over phi (axis=2), then over coils (axis=0)
+    Br_total = mx.sum(
+        mx.sum(prefactor * cos_3d * dz_3d * R_inv3, axis=2), axis=0
+    )
+    Bz_total = mx.sum(
+        mx.sum(prefactor * (a_3d - r_3d * cos_3d) * R_inv3, axis=2), axis=0
+    )
+    return Br_total, Bz_total
+
+
+def _biot_savart_compiled(
+    coil_params: mx.array,
+    grid_r: mx.array,
+    grid_z: mx.array,
+    n_phi: int = 128,
+) -> tuple[mx.array, mx.array]:
+    """Non-differentiable MLX path using ``mx.compile`` for repeated calls.
+
+    The compiled graph is cached per ``(N_coils, N_pts, n_phi)`` key.
+
+    Parameters
+    ----------
+    coil_params : mx.array, shape (N_coils, 3)
+    grid_r, grid_z : mx.array, shape (N_pts,)
+    n_phi : int
+
+    Returns
+    -------
+    Br, Bz : mx.array, shape (N_pts,)
+    """
+    if not HAS_MLX:
+        raise ImportError("MLX is required")
+    N_c = int(coil_params.shape[0])
+    N_pts = int(grid_r.shape[0])
+    key = (N_c, N_pts, n_phi)
+    if key not in _compiled_cache:
+        def _fn(cp, gr, gz):
+            return _compute_bfield_mlx_vectorized(cp, gr, gz, n_phi=n_phi)
+        _compiled_cache[key] = mx.compile(_fn)
+    return _compiled_cache[key](coil_params, grid_r, grid_z)
+
+
 def _compute_mlx(
-    coils: Sequence[Coil], grid: Grid, n_phi: int = 128
+    coils: Sequence[Coil], grid: Grid, n_phi: int = 128, differentiable: bool = False
 ) -> tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
-    """Compute total field using the MLX backend, return NumPy arrays."""
+    """Compute total field using the MLX backend, return NumPy arrays.
+
+    When *differentiable* is False (default), uses the vectorized path with
+    ``mx.compile`` caching for faster repeated evaluations.  When True, falls
+    back to the loop-based differentiable path so ``mx.grad()`` works.
+    """
     r = np.linspace(0.0, grid.r_max, grid.nr)
     z = np.linspace(grid.z_min, grid.z_max, grid.nz)
     Z, R = np.meshgrid(z, r)  # (nr, nz)
@@ -390,7 +520,12 @@ def _compute_mlx(
         dtype=mx.float32,
     )
 
-    Br_flat, Bz_flat = compute_bfield_mlx_differentiable(params, flat_r, flat_z, n_phi=n_phi)
+    if differentiable:
+        Br_flat, Bz_flat = compute_bfield_mlx_differentiable(
+            params, flat_r, flat_z, n_phi=n_phi
+        )
+    else:
+        Br_flat, Bz_flat = _biot_savart_compiled(params, flat_r, flat_z, n_phi=n_phi)
     mx.eval(Br_flat, Bz_flat)
 
     Br = np.array(Br_flat).reshape(grid.nr, grid.nz)
@@ -407,6 +542,7 @@ def compute_bfield(
     *,
     backend: str = "auto",
     n_phi: int = 128,
+    differentiable: bool = False,
 ) -> BField:
     """Compute the applied magnetic field from a set of circular coils.
 
@@ -420,6 +556,10 @@ def compute_bfield(
         ``"auto"`` uses MLX if available, else NumPy.
     n_phi : int
         Azimuthal quadrature points (MLX backend only).
+    differentiable : bool
+        When True, use the loop-based MLX path so the computation graph is
+        preserved for ``mx.grad()``.  When False (default), use the
+        vectorized + compiled path for faster non-gradient evaluation.
 
     Returns
     -------
@@ -434,7 +574,7 @@ def compute_bfield(
     if backend == "mlx":
         if not HAS_MLX:
             raise ImportError("MLX is not installed. Install with: pip install 'helicon[mlx]'")
-        Br, Bz, r, z = _compute_mlx(coils, grid, n_phi=n_phi)
+        Br, Bz, r, z = _compute_mlx(coils, grid, n_phi=n_phi, differentiable=differentiable)
     elif backend == "numpy":
         Br, Bz, r, z = _compute_numpy(coils, grid)
     else:

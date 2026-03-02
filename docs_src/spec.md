@@ -620,6 +620,64 @@ Every validation run generates a comparison plot (our result vs. reference) and 
 - [ ] At least 3 external users/groups running the code
 - [ ] Stable API; semantic versioning enforced
 
+### v1.1 — MLX-Native Acceleration (Month 15+)
+
+The core bottleneck on Apple Silicon is that WarpX runs CPU-only (no Metal backend). The strategy is to push every computation that *isn't* the PIC loop into MLX on the Apple GPU, and minimize how often a full WarpX run is needed.
+
+- [ ] MLX-accelerated postprocessing: rewrite thrust integration, moment computation, and field-line classification as `mlx.core` operations — process openPMD particle data on Metal GPU instead of NumPy on CPU; target 5-10× speedup for postprocessing of 10M+ particle datasets on M4 Pro
+- [ ] MLX Biot-Savart on full grids: extend current coil-level `vmap` to batch-evaluate B(r,z) on AMR-resolution grids (1024×512+) with `mlx.core.compile` for fused kernels; this is the inner loop of the Tier 1 analytical pre-screener
+- [ ] Differentiable nozzle physics in MLX: implement the Breizman-Arefiev paraxial model and Little-Choueiri C_T model as end-to-end differentiable MLX graphs — enables `mlx.core.grad` through the entire Tier 1 analytical pipeline, not just field geometry
+- [ ] In-situ MLX postprocessing via WarpX Python callbacks: compute thrust and η_d on the Metal GPU every N timesteps *during* WarpX execution, eliminating the need for full particle dumps to disk; reduces storage from ~5 GB to ~10 MB per run
+- [ ] Adaptive mesh refinement (AMR) around detachment front using WarpX native AMR — resolve the narrow electron demagnetization layer without paying full grid cost; critical for making Apple Silicon CPU-bound WarpX runs practical
+- [ ] Benchmark suite with published timing data on Apple M-series chips (M2 Pro, M4 Pro, M4 Max) for each validation case: wall time, Metal GPU utilization, unified memory high-water mark; gives users realistic expectations per chip tier
+
+**Exit criterion:** Full postprocessing pipeline runs on Metal GPU via MLX. Tier 1 analytical screening evaluates 10,000 coil geometries in <60 seconds on M4 Pro. Standard validation case with AMR completes in <50% of uniform-grid wall time.
+
+### v1.2 — Extended Physics (Month 18+)
+
+- [ ] Self-consistent neutral dynamics: Monte Carlo neutrals with ionization, charge exchange, and recombination — replaces v0.1 static background model; critical for VASIMR-class engines with neutral propellant injection. Neutral particle push implemented in MLX for Metal GPU acceleration (neutrals don't need WarpX's electromagnetic solver)
+- [ ] MLX-native fluid-hybrid electron solver: replace the v0.4 stub with a real CGL (Chew-Goldberger-Low) double-adiabatic electron fluid coupled to kinetic ions via WarpX — the fluid solve runs on Metal GPU via MLX while only ions are pushed by WarpX on CPU, cutting wall time ~10× vs. full kinetic electrons
+- [ ] Multi-ion species detachment tracking: separate η_d computation for each ion species (D⁺, He²⁺, protons, α-particles) since heavier ions detach at different locations; MLX-accelerated species-resolved moment computation
+- [ ] Anomalous transport models beyond parametrized collision frequency: lower-hybrid drift instability (LHDI) driven cross-field transport via sub-grid model calibrated to full kinetic runs; the sub-grid model itself runs in MLX as a closure on the fluid-hybrid path
+- [ ] Full 3D simulations for non-axisymmetric nozzles (asymmetric coil placement, tilted exhaust); validate against 2D-RZ results for symmetric cases to quantify 3D overhead vs. accuracy trade-off. Note: 3D WarpX on Apple Silicon CPU is expensive — this is the use case that justifies optional cloud HPC offload (see v1.3)
+
+**Exit criterion:** Fluid-hybrid electron path produces detachment results within 15% of full kinetic on Merino-Ahedo case at 10× lower wall time on M4 Pro. Multi-species detachment validated for D⁺/He²⁺ mix.
+
+### v1.3 — Mission Integration (Month 21+)
+
+- [ ] Throttle curve generation: map thrust and Isp as functions of input power and propellant flow rate across a grid of operating points; output as interpolation tables consumable by mission planners. Built on Tier 1 (MLX analytical) + selective Tier 2 (WarpX PIC) validation
+- [ ] Native poliastro integration: Helicon performance tables feed directly into low-thrust trajectory optimization (e.g., Earth-Mars spiral with variable Isp)
+- [ ] Spacecraft interaction model: backflow fraction (ions returning past thruster plane), spacecraft charging from exhaust plume electrons, magnetic torque from nozzle field on spacecraft bus — all computed in MLX postprocessing from particle exit data
+- [ ] Pulsed mission profiles: for PPR-class engines, compute impulse-averaged performance over burst cycles (thrust/Isp/η_d averaged over pulse train) for trajectory integration
+- [ ] Optional cloud HPC offload: submit large WarpX runs (3D, high-resolution parameter scans) to cloud GPU instances (Lambda, AWS p4d) directly from `helicon scan --cloud`; develop and postprocess locally on Apple Silicon, run PIC remotely only when needed
+- [ ] Thermal-structural coil constraints: import coil thermal limits from external FEA exports as optimization constraints, closing the loop between magnetic design and structural feasibility
+
+**Exit criterion:** Generate a complete thrust/Isp/η_d performance map for Sunbird configuration on a single M4 Pro Mac in <48 hours (Tier 1 sweep + Tier 2 PIC on top 10 candidates). Demonstrate end-to-end coil geometry → simulation → mission ΔV estimate.
+
+### v2.0 — Engineering Design Tool (Month 24+)
+
+- [ ] MLX-trained neural surrogate: train a small MLP on the PIC parameter scan database using `mlx.nn` — predicts thrust, η_d, and plume angle in microseconds on Metal GPU given coil geometry + plasma source parameters; document the surrogate's validated accuracy envelope and extrapolation boundaries
+- [ ] Interactive local-first design app (Streamlit or Marimo notebook): real-time nozzle design exploration using the MLX surrogate on Metal GPU, with one-click dispatch to full WarpX PIC for selected candidate designs; runs entirely on a MacBook, no server required
+- [ ] Uncertainty quantification: Monte Carlo propagation of input parameter uncertainties (coil tolerances, plasma source variability) through the MLX surrogate — 100,000 MC samples in seconds on Metal GPU to produce confidence intervals on performance predictions
+- [ ] Coil manufacturability constraints: winding pack geometry, minimum bend radius, layer-wound vs. pancake topology, REBCO tape width discretization — ensures optimized designs are physically buildable
+- [ ] Multi-fidelity optimization pipeline: Tier 1 analytical in MLX (seconds) → Tier 2 neural surrogate in MLX (microseconds, but trained) → Tier 3 full WarpX PIC (hours, local or cloud); automatic promotion of promising candidates up the fidelity ladder
+- [ ] Provenance and audit trail: every design decision traceable from final coil geometry back through optimization history, PIC validation, and input assumptions
+- [ ] Export to CAD: output optimized coil geometry as STEP/IGES files for mechanical integration
+
+**Exit criterion:** An engineer on a MacBook runs the interactive app, explores 50 nozzle designs in an afternoon using the surrogate, dispatches 3 to full PIC, and gets a validated coil geometry recommendation with uncertainty bounds — all locally, no HPC cluster.
+
+### v2.1 — Ecosystem & Community (Month 30+)
+
+- [ ] Plugin architecture: third-party postprocessing modules and custom physics operators can be registered without modifying Helicon core
+- [ ] WarpX upstream contributions: push for Metal/MPS backend in WarpX (or contribute OpenCL path); contribute nozzle-specific RZ boundary improvements and propulsion diagnostics back to WarpX mainline
+- [ ] Jupyter widget for interactive field topology exploration: drag coils, see field lines and detachment surface update in real time via MLX surrogate on Metal GPU
+- [ ] Multi-thruster array simulation: model plume-plume interaction for spacecraft with 2-4 nozzles (relevant for attitude control via differential thrust)
+- [ ] Collaborative validation database: community-contributed experimental data with standardized metadata, enabling cross-validation beyond the original 5 cases
+- [ ] Annual validation report: automated regression suite run on each WarpX release; published as living document on documentation site
+- [ ] Apple Silicon performance guide: documented best practices for WarpX OpenMP tuning on M-series (thread pinning, memory bandwidth utilization, performance cores vs. efficiency cores), MLX compilation tips, and unified memory management for large particle counts
+
+**Exit criterion:** At least 10 external users/groups. Plugin used by at least one group for a use case not anticipated in the original spec. Validation database has contributions from 3+ independent sources.
+
 ---
 
 ## 9. Risks & Mitigations
@@ -628,12 +686,12 @@ Every validation run generates a comparison plot (our result vs. reference) and 
 |---|---|---|---|
 | WarpX RZ mode has bugs or limitations for nozzle-relevant regimes | High | Low (mature code, but edge cases exist) | Engage WarpX developers early; file issues; contribute upstream fixes |
 | Insufficient published experimental data for validation | High | Medium | Use multiple independent simulation codes (MN1D, published PIC results) as cross-validation; clearly label which cases have experimental vs. simulation-only validation |
-| Full kinetic electron runs are too expensive for practical parameter scans | Medium | High | Fluid-hybrid electron option in v0.4; GP surrogate reduces required evaluations by 10-50×; reduced mass ratio mode for qualitative scans. Note: WarpX is CPU-only on Apple Silicon (~2-4× slower than NVIDIA GPU); use Linux/NVIDIA for large kinetic scans |
+| Full kinetic electron runs are too expensive for practical parameter scans | Medium | High | Fluid-hybrid electron option in v0.4 (MLX-native CGL solver in v1.2); GP surrogate reduces required evaluations by 10-50×; reduced mass ratio mode for qualitative scans; MLX-accelerated Tier 1 analytical pre-screening avoids unnecessary PIC runs; optional cloud HPC offload in v1.3 for cases that truly need full kinetic resolution |
 | PIC noise corrupts detachment metrics | Medium | Medium | Large particle counts (>10M); time-averaging over multiple plasma transit times; statistical convergence checks in postprocessing |
 | No community adoption | Medium | Medium | Start with validation paper establishing credibility; engage Ahedo group, Pulsar, Princeton DFD team directly; present at APS-DPP and IEPC |
 | MLX maturity and API stability | Medium | Medium | MLX is under active development by Apple; pin to tested MLX releases; NumPy fallback for all MLX-dependent code; monitor MLX changelog for breaking changes |
-| WarpX CPU-only performance on Apple Silicon | High | High | WarpX has no Metal backend; runs CPU/OpenMP only on macOS. Mitigated by Apple Silicon's high memory bandwidth, M-series core count, and unified memory (no PCIe bottleneck). Recommend Linux/NVIDIA for production parameter scans |
-| Limited Apple Silicon adoption in HPC community | Medium | High | Position Apple Silicon as the primary development platform; retain full NVIDIA/CUDA support for production HPC. Most researchers develop locally and run production on clusters |
+| WarpX CPU-only performance on Apple Silicon | High | High | WarpX has no Metal backend; runs CPU/OpenMP only on macOS. Mitigated by: (a) pushing all non-PIC computation into MLX on Metal GPU (postprocessing, optimization, surrogate inference); (b) AMR to reduce grid cost (v1.1); (c) fluid-hybrid electrons in MLX to cut PIC wall time ~10× (v1.2); (d) optional cloud HPC offload for rare full-kinetic 3D runs (v1.3); (e) long-term: contribute Metal/OpenCL backend to WarpX upstream (v2.1) |
+| Limited Apple Silicon adoption in HPC community | Medium | High | Apple Silicon is the primary development and single-user platform; cloud GPU instances (Lambda, AWS) available for production scans via `helicon scan --cloud` (v1.3). Most researchers develop locally — meeting them where they are (MacBooks) lowers adoption barrier |
 | Unified memory constraints on Apple Silicon | Low | Medium | 24-96 GB unified memory is shared between CPU and GPU; large particle counts may require careful memory management. Mitigated by MLX lazy evaluation and WarpX's efficient memory use |
 | WarpX version drift breaks backward compatibility | Medium | Medium | Pin to tested WarpX release in CI; run validation suite before accepting new WarpX versions; document minimum + maximum tested version |
 | Storage costs for parameter scans | Low | High | A single RZ run with 10M particles produces ~0.5-10 GB depending on diagnostic frequency. A 100-run scan: 0.5-1 TB. Document storage estimates; provide diagnostic scheduling guidance that minimizes data volume while preserving postprocessing requirements; support reduced-diagnostic "scan mode" vs. full-diagnostic "analysis mode" |

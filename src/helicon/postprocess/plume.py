@@ -17,6 +17,8 @@ from typing import Any
 
 import numpy as np
 
+from helicon._mlx_utils import HAS_MLX, resolve_backend, to_mx, to_np
+
 
 @dataclass
 class PlumeResult:
@@ -28,6 +30,38 @@ class PlumeResult:
     radial_loss_fraction: float
 
 
+def _plume_reduce_mlx(
+    wt: np.ndarray,
+    species_mass: float,
+    vz: np.ndarray,
+    vr: np.ndarray,
+    c_s: float,
+) -> tuple[float, float, float, float]:
+    """Compute plume force sums on Metal GPU via MLX.
+
+    Returns
+    -------
+    F_axial, F_total, ke_axial, ke_total, mdot :
+        Force and kinetic energy sums.
+    """
+    if not HAS_MLX:
+        raise ImportError("MLX required for _plume_reduce_mlx")
+    import mlx.core as mx
+
+    wt_mx = to_mx(wt)
+    vz_mx = to_mx(vz)
+    vr_mx = to_mx(vr)
+    m = float(species_mass)
+
+    v_total_mx = mx.sqrt(vr_mx * vr_mx + vz_mx * vz_mx)
+    F_axial = float(to_np(mx.sum(wt_mx * m * vz_mx * vz_mx)))
+    F_total = float(to_np(mx.sum(wt_mx * m * v_total_mx * mx.abs(vz_mx))))
+    ke_axial = float(to_np(mx.sum(wt_mx * vz_mx * vz_mx)))
+    ke_total = float(to_np(mx.sum(wt_mx * (v_total_mx * v_total_mx))))
+    mdot = float(to_np(mx.sum(wt_mx * m * mx.abs(vz_mx))))
+    return F_axial, F_total, ke_axial, ke_total, mdot
+
+
 def compute_plume_metrics(
     output_dir: str | Path,
     *,
@@ -36,6 +70,7 @@ def compute_plume_metrics(
     T_e_eV: float = 2000.0,
     z_exit: float | None = None,
     r_max: float | None = None,
+    backend: str = "auto",
 ) -> PlumeResult:
     """Compute plume divergence and beam efficiency from particle data.
 
@@ -53,7 +88,10 @@ def compute_plume_metrics(
         Exit plane z [m].
     r_max : float, optional
         Radial domain boundary [m].
+    backend : ``"auto"`` | ``"mlx"`` | ``"numpy"``
+        Compute backend for force and kinetic-energy reductions.
     """
+    use_mlx = resolve_backend(backend) == "mlx"
     import h5py
 
     output_dir = Path(output_dir)
@@ -102,29 +140,32 @@ def compute_plume_metrics(
     vr = pr[near_exit] / species_mass
     wt = w[near_exit]
 
-    # Plume divergence half-angle: cos(θ) = F / ∫ n m |v|² dA
-    # Simplified: θ = arctan(⟨|vr|⟩ / ⟨vz⟩) momentum-weighted
-    v_total = np.sqrt(vr**2 + vz**2)
-    F_axial = np.sum(wt * species_mass * vz**2)
-    F_total = np.sum(wt * species_mass * v_total * np.abs(vz))
+    eV_to_J = 1.602176634e-19
+    c_s = math.sqrt(T_e_eV * eV_to_J / species_mass)
+
+    if use_mlx and len(wt) > 0:
+        F_axial, F_total, ke_axial, ke_total, mdot = _plume_reduce_mlx(
+            wt, species_mass, vz, vr, c_s
+        )
+    else:
+        v_total = np.sqrt(vr**2 + vz**2)
+        F_axial = float(np.sum(wt * species_mass * vz**2))
+        F_total = float(np.sum(wt * species_mass * v_total * np.abs(vz)))
+        ke_axial = float(np.sum(wt * vz**2))
+        ke_total = float(np.sum(wt * v_total**2))
+        mdot = float(np.sum(wt * species_mass * np.abs(vz)))
 
     if F_total > 0:
         cos_theta = F_axial / F_total
-        cos_theta = np.clip(cos_theta, -1.0, 1.0)
+        cos_theta = float(np.clip(cos_theta, -1.0, 1.0))
         theta_deg = float(np.degrees(np.arccos(cos_theta)))
     else:
         theta_deg = 0.0
 
     # Beam efficiency: η_b = (½ṁv_z²) / (½ṁ|v|²)
-    ke_axial = np.sum(wt * vz**2)
-    ke_total = np.sum(wt * v_total**2)
     eta_beam = float(ke_axial / ke_total) if ke_total > 0 else 0.0
 
     # Thrust coefficient: C_T = F / (ṁ c_s)
-    # c_s = √(T_e / m_i) — ion sound speed
-    eV_to_J = 1.602176634e-19
-    c_s = math.sqrt(T_e_eV * eV_to_J / species_mass)
-    mdot = np.sum(wt * species_mass * np.abs(vz))
     C_T = float(F_axial / (mdot * c_s)) if mdot > 0 and c_s > 0 else 0.0
 
     # Radial loss fraction
@@ -146,6 +187,7 @@ def compute_electron_magnetization(
     T_e_eV: float,
     *,
     collision_freq: float | None = None,
+    backend: str = "auto",
 ) -> np.ndarray:
     """Compute electron magnetization parameter Ω_e on the grid.
 
@@ -165,10 +207,35 @@ def compute_electron_magnetization(
     collision_freq : float, optional
         Fixed collision frequency [Hz]. If None, uses Coulomb collision
         estimate.
+    backend : ``"auto"`` | ``"mlx"`` | ``"numpy"``
+        Compute backend for grid-array operations.
     """
+    use_mlx = resolve_backend(backend) == "mlx"
+
     e = 1.602176634e-19
     m_e = 9.1093837139e-31
     eps0 = 8.854187817e-12
+
+    if use_mlx:
+        import mlx.core as mx
+
+        Br_mx = to_mx(Br)
+        Bz_mx = to_mx(Bz)
+        ne_mx = to_mx(n_e)
+        B_mag_mx = mx.sqrt(Br_mx * Br_mx + Bz_mx * Bz_mx)
+        omega_ce_mx = float(e) / float(m_e) * B_mag_mx
+
+        if collision_freq is not None:
+            nu_mx = mx.ones_like(B_mag_mx) * float(collision_freq)
+        else:
+            T_J = T_e_eV * e
+            v_th = math.sqrt(T_J / m_e)
+            ln_lambda = 10.0
+            coeff = float(e**4 * ln_lambda / (4 * math.pi * eps0**2 * m_e**2 * v_th**3))
+            nu_mx = mx.where(ne_mx > 0, ne_mx * coeff, 1e-10)
+
+        result_mx = mx.where(nu_mx > 0, omega_ce_mx / nu_mx, float("inf"))
+        return to_np(result_mx)
 
     B_mag = np.sqrt(Br**2 + Bz**2)
     omega_ce = e * B_mag / m_e  # cyclotron frequency
@@ -187,12 +254,15 @@ def compute_electron_magnetization(
             1e-10,
         )
 
-    return np.where(nu_eff > 0, omega_ce / nu_eff, np.inf)
+    safe_nu = np.where(nu_eff > 0, nu_eff, 1.0)
+    return np.where(nu_eff > 0, omega_ce / safe_nu, np.inf)
 
 
 def compute_pressure_anisotropy(
     P_perp: np.ndarray,
     P_parallel: np.ndarray,
+    *,
+    backend: str = "auto",
 ) -> np.ndarray:
     """Compute pressure anisotropy A = P_perp / P_parallel - 1.
 
@@ -202,7 +272,17 @@ def compute_pressure_anisotropy(
         Perpendicular pressure (P_rr for axisymmetric) [Pa].
     P_parallel : ndarray
         Parallel pressure (P_zz along B) [Pa].
+    backend : ``"auto"`` | ``"mlx"`` | ``"numpy"``
+        Compute backend.
     """
+    if resolve_backend(backend) == "mlx":
+        import mlx.core as mx
+
+        pp_mx = to_mx(P_perp)
+        par_mx = to_mx(P_parallel)
+        safe = mx.where(par_mx > 0, par_mx, 1e-30)
+        return to_np(pp_mx / safe - 1.0)
+
     safe_parallel = np.where(P_parallel > 0, P_parallel, 1e-30)
     return P_perp / safe_parallel - 1.0
 

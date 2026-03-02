@@ -1,6 +1,6 @@
 [project]
 name = "helicon"
-version = "0.4.0"
+version = "1.1.0"
 description = "GPU-Accelerated Magnetic Nozzle Simulation & Detachment Analysis Toolkit"
 license = "MIT"
 requires-python = ">=3.11"
@@ -17,7 +17,9 @@ dependencies = [
 helicon = "helicon.cli:main"
 
 [project.optional-dependencies]
-mlx = ["mlx>=0.18"]
+mlx = [
+    "mlx>=0.18",
+]
 optimize = ["scikit-learn>=1.5"]
 botorch = ["botorch>=0.12", "torch>=2.4"]
 dev = ["pytest>=8.0", "scikit-learn>=1.5"]

@@ -11,6 +11,8 @@ from pathlib import Path
 
 import numpy as np
 
+from helicon._mlx_utils import HAS_MLX, resolve_backend, to_mx, to_np
+
 
 @dataclass
 class MomentData:
@@ -26,6 +28,42 @@ class MomentData:
     z_grid: np.ndarray  # (nz,) [m]
 
 
+def _compute_bin_indices_mlx(
+    pos: np.ndarray,
+    edges: np.ndarray,
+    n_bins: int,
+) -> np.ndarray:
+    """Compute bin indices for particle positions using MLX (faster cast-to-int).
+
+    MLX evaluates ``(pos - min) / dz`` using float32 on Metal, then we cast to
+    int32 and clip.  The scatter-add (``np.add.at``) still runs on CPU since
+    MLX lacks a direct scatter-add equivalent.
+
+    Parameters
+    ----------
+    pos : ndarray
+        Particle positions along one axis.
+    edges : ndarray
+        Bin edges (length n_bins + 1).
+    n_bins : int
+        Number of bins.
+
+    Returns
+    -------
+    ndarray of int32
+        Bin index for each particle, clipped to [0, n_bins-1].
+    """
+    if not HAS_MLX:
+        raise ImportError("MLX required for _compute_bin_indices_mlx")
+
+    pos_mx = to_mx(pos)
+    e_min = float(edges[0])
+    dz = float(edges[1] - edges[0])
+    idx_mx = (pos_mx - e_min) / dz
+    idx_np = to_np(idx_mx).astype(np.int32)
+    return np.clip(idx_np, 0, n_bins - 1)
+
+
 def compute_moments(
     output_dir: str | Path,
     *,
@@ -33,6 +71,7 @@ def compute_moments(
     nr: int = 64,
     species_name: str = "D_plus",
     species_mass: float = 3.3435837724e-27,
+    backend: str = "auto",
 ) -> MomentData:
     """Compute velocity-space moments on a uniform grid.
 
@@ -50,7 +89,11 @@ def compute_moments(
         Name of species to process.
     species_mass : float
         Particle mass [kg].
+    backend : ``"auto"`` | ``"mlx"`` | ``"numpy"``
+        Compute backend for bin index computation.  Scatter-add always runs
+        on CPU regardless.
     """
+    use_mlx = resolve_backend(backend) == "mlx"
     import h5py
 
     output_dir = Path(output_dir)
@@ -108,9 +151,13 @@ def compute_moments(
     dz = z_edges[1] - z_edges[0]
     dr = r_edges[1] - r_edges[0]
 
-    # Bin particles
-    iz = np.clip(np.searchsorted(z_edges, z_pos) - 1, 0, nz - 1)
-    ir = np.clip(np.searchsorted(r_edges, r_pos) - 1, 0, nr - 1)
+    # Bin particles — MLX path uses (pos-min)/dz cast-to-int (faster on Metal)
+    if use_mlx:
+        iz = _compute_bin_indices_mlx(z_pos, z_edges, nz)
+        ir = _compute_bin_indices_mlx(r_pos, r_edges, nr)
+    else:
+        iz = np.clip(np.searchsorted(z_edges, z_pos) - 1, 0, nz - 1)
+        ir = np.clip(np.searchsorted(r_edges, r_pos) - 1, 0, nr - 1)
 
     density = np.zeros((nr, nz))
     vr_sum = np.zeros((nr, nz))
@@ -128,26 +175,62 @@ def compute_moments(
     r_centers = r_grid[:, np.newaxis]
     cell_volume = 2 * np.pi * np.maximum(r_centers, 1e-10) * dr * dz
 
-    # Normalize
     mask = density > 0
-    n = np.zeros((nr, nz))
-    n[mask] = density[mask] / cell_volume[mask]
 
-    vr_mean = np.zeros((nr, nz))
-    vz_mean = np.zeros((nr, nz))
-    vr_mean[mask] = vr_sum[mask] / density[mask]
-    vz_mean[mask] = vz_sum[mask] / density[mask]
+    if use_mlx:
+        import mlx.core as mx
 
-    # Pressure = n * m * (<v^2> - <v>^2)
-    p_rr = np.zeros((nr, nz))
-    p_zz = np.zeros((nr, nz))
-    if np.any(mask):
-        vr2_mean = np.zeros((nr, nz))
-        vz2_mean = np.zeros((nr, nz))
-        vr2_mean[mask] = vr2_sum[mask] / density[mask]
-        vz2_mean[mask] = vz2_sum[mask] / density[mask]
-        p_rr[mask] = n[mask] * species_mass * (vr2_mean[mask] - vr_mean[mask] ** 2)
-        p_zz[mask] = n[mask] * species_mass * (vz2_mean[mask] - vz_mean[mask] ** 2)
+        dens_mx = to_mx(density)
+        cell_mx = to_mx(cell_volume)
+        vrs_mx = to_mx(vr_sum)
+        vzs_mx = to_mx(vz_sum)
+        vr2s_mx = to_mx(vr2_sum)
+        vz2s_mx = to_mx(vz2_sum)
+        mask_mx = dens_mx > 0
+        safe_dens = mx.where(mask_mx, dens_mx, 1.0)
+
+        n_mx = mx.where(mask_mx, dens_mx / cell_mx, 0.0)
+        vr_mean_mx = mx.where(mask_mx, vrs_mx / safe_dens, 0.0)
+        vz_mean_mx = mx.where(mask_mx, vzs_mx / safe_dens, 0.0)
+        vr2_mean_mx = mx.where(mask_mx, vr2s_mx / safe_dens, 0.0)
+        vz2_mean_mx = mx.where(mask_mx, vz2s_mx / safe_dens, 0.0)
+
+        p_rr_mx = mx.where(
+            mask_mx,
+            n_mx * float(species_mass) * (vr2_mean_mx - vr_mean_mx * vr_mean_mx),
+            0.0,
+        )
+        p_zz_mx = mx.where(
+            mask_mx,
+            n_mx * float(species_mass) * (vz2_mean_mx - vz_mean_mx * vz_mean_mx),
+            0.0,
+        )
+
+        n = to_np(n_mx)
+        vr_mean = to_np(vr_mean_mx)
+        vz_mean = to_np(vz_mean_mx)
+        p_rr = to_np(p_rr_mx)
+        p_zz = to_np(p_zz_mx)
+    else:
+        # Normalize
+        n = np.zeros((nr, nz))
+        n[mask] = density[mask] / cell_volume[mask]
+
+        vr_mean = np.zeros((nr, nz))
+        vz_mean = np.zeros((nr, nz))
+        vr_mean[mask] = vr_sum[mask] / density[mask]
+        vz_mean[mask] = vz_sum[mask] / density[mask]
+
+        # Pressure = n * m * (<v^2> - <v>^2)
+        p_rr = np.zeros((nr, nz))
+        p_zz = np.zeros((nr, nz))
+        if np.any(mask):
+            vr2_mean = np.zeros((nr, nz))
+            vz2_mean = np.zeros((nr, nz))
+            vr2_mean[mask] = vr2_sum[mask] / density[mask]
+            vz2_mean[mask] = vz2_sum[mask] / density[mask]
+            p_rr[mask] = n[mask] * species_mass * (vr2_mean[mask] - vr_mean[mask] ** 2)
+            p_zz[mask] = n[mask] * species_mass * (vz2_mean[mask] - vz_mean[mask] ** 2)
 
     return MomentData(
         species=species_name,
