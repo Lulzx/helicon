@@ -89,8 +89,9 @@ def run_simulation(
     # Step 3: Collect metadata
     meta = collect_metadata(config)
     meta["hardware"] = hardware.summary()
-    # Flag non-physical configurations for downstream citation guards
-    meta["mass_ratio_reduced"] = config.plasma.mass_ratio is not None
+    # Flag non-physical configurations for downstream citation guards (§14)
+    mr = config.plasma.mass_ratio
+    meta["mass_ratio_reduced"] = mr is not None and mr < 1836.0
     meta["electron_model"] = config.plasma.electron_model
 
     # Validation proximity

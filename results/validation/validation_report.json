@@ -1,0 +1,14 @@
+[
+  {
+    "case_name": "guiding_center",
+    "passed": true,
+    "metrics": {
+      "expected_convergence_order": 2.0,
+      "measured_convergence_order": 1.998138086167462
+    },
+    "tolerances": {
+      "order_relative_error": 0.2
+    },
+    "description": "Boris pusher convergence to guiding-center theory"
+  }
+]

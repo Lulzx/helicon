@@ -84,17 +84,24 @@ def collect_metadata(config: object | None = None) -> dict:
     # GPU model
     meta["gpu_model"] = _get_gpu_model()
 
-    # Config hash and contents
+    # Config hash, contents, and random seed
     if config is not None:
         from helicon.config.parser import SimConfig
 
         if isinstance(config, SimConfig):
             json_bytes = config.model_dump_json().encode()
-            meta["config_hash"] = hashlib.sha256(json_bytes).hexdigest()
+            cfg_hash = hashlib.sha256(json_bytes).hexdigest()
+            meta["config_hash"] = cfg_hash
 
             import yaml
 
             meta["config_contents"] = yaml.safe_dump(config.model_dump())
+
+            # §14: deterministic random seed from config_hash when not user-specified
+            if config.random_seed is not None:
+                meta["random_seed"] = config.random_seed
+            else:
+                meta["random_seed"] = int(cfg_hash[:8], 16) % (2**31)
 
             # §14: flag when a non-physical mass ratio is used
             mr = config.plasma.mass_ratio

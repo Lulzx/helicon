@@ -1,0 +1,31 @@
+{
+  "helicon_version": "0.4.0",
+  "python_version": "3.12.11 (main, Jul 11 2025, 22:26:01) [Clang 20.1.4 ]",
+  "platform": "macOS-26.4-arm64-arm-64bit",
+  "hostname": "Lulzxs-MacBook-Pro.local",
+  "timestamp": "2026-03-02T04:38:49.240448+00:00",
+  "helicon_git_sha": "c6a5a45bcc8447d95d25819ca2f5bd2fa35ce9f2",
+  "warpx_version": null,
+  "warpx_git_sha": null,
+  "numpy_version": "2.4.2",
+  "scipy_version": "1.17.1",
+  "pydantic_version": "2.12.5",
+  "h5py_version": "3.15.1",
+  "torch_version": null,
+  "mlx_version": null,
+  "apple_silicon_chip": "Apple M4 Pro",
+  "metal_version": "J614s",
+  "cuda_version": null,
+  "gpu_model": null,
+  "config_hash": "e5f39ac57ad4d9e8057c11562d422d318742eff03b373533a2b728b1ae8c97f9",
+  "config_contents": "diagnostics:\n  field_dump_interval: 500\n  mode: analysis\n  particle_dump_interval: 5000\ndt_multiplier: 0.95\nkeep_checkpoints: false\nnozzle:\n  coils:\n  - I: 6366.197723675814\n    r: 0.08\n    z: 0.0\n  domain:\n    r_max: 0.5\n    z_max: 2.0\n    z_min: -0.5\n  resolution:\n    nr: 128\n    nz: 256\n  type: solenoid\noutput_dir: results/validation/resistive_dimov\nplasma:\n  T_e_eV: 10.0\n  T_i_eV: 5.0\n  electron_model: kinetic\n  mass_ratio: null\n  n0: 1.0e+21\n  species:\n  - D+\n  - e-\n  v_injection_ms: 50000.0\nrandom_seed: null\ntimesteps: 50000\n",
+  "hardware": "Platform: darwin (arm64)\nCPU cores: 12\nApple Silicon: Apple M4 Pro\nRecommended backend: omp\nOMP threads: 12",
+  "mass_ratio_reduced": false,
+  "electron_model": "kinetic",
+  "validation_proximity": {
+    "nearest_case": "resistive_dimov",
+    "distance": 1.0,
+    "in_validated_region": false,
+    "warning": null
+  }
+}

@@ -19,6 +19,7 @@ from helicon.postprocess.normalize import (
     normalize_time,
     normalize_velocity,
 )
+from helicon.postprocess.plots import generate_all_plots
 from helicon.postprocess.pulsed import compute_pulsed_metrics
 from helicon.postprocess.report import generate_report, load_report, save_report
 from helicon.postprocess.thrust import compute_thrust
@@ -32,6 +33,7 @@ __all__ = [
     "compute_plume_metrics",
     "compute_pulsed_metrics",
     "compute_thrust",
+    "generate_all_plots",
     "generate_report",
     "load_propbench",
     "load_report",

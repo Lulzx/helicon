@@ -97,3 +97,43 @@ class TestCollectMetadataMassRatioReduced:
         meta = collect_metadata(config)
         assert "config_contents" in meta
         assert isinstance(meta["config_contents"], str)
+
+
+class TestCollectMetadataRandomSeed:
+    """Tests for random_seed in metadata (spec §14)."""
+
+    def test_no_seed_when_no_config(self) -> None:
+        meta = collect_metadata()
+        assert "random_seed" not in meta
+
+    def test_seed_present_with_config(self) -> None:
+        config = _make_config()
+        meta = collect_metadata(config)
+        assert "random_seed" in meta
+        assert isinstance(meta["random_seed"], int)
+
+    def test_user_seed_preserved(self) -> None:
+        config = SimConfig(
+            nozzle=_make_config().nozzle,
+            plasma=_make_config().plasma,
+            random_seed=42,
+        )
+        meta = collect_metadata(config)
+        assert meta["random_seed"] == 42
+
+    def test_deterministic_from_config_hash(self) -> None:
+        """Same config → same seed, different config → different seed."""
+        c1 = _make_config()
+        c2 = _make_config(mass_ratio=100.0)
+        s1 = collect_metadata(c1)["random_seed"]
+        s2 = collect_metadata(c2)["random_seed"]
+        # Same config twice → same seed
+        assert collect_metadata(c1)["random_seed"] == s1
+        # Different config → different seed
+        assert s1 != s2
+
+    def test_seed_in_valid_range(self) -> None:
+        """Derived seed must fit in 32-bit signed int."""
+        config = _make_config()
+        meta = collect_metadata(config)
+        assert 0 <= meta["random_seed"] < 2**31

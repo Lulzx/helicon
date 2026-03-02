@@ -1,0 +1,31 @@
+{
+  "helicon_version": "0.4.0",
+  "python_version": "3.12.11 (main, Jul 11 2025, 22:26:01) [Clang 20.1.4 ]",
+  "platform": "macOS-26.4-arm64-arm-64bit",
+  "hostname": "Lulzxs-MacBook-Pro.local",
+  "timestamp": "2026-03-02T04:38:49.131749+00:00",
+  "helicon_git_sha": "c6a5a45bcc8447d95d25819ca2f5bd2fa35ce9f2",
+  "warpx_version": null,
+  "warpx_git_sha": null,
+  "numpy_version": "2.4.2",
+  "scipy_version": "1.17.1",
+  "pydantic_version": "2.12.5",
+  "h5py_version": "3.15.1",
+  "torch_version": null,
+  "mlx_version": null,
+  "apple_silicon_chip": "Apple M4 Pro",
+  "metal_version": "J614s",
+  "cuda_version": null,
+  "gpu_model": null,
+  "config_hash": "d2902d4b4e306777604d6e22bc7982bb66da6e88d6a7259589b6d8fcafb8741c",
+  "config_contents": "diagnostics:\n  field_dump_interval: 500\n  mode: analysis\n  particle_dump_interval: 5000\ndt_multiplier: 0.95\nkeep_checkpoints: false\nnozzle:\n  coils:\n  - I: 1428.2698092655585\n    r: 0.1\n    z: 0.0\n  domain:\n    r_max: 0.6\n    z_max: 3.0\n    z_min: -0.5\n  resolution:\n    nr: 256\n    nz: 512\n  type: solenoid\noutput_dir: results/validation/mn1d/beta_0.05\nplasma:\n  T_e_eV: 10.0\n  T_i_eV: 10.0\n  electron_model: kinetic\n  mass_ratio: null\n  n0: 1.0e+18\n  species:\n  - D+\n  - e-\n  v_injection_ms: 100000.0\nrandom_seed: null\ntimesteps: 50000\n",
+  "hardware": "Platform: darwin (arm64)\nCPU cores: 12\nApple Silicon: Apple M4 Pro\nRecommended backend: omp\nOMP threads: 12",
+  "mass_ratio_reduced": false,
+  "electron_model": "kinetic",
+  "validation_proximity": {
+    "nearest_case": "free_expansion",
+    "distance": 2.5601341687838888,
+    "in_validated_region": false,
+    "warning": "Config is far from all validated cases (nearest: 'free_expansion', distance=2.56). Consider adjusting: B_T (currently 1.8x outside the validated half-width; nearest validated centre is 0.1); T_i_eV (currently 1.8x outside the validated half-width; nearest validated centre is 100)."
+  }
+}

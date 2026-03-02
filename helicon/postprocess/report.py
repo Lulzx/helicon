@@ -42,6 +42,31 @@ class RunReport:
     # §7.3 validation proximity (populated via config_proximity())
     validation_proximity: dict | None = None
 
+    def _compute_validation_flags(self) -> dict:
+        """Derive spec §6.3 validation_flags from convergence diagnostics.
+
+        Rules (per spec §7.1):
+        - steady_state_reached: True when thrust_relative_change_last_10pct < 0.01 (1%)
+        - particle_statistics_sufficient: True when particle_count_exit >= 1_000_000
+        - energy_conservation_error: returned directly from convergence data
+          (None when not yet computed)
+        """
+        steady = None
+        if self.thrust_relative_change_last_10pct is not None:
+            steady = self.thrust_relative_change_last_10pct < 0.01
+
+        sufficient = None
+        if self.particle_count_exit is not None:
+            sufficient = self.particle_count_exit >= 1_000_000
+
+        return {
+            "steady_state_reached": steady,
+            "particle_statistics_sufficient": sufficient,
+            # Energy conservation error is a PIC diagnostic not yet piped
+            # through postprocess; None until WarpX diagnostic integration.
+            "energy_conservation_error": None,
+        }
+
     def to_spec_dict(
         self,
         *,
@@ -106,6 +131,8 @@ class RunReport:
             "results": {
                 "thrust_N": self.thrust_N,
                 "isp_s": self.isp_s,
+                "exhaust_velocity_ms": self.exhaust_velocity_ms,
+                "mass_flow_rate_kgs": self.mass_flow_rate_kgs,
                 "detachment_efficiency": {
                     "momentum_based": self.detachment_momentum,
                     "particle_based": self.detachment_particle,
@@ -121,11 +148,7 @@ class RunReport:
                     "particle_count_exit": self.particle_count_exit,
                 },
             },
-            "validation_flags": {
-                "steady_state_reached": None,
-                "particle_statistics_sufficient": None,
-                "energy_conservation_error": None,
-            },
+            "validation_flags": self._compute_validation_flags(),
             "validation_proximity": validation_proximity,
         }
 

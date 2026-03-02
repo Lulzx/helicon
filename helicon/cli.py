@@ -108,7 +108,26 @@ def run(
     help="Comma-separated metrics: thrust,detachment,plume,pulsed,report",
 )
 @click.option("--output", "output_file", type=click.Path(), help="Output JSON file")
-def postprocess(input_dir: str, metrics: str, output_file: str | None) -> None:
+@click.option(
+    "--plots",
+    is_flag=True,
+    default=False,
+    help="Auto-generate matplotlib figures (field topology, thrust convergence, detachment map)",
+)
+@click.option(
+    "--plot-format",
+    type=click.Choice(["png", "pdf", "svg"]),
+    default="png",
+    show_default=True,
+    help="Output format for auto-generated figures",
+)
+def postprocess(
+    input_dir: str,
+    metrics: str,
+    output_file: str | None,
+    plots: bool,
+    plot_format: str,
+) -> None:
     """Extract propulsion metrics from WarpX output.
 
     Available metrics: thrust, detachment, plume, pulsed, report
@@ -197,6 +216,17 @@ def postprocess(input_dir: str, metrics: str, output_file: str | None) -> None:
             click.echo(f"  Report saved to: {report_path}")
         except FileNotFoundError as exc:
             click.echo(f"  Error: {exc}", err=True)
+
+    if plots:
+        from helicon.postprocess.plots import generate_all_plots
+
+        click.echo("Generating plots...")
+        saved = generate_all_plots(input_dir, fmt=plot_format)
+        if saved:
+            for p in saved:
+                click.echo(f"  Plot saved: {p}")
+        else:
+            click.echo("  No plots generated (insufficient data or matplotlib unavailable)")
 
     if output_file:
         Path(output_file).write_text(json.dumps(results, indent=2))

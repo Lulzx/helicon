@@ -5,6 +5,8 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
+import pytest
+
 from helicon.postprocess.report import RunReport, generate_report, load_report, save_report
 
 
@@ -270,3 +272,134 @@ class TestValidationProximityInReport:
         report = _make_report(validation_proximity=prox_data)
         d = report.to_spec_dict()
         assert d["validation_proximity"]["nearest_case"] == "vasimr"
+
+
+class TestSpecDictResultsFields:
+    """Tests that to_spec_dict() includes all spec §6.3 results fields."""
+
+    def test_exhaust_velocity_in_results(self) -> None:
+        report = _make_report(exhaust_velocity_ms=109800.0)
+        d = report.to_spec_dict()
+        assert "exhaust_velocity_ms" in d["results"]
+        assert d["results"]["exhaust_velocity_ms"] == 109800.0
+
+    def test_mass_flow_rate_in_results(self) -> None:
+        report = _make_report(mass_flow_rate_kgs=4.39e-5)
+        d = report.to_spec_dict()
+        assert "mass_flow_rate_kgs" in d["results"]
+        assert d["results"]["mass_flow_rate_kgs"] == pytest.approx(4.39e-5)
+
+    def test_all_required_results_keys_present(self) -> None:
+        report = _make_report()
+        d = report.to_spec_dict()
+        required = [
+            "thrust_N", "isp_s", "exhaust_velocity_ms", "mass_flow_rate_kgs",
+            "detachment_efficiency", "plume_half_angle_deg", "beam_efficiency",
+            "radial_loss_fraction", "convergence",
+        ]
+        for key in required:
+            assert key in d["results"], f"Missing required key: {key}"
+
+    def test_detachment_efficiency_subkeys(self) -> None:
+        report = _make_report()
+        d = report.to_spec_dict()
+        det = d["results"]["detachment_efficiency"]
+        for key in ("momentum_based", "particle_based", "energy_based"):
+            assert key in det
+
+
+class TestValidationFlags:
+    """Tests for computed validation_flags (spec §6.3, §7.1)."""
+
+    def test_structure_present(self) -> None:
+        report = _make_report()
+        d = report.to_spec_dict()
+        assert "validation_flags" in d
+        vf = d["validation_flags"]
+        assert "steady_state_reached" in vf
+        assert "particle_statistics_sufficient" in vf
+        assert "energy_conservation_error" in vf
+
+    def test_steady_state_none_without_data(self) -> None:
+        report = _make_report()
+        d = report.to_spec_dict()
+        assert d["validation_flags"]["steady_state_reached"] is None
+
+    def test_steady_state_true_when_converged(self) -> None:
+        report = _make_report(thrust_relative_change_last_10pct=0.003)
+        d = report.to_spec_dict()
+        assert d["validation_flags"]["steady_state_reached"] is True
+
+    def test_steady_state_false_when_not_converged(self) -> None:
+        report = _make_report(thrust_relative_change_last_10pct=0.05)
+        d = report.to_spec_dict()
+        assert d["validation_flags"]["steady_state_reached"] is False
+
+    def test_steady_state_boundary_at_1pct(self) -> None:
+        report = _make_report(thrust_relative_change_last_10pct=0.01)
+        d = report.to_spec_dict()
+        # 0.01 is NOT < 0.01 so should be False
+        assert d["validation_flags"]["steady_state_reached"] is False
+
+    def test_particle_stats_sufficient_when_large(self) -> None:
+        report = _make_report(particle_count_exit=8_420_000)
+        d = report.to_spec_dict()
+        assert d["validation_flags"]["particle_statistics_sufficient"] is True
+
+    def test_particle_stats_insufficient_when_small(self) -> None:
+        report = _make_report(particle_count_exit=50_000)
+        d = report.to_spec_dict()
+        assert d["validation_flags"]["particle_statistics_sufficient"] is False
+
+    def test_particle_stats_none_without_data(self) -> None:
+        report = _make_report()
+        d = report.to_spec_dict()
+        assert d["validation_flags"]["particle_statistics_sufficient"] is None
+
+
+class TestAutoPlots:
+    """Tests for generate_all_plots (spec §6.3)."""
+
+    def test_import(self) -> None:
+        from helicon.postprocess.plots import generate_all_plots
+        assert callable(generate_all_plots)
+
+    def test_empty_dir_returns_empty_list(self, tmp_path: Path) -> None:
+        from helicon.postprocess.plots import generate_all_plots
+        result = generate_all_plots(tmp_path)
+        assert isinstance(result, list)
+
+    def test_missing_bfield_skips_topology(self, tmp_path: Path) -> None:
+        from helicon.postprocess.plots import generate_all_plots
+        # No bfield file → topology plot skipped gracefully
+        result = generate_all_plots(tmp_path, bfield_file=tmp_path / "nonexistent.h5")
+        assert all("bfield_topology" not in str(p) for p in result)
+
+    def test_plots_dir_created(self, tmp_path: Path) -> None:
+        from helicon.postprocess.plots import generate_all_plots
+        generate_all_plots(tmp_path)
+        assert (tmp_path / "plots").exists()
+
+    def test_bfield_topology_saved(self, tmp_path: Path) -> None:
+        """With a real BField HDF5, topology plot should be generated."""
+        try:
+            import matplotlib  # noqa: F401
+        except ImportError:
+            pytest.skip("matplotlib not available")
+
+        from helicon.config.parser import CoilConfig, DomainConfig, NozzleConfig
+        from helicon.fields.biot_savart import BField, Coil, Grid
+        from helicon.postprocess.plots import generate_all_plots
+
+        coils = [Coil(z=0.0, r=0.1, I=10000)]
+        grid = Grid(z_min=0.0, z_max=1.0, r_max=0.5, nz=32, nr=16)
+
+        from helicon.fields import compute_bfield
+        bf = compute_bfield(coils, grid)
+        bf_path = tmp_path / "applied_bfield.h5"
+        bf.save(str(bf_path))
+
+        saved = generate_all_plots(tmp_path, bfield_file=bf_path)
+        topology_plots = [p for p in saved if "bfield_topology" in p.name]
+        assert len(topology_plots) == 1
+        assert topology_plots[0].exists()

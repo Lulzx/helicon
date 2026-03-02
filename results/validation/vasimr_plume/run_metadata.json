@@ -1,0 +1,31 @@
+{
+  "helicon_version": "0.4.0",
+  "python_version": "3.12.11 (main, Jul 11 2025, 22:26:01) [Clang 20.1.4 ]",
+  "platform": "macOS-26.4-arm64-arm-64bit",
+  "hostname": "Lulzxs-MacBook-Pro.local",
+  "timestamp": "2026-03-02T04:38:49.416442+00:00",
+  "helicon_git_sha": "c6a5a45bcc8447d95d25819ca2f5bd2fa35ce9f2",
+  "warpx_version": null,
+  "warpx_git_sha": null,
+  "numpy_version": "2.4.2",
+  "scipy_version": "1.17.1",
+  "pydantic_version": "2.12.5",
+  "h5py_version": "3.15.1",
+  "torch_version": null,
+  "mlx_version": null,
+  "apple_silicon_chip": "Apple M4 Pro",
+  "metal_version": "J614s",
+  "cuda_version": null,
+  "gpu_model": null,
+  "config_hash": "21eb954b1860d0d25379408f433e03f3d2b4416fafb5268eb5a6e3f0958c4f57",
+  "config_contents": "diagnostics:\n  field_dump_interval: 500\n  mode: analysis\n  particle_dump_interval: 5000\ndt_multiplier: 0.95\nkeep_checkpoints: false\nnozzle:\n  coils:\n  - I: 95492.9658551372\n    r: 0.12\n    z: -0.05\n  - I: 47746.4829275686\n    r: 0.12\n    z: 0.05\n  domain:\n    r_max: 0.8\n    z_max: 2.0\n    z_min: -0.3\n  resolution:\n    nr: 256\n    nz: 512\n  type: converging_diverging\noutput_dir: results/validation/vasimr_plume\nplasma:\n  T_e_eV: 5.0\n  T_i_eV: 50.0\n  electron_model: kinetic\n  mass_ratio: null\n  n0: 3.0e+18\n  species:\n  - Ar+\n  - e-\n  v_injection_ms: 40000.0\nrandom_seed: null\ntimesteps: 100000\n",
+  "hardware": "Platform: darwin (arm64)\nCPU cores: 12\nApple Silicon: Apple M4 Pro\nRecommended backend: omp\nOMP threads: 12",
+  "mass_ratio_reduced": false,
+  "electron_model": "kinetic",
+  "validation_proximity": {
+    "nearest_case": "merino_ahedo",
+    "distance": 2.761711330917328,
+    "in_validated_region": false,
+    "warning": "Config is far from all validated cases (nearest: 'merino_ahedo', distance=2.76). Consider adjusting: T_i_eV (currently 1.9x outside the validated half-width; nearest validated centre is 1e+03); n0 (currently 1.7x outside the validated half-width; nearest validated centre is 1e+19)."
+  }
+}
