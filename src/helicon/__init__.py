@@ -5,7 +5,7 @@ from __future__ import annotations
 import contextlib
 from dataclasses import dataclass
 
-__version__ = "2.4.0"
+__version__ = "2.5.0"
 
 
 # ---------------------------------------------------------------------------

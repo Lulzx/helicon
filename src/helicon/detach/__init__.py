@@ -1,4 +1,4 @@
-"""Real-time reduced model for magnetic nozzle detachment onset (v2.4).
+"""Real-time reduced model for magnetic nozzle detachment onset (v2.5).
 
 Predicts detachment from local MHD invariants and sheath parameters.
 Designed for embedded control loops — pure scalar arithmetic, no numpy.
@@ -30,6 +30,16 @@ References
 
 from __future__ import annotations
 
+from helicon.detach.calibration import (
+    CalibrationRecord,
+    CalibrationResult,
+    DetachmentCalibrator,
+)
+from helicon.detach.control import (
+    ControlState,
+    ControlUpdate,
+    LyapunovController,
+)
 from helicon.detach.invariants import (
     alfven_mach,
     alfven_velocity,
@@ -39,21 +49,59 @@ from helicon.detach.invariants import (
     ion_larmor_radius,
     ion_magnetization,
 )
+from helicon.detach.inverse import (
+    InferredState,
+    ThrustInverter,
+    ThrustObservation,
+)
+from helicon.detach.kinetic import (
+    alfven_mach_kinetic,
+    bohm_velocity_full,
+    flr_correction_factor,
+    ion_inertial_length,
+    ion_magnetization_flr,
+    larmor_radius_maxwellian,
+)
 from helicon.detach.model import (
     DetachmentOnsetModel,
     DetachmentState,
     PlasmaState,
 )
+from helicon.detach.sheath import (
+    SheathCorrectedState,
+    apply_sheath_correction,
+    debye_length,
+    sheath_potential,
+)
 
 __all__ = [
+    "CalibrationRecord",
+    "CalibrationResult",
+    "ControlState",
+    "ControlUpdate",
+    "DetachmentCalibrator",
     "DetachmentOnsetModel",
     "DetachmentState",
+    "InferredState",
+    "LyapunovController",
     "PlasmaState",
+    "SheathCorrectedState",
+    "ThrustInverter",
+    "ThrustObservation",
     "alfven_mach",
+    "alfven_mach_kinetic",
     "alfven_velocity",
+    "apply_sheath_correction",
     "bohm_velocity",
+    "bohm_velocity_full",
+    "debye_length",
     "electron_beta",
     "field_scale_length",
+    "flr_correction_factor",
+    "ion_inertial_length",
     "ion_larmor_radius",
     "ion_magnetization",
+    "ion_magnetization_flr",
+    "larmor_radius_maxwellian",
+    "sheath_potential",
 ]
