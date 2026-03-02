@@ -94,4 +94,4 @@ docs_dir: docs_src
 site_dir: docs
 
 watch:
-  - helicon/
+  - src/helicon/
