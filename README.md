@@ -49,11 +49,16 @@ bfield.save("applied_bfield.h5")
 # Generate WarpX input (dry run, no WarpX required)
 helicon run --preset sunbird --dry-run
 
-# Run simulation (auto-selects Metal/CUDA/OMP backend)
+# Run simulation (auto-selects Metal/CUDA/OMP backend, tqdm progress bar)
 helicon run --preset sunbird --output results/
 
 # Post-process output
 helicon postprocess --input results/ --metrics thrust
+```
+
+On Metal the terminal shows a live progress bar:
+```
+WarpX Metal:  42%|████▏     | 210/500 [03:22<04:39,  1.04step/s]
 ```
 
 ### Detachment analysis
@@ -124,15 +129,23 @@ result = run_warpx_metal(
     output_dir="metal_run/",
     n_cell=128,
     max_step=4,
+    progress=True,          # tqdm bar in terminal
 )
 print(result.summary())
 for diag in result.diags:
+    fields = diag.read_fields()   # dict: "Ex" -> np.ndarray(nx, ny)
     print(diag.summary())
 ```
 
-**Limitations:** single precision (no FP64), FDTD solver only (no PSATD), 2D runs via
-`warpx.2d.NOMPI.SYCL.SP.PSP.EB`. The first run is slow due to LLVM IR → Metal shader
-JIT compilation; subsequent runs use `~/.acpp/apps/global/jit-cache/`.
+**First-run note:** AdaptiveCpp JIT-compiles LLVM IR → Metal shaders on first use
+(~2–10 s/step for the first ~200 steps). Subsequent runs reuse
+`~/.acpp/apps/global/jit-cache/` and reach ~1 ms/step.
+By default `helicon run` caps Metal at 500 steps; override with
+`HELICON_METAL_MAX_STEP=N`.
+
+**Limitations:** single precision (no FP64), FDTD solver only (no PSATD), 2D via
+`warpx.2d.NOMPI.SYCL.SP.PSP.EB`, periodic boundaries only (PML triggers AdaptiveCpp
+Metal JIT bug for D⁺/e⁻ mass-ratio plasmas).
 
 ## Architecture
 
@@ -175,7 +188,7 @@ uv run pytest tests/ -q
 uv run ruff check src/ tests/
 ```
 
-1163 tests, 0 skipped.
+1165 tests, 0 skipped.
 
 ## License
 
