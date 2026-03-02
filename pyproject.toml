@@ -51,6 +51,7 @@ dev = [
     "matplotlib>=3.10",
     "mkdocs-material>=9.5",
     "mkdocstrings[python]>=0.27",
+    "pytest>=8.0",
     "ruff>=0.9",
     "scikit-learn>=1.5",
 ]

@@ -455,6 +455,7 @@ dev = [
     { name = "matplotlib" },
     { name = "mkdocs-material" },
     { name = "mkdocstrings", extra = ["python"] },
+    { name = "pytest" },
     { name = "ruff" },
     { name = "scikit-learn" },
 ]
@@ -481,6 +482,7 @@ dev = [
     { name = "matplotlib", specifier = ">=3.10" },
     { name = "mkdocs-material", specifier = ">=9.5" },
     { name = "mkdocstrings", extras = ["python"], specifier = ">=0.27" },
+    { name = "pytest", specifier = ">=8.0" },
     { name = "ruff", specifier = ">=0.9" },
     { name = "scikit-learn", specifier = ">=1.5" },
 ]
