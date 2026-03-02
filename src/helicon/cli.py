@@ -96,7 +96,18 @@ def run(
         click.echo(f"Simulation complete ({run_result.wall_time_seconds:.1f}s)")
         click.echo(f"Output: {run_result.output_dir}")
     else:
-        click.echo("Simulation failed.", err=True)
+        error_msg = run_result.metadata.get("error", "unknown error")
+        backend = run_result.metadata.get("backend", "unknown")
+        rc = run_result.metadata.get("warpx_returncode", "?")
+        click.echo(
+            f"Simulation failed (backend={backend}, returncode={rc}): {error_msg}",
+            err=True,
+        )
+        log = run_result.output_dir / "warpx_metal.log"
+        if not log.exists():
+            log = run_result.output_dir / "warpx.log"
+        if log.exists():
+            click.echo(f"Log: {log}", err=True)
         sys.exit(1)
 
 

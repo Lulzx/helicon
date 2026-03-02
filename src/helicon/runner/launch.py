@@ -139,6 +139,16 @@ def _adapt_inputs_for_metal(inputs_text: str) -> str:
         joined,
     )
 
+    # Cap timesteps for Metal: the warpx-metal build JIT-compiles Metal shaders on the
+    # first run (~2–10 s/step until warm); 500 steps is enough for physics verification
+    # and keeps cold-start wall time under 10 minutes.
+    _METAL_MAX_STEP = int(os.environ.get("HELICON_METAL_MAX_STEP", "500"))
+    joined = re.sub(
+        r"max_step\s*=\s*\d+",
+        f"max_step = {_METAL_MAX_STEP}",
+        joined,
+    )
+
     # Inject fields required by the native executable but set via Python in pywarpx
     _required = {
         "algo.particle_shape": "1",

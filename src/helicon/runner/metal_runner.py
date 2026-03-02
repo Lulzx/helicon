@@ -566,15 +566,16 @@ def run_warpx_metal(
         metal_info = detect_warpx_metal()
 
     if not metal_info.valid or metal_info.exe_2d is None:
+        _out = Path(output_dir).resolve()
         return MetalRunResult(
             success=False, exit_code=-1,
-            output_dir=Path(output_dir),
-            log_path=Path(output_dir) / "warpx_metal.log",
+            output_dir=_out,
+            log_path=_out / "warpx_metal.log",
             wall_time_s=0.0, steps_completed=0, diags=[],
             error="warpx-metal 2D executable not found — run warpx-metal build scripts first",
         )
 
-    out = Path(output_dir)
+    out = Path(output_dir).resolve()
     out.mkdir(parents=True, exist_ok=True)
 
     # Write inputs file
