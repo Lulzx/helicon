@@ -58,14 +58,34 @@ def _chip_model() -> str:
 
 
 def _total_memory_gb() -> float:
-    """Return total unified memory in GB."""
+    """Return total unified memory in GB (cross-platform, no psutil)."""
+    # macOS: hw.memsize via sysctl
     mem_bytes = _sysctl("hw.memsize")
     try:
         return int(mem_bytes) / 1e9
     except (ValueError, TypeError):
-        import psutil  # type: ignore[import-untyped]
+        pass
 
-        return psutil.virtual_memory().total / 1e9
+    # Linux: /proc/meminfo
+    try:
+        from pathlib import Path
+
+        for line in Path("/proc/meminfo").read_text().splitlines():
+            if line.startswith("MemTotal:"):
+                return int(line.split()[1]) / 1e6  # kB → GB
+    except Exception:
+        pass
+
+    # POSIX fallback: sysconf
+    try:
+        pages = os.sysconf("SC_PHYS_PAGES")
+        page_size = os.sysconf("SC_PAGE_SIZE")
+        if pages > 0 and page_size > 0:
+            return pages * page_size / 1e9
+    except Exception:
+        pass
+
+    return 1.0  # last-resort default
 
 
 def _cpu_cores() -> tuple[int, int]:
