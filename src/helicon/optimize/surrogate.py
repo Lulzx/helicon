@@ -66,6 +66,7 @@ class GPSurrogate:
             kernel=kernel,
             n_restarts_optimizer=n_restarts,
             normalize_y=normalize_y,
+            alpha=1e-6,
         )
         self._scaler: StandardScaler = StandardScaler()
         self._fitted = False

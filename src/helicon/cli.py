@@ -1104,5 +1104,87 @@ def perf_cmd(output_json: bool, skip_bandwidth: bool) -> None:
         click.echo(profile.recommendations())
 
 
+# ---------------------------------------------------------------------------
+# helicon doctor — environment health checker
+# ---------------------------------------------------------------------------
+
+
+@main.command("doctor")
+@click.option("--json", "output_json", is_flag=True, help="Output machine-readable JSON")
+def doctor_cmd(output_json: bool) -> None:
+    """Check the Helicon environment: Python, dependencies, and WarpX binary."""
+    from helicon.doctor import check_environment
+
+    report = check_environment()
+    if output_json:
+        click.echo(json.dumps(report.to_dict(), indent=2))
+    else:
+        click.echo(report.summary())
+    if not report.healthy:
+        sys.exit(1)
+
+
+# ---------------------------------------------------------------------------
+# helicon init — scaffold a new simulation config
+# ---------------------------------------------------------------------------
+
+
+@main.command("init")
+@click.argument("name")
+@click.option(
+    "--preset",
+    type=click.Choice(["custom", "sunbird", "highpower"]),
+    default="custom",
+    show_default=True,
+    help="Starting template preset",
+)
+@click.option(
+    "--output",
+    "output_path",
+    default=None,
+    type=click.Path(),
+    help="Output path (default: <name>.yaml)",
+)
+def init_cmd(name: str, preset: str, output_path: str | None) -> None:
+    """Scaffold a new simulation config YAML for NAME."""
+    from helicon.scaffold import scaffold_config
+
+    yaml_text = scaffold_config(preset)
+    dest = output_path or f"{name}.yaml"
+    with open(dest, "w") as fh:
+        fh.write(yaml_text)
+    click.echo(f"Created {dest}  (preset: {preset})")
+    click.echo(f"Edit the config, then run:  helicon run --config {dest}")
+
+
+# ---------------------------------------------------------------------------
+# helicon schema — export SimConfig JSON schema
+# ---------------------------------------------------------------------------
+
+
+@main.command("schema")
+@click.option(
+    "--output",
+    "output_path",
+    default=None,
+    type=click.Path(),
+    help="Write schema to file (default: print to stdout)",
+)
+@click.option("--indent", default=2, show_default=True, type=int, help="JSON indent level")
+def schema_cmd(output_path: str | None, indent: int) -> None:
+    """Export the JSON schema for Helicon simulation configs."""
+    from helicon.config import SimConfig
+
+    schema = SimConfig.model_json_schema()
+    text = json.dumps(schema, indent=indent)
+    if output_path:
+        with open(output_path, "w") as fh:
+            fh.write(text)
+            fh.write("\n")
+        click.echo(f"Schema written to {output_path}")
+    else:
+        click.echo(text)
+
+
 if __name__ == "__main__":
     main()
