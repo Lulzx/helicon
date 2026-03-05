@@ -1846,5 +1846,168 @@ def detach_report_cmd(
         )
 
 
+# ---------------------------------------------------------------------------
+# helicon mf — multi-fidelity pipeline
+# ---------------------------------------------------------------------------
+
+
+@main.group("mf")
+def mf_group() -> None:
+    """Multi-fidelity optimisation pipeline (Tier 1 → 2 → 3)."""
+
+
+@mf_group.command("report")
+@click.argument("output_dir", type=click.Path(exists=True))
+@click.option("--top", default=10, show_default=True, help="Number of top candidates to show")
+@click.option("--json", "as_json", is_flag=True, help="Output as JSON")
+def mf_report(output_dir: str, top: int, as_json: bool) -> None:
+    """Summarise tier3 candidates from a multi-fidelity scan output directory."""
+    import json as _json
+
+    candidates = []
+    for meta_path in Path(output_dir).glob("tier3_*/tier3_meta.json"):
+        try:
+            data = _json.loads(meta_path.read_text())
+            data["_dir"] = meta_path.parent.name
+            candidates.append(data)
+        except Exception:
+            continue
+
+    if not candidates:
+        click.echo(f"No tier3_meta.json files found under {output_dir}", err=True)
+        sys.exit(1)
+
+    candidates.sort(key=lambda c: c.get("tier2_score", 0.0), reverse=True)
+    shown = candidates[:top]
+
+    if as_json:
+        click.echo(_json.dumps({"n_total": len(candidates), "top": shown}, indent=2))
+        return
+
+    click.echo(f"Multi-fidelity report: {output_dir}")
+    click.echo(f"Total tier3 candidates: {len(candidates)}")
+    statuses = {}
+    for c in candidates:
+        s = c.get("status", "unknown")
+        statuses[s] = statuses.get(s, 0) + 1
+    for s, n in sorted(statuses.items()):
+        click.echo(f"  {s}: {n}")
+    click.echo(f"\nTop {len(shown)} by tier2_score:")
+    click.echo(f"  {'Candidate':<28}  {'Score':>6}  {'η_d':>6}  {'Thrust/N':>10}  Status")
+    click.echo("  " + "-" * 60)
+    for c in shown:
+        m = c.get("tier2_metrics", {})
+        eta = m.get("eta_d", float("nan"))
+        thrust = m.get("thrust_N", float("nan"))
+        score = c.get("tier2_score", float("nan"))
+        status = c.get("status", "?")
+        cid = c.get("candidate_id", c.get("_dir", "?"))
+        click.echo(f"  {cid:<28}  {score:6.4f}  {eta:6.4f}  {thrust:10.3e}  {status}")
+
+
+@mf_group.command("run")
+@click.option("--config", "config_path", type=click.Path(exists=True), required=True)
+@click.option(
+    "--vary",
+    "vary_specs",
+    multiple=True,
+    metavar="PATH:LOW:HIGH:N",
+    required=True,
+    help="Parameter range, e.g. coils.0.I:20000:80000:5",
+)
+@click.option(
+    "--output", "output_dir", default="mf_output", show_default=True, type=click.Path()
+)
+@click.option(
+    "--n-tier1", default=500, show_default=True, help="Tier-1 analytical evaluations"
+)
+@click.option(
+    "--tier2-threshold", default=0.5, show_default=True, help="Tier-1 → 2 score cutoff"
+)
+@click.option(
+    "--tier3-threshold", default=0.6, show_default=True, help="Tier-2 → 3 score cutoff"
+)
+@click.option("--top-k", default=3, show_default=True, help="Candidates to promote to Tier 3")
+@click.option(
+    "--objective",
+    default="thrust_N",
+    show_default=True,
+    type=click.Choice(["thrust_N", "eta_d"]),
+    help="Metric to maximise",
+)
+@click.option("--dry-run", is_flag=True, help="Generate Tier-3 inputs but do not run WarpX")
+@click.option("--seed", default=0, show_default=True, help="RNG seed for LHC sampling")
+@click.option("--json", "as_json", is_flag=True, help="Output result summary as JSON")
+def mf_run(
+    config_path: str,
+    vary_specs: tuple[str, ...],
+    output_dir: str,
+    n_tier1: int,
+    tier2_threshold: float,
+    tier3_threshold: float,
+    top_k: int,
+    objective: str,
+    dry_run: bool,
+    seed: int,
+    as_json: bool,
+) -> None:
+    """Run the multi-fidelity pipeline: analytical → surrogate → WarpX PIC."""
+    import json as _json
+
+    import numpy as np
+
+    from helicon.optimize.multifidelity import FidelityConfig, MultiFidelityPipeline
+
+    # Parse vary specs into LHC candidates
+    ranges = []
+    for spec in vary_specs:
+        parts = spec.split(":")
+        if len(parts) != 4:
+            click.echo(f"Bad --vary spec {spec!r}: expected PATH:LOW:HIGH:N", err=True)
+            sys.exit(1)
+        path, lo, hi, n = parts[0], float(parts[1]), float(parts[2]), int(parts[3])
+        ranges.append((path, lo, hi, n))
+
+    rng = np.random.default_rng(seed)
+    candidates = []
+    for _ in range(n_tier1):
+        c: dict = {}
+        for path, lo, hi, _n in ranges:
+            key = path.replace(".", "_").replace("coils_0_", "coil_")
+            c[key] = float(rng.uniform(lo, hi))
+        candidates.append(c)
+
+    cfg = FidelityConfig(
+        tier2_threshold=tier2_threshold,
+        tier3_threshold=tier3_threshold,
+        top_k_to_tier3=top_k,
+        tier1_n_eval=n_tier1,
+        dry_run_tier3=dry_run,
+    )
+    pipeline = MultiFidelityPipeline(fidelity_config=cfg, output_dir=output_dir)
+
+    if not as_json:
+        click.echo(
+            f"Multi-fidelity run: {n_tier1} Tier-1 candidates, "
+            f"objective={objective}, top_k={top_k}, dry_run={dry_run}"
+        )
+    result = pipeline.run(candidates, objective=objective)
+
+    summary = result.to_dict()
+    if as_json:
+        click.echo(_json.dumps(summary, indent=2))
+    else:
+        click.echo(f"Tier-1 evaluated:  {summary['n_tier1']}")
+        click.echo(f"Tier-2 evaluated:  {summary['n_tier2']}")
+        click.echo(f"Tier-3 promoted:   {summary['n_tier3']}")
+        click.echo(f"Best candidate:    {summary['best_candidate_id']}")
+        click.echo(f"Wall time:         {summary['total_wall_time_s']:.1f} s")
+        if summary["best_metrics"]:
+            m = summary["best_metrics"]
+            click.echo(f"Best η_d:          {m.get('eta_d', float('nan')):.4f}")
+            click.echo(f"Best thrust:       {m.get('thrust_N', float('nan')):.3e} N")
+        click.echo(f"Tier-3 outputs in: {output_dir}/")
+
+
 if __name__ == "__main__":
     main()
