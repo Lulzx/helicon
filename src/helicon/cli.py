@@ -2051,8 +2051,9 @@ def mf_promote(candidate_dir: str, output_dir: str | None, as_json: bool) -> Non
     try:
         config = _candidate_to_config(metrics, output_dir=str(out))
         run_result = run_simulation(config, output_dir=out, dry_run=False)
+        wall_time = run_result.wall_time_seconds
         meta["status"] = "completed"
-        meta["wall_time_s"] = run_result.wall_time_s
+        meta["wall_time_s"] = wall_time
         meta["pic_output_dir"] = str(out)
         meta_path.write_text(_json.dumps(meta, indent=2))
 
@@ -2062,14 +2063,14 @@ def mf_promote(candidate_dir: str, output_dir: str | None, as_json: bool) -> Non
                     {
                         "candidate_id": cid,
                         "status": "completed",
-                        "wall_time_s": run_result.wall_time_s,
+                        "wall_time_s": wall_time,
                         "pic_output_dir": str(out),
                     },
                     indent=2,
                 )
             )
         else:
-            click.echo(f"Completed in {run_result.wall_time_s:.1f} s → {out}")
+            click.echo(f"Completed in {wall_time:.1f} s → {out}")
     except Exception as exc:
         meta["status"] = f"error: {exc}"
         meta_path.write_text(_json.dumps(meta, indent=2))
