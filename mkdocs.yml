@@ -39,6 +39,7 @@ nav:
       - Parameter Scans: guide/scans.md
       - Optimization: guide/optimization.md
       - Apple Silicon: guide/apple_silicon.md
+      - Timing Reference: guide/timing.md
   - Validation:
       - Overview: validation/index.md
       - Free Expansion: validation/free_expansion.md
