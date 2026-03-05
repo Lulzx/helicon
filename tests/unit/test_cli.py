@@ -199,9 +199,12 @@ def test_scan_dry_run(tmp_path):
             main,
             [
                 "scan",
-                "--config", config_path,
-                "--vary", "coils.0.I:5000:15000:2",
-                "--output", out,
+                "--config",
+                config_path,
+                "--vary",
+                "coils.0.I:5000:15000:2",
+                "--output",
+                out,
                 "--dry-run",
             ],
         )
@@ -222,9 +225,12 @@ def test_scan_writes_csv_and_json(tmp_path):
             main,
             [
                 "scan",
-                "--config", config_path,
-                "--vary", "coils.0.I:5000:15000:2",
-                "--output", str(out),
+                "--config",
+                config_path,
+                "--vary",
+                "coils.0.I:5000:15000:2",
+                "--output",
+                str(out),
                 "--dry-run",
             ],
         )
@@ -295,12 +301,18 @@ def test_detach_assess_json():
     result = runner.invoke(
         main,
         [
-            "detach", "assess",
-            "--n", "1e18",
-            "--Te", "100",
-            "--Ti", "100",
-            "--B", "0.05",
-            "--vz", "50000",
+            "detach",
+            "assess",
+            "--n",
+            "1e18",
+            "--Te",
+            "100",
+            "--Ti",
+            "100",
+            "--B",
+            "0.05",
+            "--vz",
+            "50000",
             "--json",
         ],
     )
@@ -314,12 +326,18 @@ def test_detach_assess_text():
     result = runner.invoke(
         main,
         [
-            "detach", "assess",
-            "--n", "1e18",
-            "--Te", "100",
-            "--Ti", "100",
-            "--B", "0.1",
-            "--vz", "20000",
+            "detach",
+            "assess",
+            "--n",
+            "1e18",
+            "--Te",
+            "100",
+            "--Ti",
+            "100",
+            "--B",
+            "0.1",
+            "--vz",
+            "20000",
         ],
     )
     assert result.exit_code in (0, 1, 2)
@@ -336,10 +354,94 @@ def test_sensitivity_cmd(tmp_path):
         main,
         [
             "sensitivity",
-            "--preset", "sunbird",
-            "--n-samples", "8",
-            "--output", str(tmp_path / "sobol.json"),
+            "--preset",
+            "sunbird",
+            "--n-samples",
+            "8",
+            "--output",
+            str(tmp_path / "sobol.json"),
         ],
     )
     assert result.exit_code == 0, result.output
     assert "Sobol" in result.output or "S1" in result.output or "coil" in result.output.lower()
+
+
+# ---------------------------------------------------------------------------
+# helicon validate
+# ---------------------------------------------------------------------------
+
+
+def test_validate_guiding_center(tmp_path):
+    runner = CliRunner()
+    result = runner.invoke(
+        main,
+        [
+            "validate",
+            "--case",
+            "guiding_center",
+            "--output",
+            str(tmp_path / "val_out"),
+            "--evaluate-only",
+        ],
+    )
+    # guiding_center doesn't need WarpX; should pass even with evaluate-only
+    assert result.exit_code == 0, result.output
+
+
+def test_validate_no_args_fails():
+    runner = CliRunner()
+    result = runner.invoke(main, ["validate"])
+    assert result.exit_code != 0
+
+
+# ---------------------------------------------------------------------------
+# helicon run-3d
+# ---------------------------------------------------------------------------
+
+
+def test_run_3d_basic():
+    runner = CliRunner()
+    with tempfile.TemporaryDirectory() as tmpdir:
+        config_path = _write_config(tmpdir)
+        result = runner.invoke(
+            main,
+            [
+                "run-3d",
+                "--config",
+                config_path,
+                "--particles",
+                "50",
+                "--steps",
+                "10",
+                "--backend",
+                "numpy",
+            ],
+        )
+    assert result.exit_code == 0, result.output
+    assert "3D" in result.output or "particle" in result.output.lower()
+
+
+def test_run_3d_save_json(tmp_path):
+    runner = CliRunner()
+    with tempfile.TemporaryDirectory() as tmpdir:
+        config_path = _write_config(tmpdir)
+        out = str(tmp_path / "sim3d_out")
+        result = runner.invoke(
+            main,
+            [
+                "run-3d",
+                "--config",
+                config_path,
+                "--particles",
+                "50",
+                "--steps",
+                "10",
+                "--backend",
+                "numpy",
+                "--output",
+                out,
+                "--save-json",
+            ],
+        )
+    assert result.exit_code == 0, result.output
+    assert (tmp_path / "sim3d_out" / "sim3d_result.json").exists()
