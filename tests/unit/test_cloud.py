@@ -9,9 +9,7 @@ from pathlib import Path
 import pytest
 
 from helicon.cloud.backends import (
-    AWSBackend,
     CloudJob,
-    LambdaLabsBackend,
     LocalBackend,
     get_backend,
 )
@@ -66,16 +64,6 @@ class TestGetBackend:
         b = get_backend("local")
         assert isinstance(b, LocalBackend)
         assert b.name == "local"
-
-    def test_lambda(self):
-        b = get_backend("lambda")
-        assert isinstance(b, LambdaLabsBackend)
-        assert b.name == "lambda"
-
-    def test_aws(self):
-        b = get_backend("aws")
-        assert isinstance(b, AWSBackend)
-        assert b.name == "aws"
 
     def test_unknown_raises(self):
         with pytest.raises(ValueError, match="Unknown backend"):
@@ -140,52 +128,6 @@ class TestLocalBackend:
             submitted_at="",
         )
         assert LocalBackend().retrieve(job) is True
-
-
-# ---------------------------------------------------------------------------
-# Stub backends (Lambda, AWS) — just verify they return a job
-# ---------------------------------------------------------------------------
-
-
-class TestStubBackends:
-    def _make_config(self, tmp: str) -> str:
-        import yaml
-
-        data = {
-            "nozzle": {
-                "type": "solenoid",
-                "coils": [{"z": 0.0, "r": 0.1, "I": 10000}],
-                "domain": {"z_min": -0.3, "z_max": 1.0, "r_max": 0.5},
-            },
-            "plasma": {
-                "n0": 1e18,
-                "T_i_eV": 100,
-                "T_e_eV": 100,
-                "v_injection_ms": 50000,
-            },
-        }
-        p = Path(tmp) / "cfg.yaml"
-        p.write_text(yaml.dump(data))
-        return str(p)
-
-    def test_lambda_returns_job(self, capsys):
-        with tempfile.TemporaryDirectory() as tmp:
-            cfg = self._make_config(tmp)
-            job = LambdaLabsBackend().submit(cfg, Path(tmp) / "out")
-        assert job.job_id != ""
-        assert job.status == "pending"
-        assert job.metadata["provider"] == "lambda_labs"
-        out = capsys.readouterr().out
-        assert "Lambda" in out
-
-    def test_aws_returns_job(self, capsys):
-        with tempfile.TemporaryDirectory() as tmp:
-            cfg = self._make_config(tmp)
-            job = AWSBackend().submit(cfg, Path(tmp) / "out")
-        assert job.status == "pending"
-        assert job.metadata["provider"] == "aws"
-        out = capsys.readouterr().out
-        assert "AWS" in out
 
 
 # ---------------------------------------------------------------------------

@@ -39,7 +39,7 @@ def submit_cloud_scan(
     output_dir : path-like
         Where to write results.
     backend : str
-        Cloud backend name: ``"local"``, ``"lambda"``, or ``"aws"``.
+        Cloud backend name: ``"local"``.
     method : str
         Sampling method: ``"grid"`` or ``"lhc"``.
     dry_run : bool

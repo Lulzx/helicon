@@ -310,7 +310,7 @@ def validate(
 )
 @click.option(
     "--cloud",
-    type=click.Choice(["local", "lambda", "aws"]),
+    type=click.Choice(["local"]),
     default=None,
     help="Submit scan to cloud HPC backend (local runs inline)",
 )

@@ -1,19 +1,15 @@
 """Cloud HPC backend abstractions for remote WarpX submission.
 
-Provides a pluggable backend interface for submitting large WarpX scans
-to cloud GPU instances. The LocalBackend runs inline on the current
-machine (no cloud required). Cloud backends print SSH/API instructions
-and return a job manifest that can be used for later retrieval.
+Provides a pluggable backend interface for submitting large WarpX scans.
+The LocalBackend runs inline on the current machine (no cloud required).
 
 Supported backends:
-- ``"local"``   — run inline (default)
-- ``"lambda"``  — Lambda Labs GPU cloud (stub, prints instructions)
-- ``"aws"``     — AWS p4d instances (stub, prints instructions)
+- ``"local"`` — run inline (default)
 
 Usage::
 
     from helicon.cloud.backends import get_backend
-    backend = get_backend("lambda")
+    backend = get_backend("local")
     job = backend.submit(scan_config)
 """
 
@@ -191,103 +187,8 @@ class LocalBackend(CloudBackend):
         return True
 
 
-class LambdaLabsBackend(CloudBackend):
-    """Lambda Labs GPU cloud backend (stub).
-
-    Prints SSH/API instructions and returns a pending job manifest.
-    Full implementation requires a Lambda Labs API key in the
-    environment variable ``LAMBDA_API_KEY``.
-    """
-
-    @property
-    def name(self) -> str:
-        return "lambda"
-
-    def submit(
-        self,
-        config_path: str | Path,
-        output_dir: str | Path,
-        *,
-        n_gpus: int = 1,
-        instance_type: str | None = None,
-        extra: dict[str, Any] | None = None,
-    ) -> CloudJob:
-        instance = instance_type or "gpu_1x_a100_sxm4"
-        job = self._make_job(
-            config_path,
-            output_dir,
-            metadata={
-                "instance_type": instance,
-                "n_gpus": n_gpus,
-                "provider": "lambda_labs",
-            },
-        )
-        print(
-            f"\n[Helicon Cloud] Lambda Labs submission\n"
-            f"  Config:   {config_path}\n"
-            f"  Output:   {output_dir}\n"
-            f"  Instance: {instance}  GPUs: {n_gpus}\n"
-            f"  Job ID:   {job.job_id}\n\n"
-            f"  To submit manually:\n"
-            f"    1. Launch a Lambda instance at https://cloud.lambda.ai\n"
-            f"    2. scp {config_path} ubuntu@<ip>:~/helicon_job/config.yaml\n"
-            f"    3. ssh ubuntu@<ip> 'pip install helicon && "
-            f"helicon scan --config helicon_job/config.yaml "
-            f"--output helicon_job/results --dry-run'\n"
-            f"    4. scp -r ubuntu@<ip>:~/helicon_job/results/ {output_dir}\n"
-            f"  API key: set LAMBDA_API_KEY in environment for automated submission.\n"
-        )
-        return job
-
-
-class AWSBackend(CloudBackend):
-    """AWS p4d instance backend (stub).
-
-    Prints boto3/CLI instructions for p4d.24xlarge (8× A100) submission.
-    Full implementation requires AWS credentials.
-    """
-
-    @property
-    def name(self) -> str:
-        return "aws"
-
-    def submit(
-        self,
-        config_path: str | Path,
-        output_dir: str | Path,
-        *,
-        n_gpus: int = 1,
-        instance_type: str | None = None,
-        extra: dict[str, Any] | None = None,
-    ) -> CloudJob:
-        instance = instance_type or "p4d.24xlarge"
-        job = self._make_job(
-            config_path,
-            output_dir,
-            metadata={
-                "instance_type": instance,
-                "n_gpus": n_gpus,
-                "provider": "aws",
-            },
-        )
-        print(
-            f"\n[Helicon Cloud] AWS submission\n"
-            f"  Config:   {config_path}\n"
-            f"  Instance: {instance}  GPUs: {n_gpus}\n"
-            f"  Job ID:   {job.job_id}\n\n"
-            f"  To submit via AWS CLI:\n"
-            f"    aws ec2 run-instances --image-id ami-deeplearning "
-            f"--instance-type {instance} "
-            f"--user-data file://helicon_startup.sh\n"
-            f"  Ensure AWS credentials are configured: aws configure\n"
-        )
-        return job
-
-
 _BACKENDS: dict[str, type[CloudBackend]] = {
     "local": LocalBackend,
-    "lambda": LambdaLabsBackend,
-    "aws": AWSBackend,
 }
 
 
@@ -296,7 +197,7 @@ def get_backend(name: str) -> CloudBackend:
 
     Parameters
     ----------
-    name : ``"local"`` | ``"lambda"`` | ``"aws"``
+    name : ``"local"``
         Backend identifier.
 
     Returns
