@@ -111,7 +111,7 @@ def generate_warpx_input(config: SimConfig) -> str:
                 f"geometry.prob_hi = {domain.z_max} {r_max} {r_max}",
                 "",
                 f"amr.n_cell = {res.nz} {res.nr} {np_phi}",
-                "amr.max_level = 0",
+                f"amr.max_level = {res.amr_max_level}",
                 "",
                 "# NOTE: 3D geometry is expensive on Apple Silicon CPU.",
                 "# Use cloud HPC offload (helicon v1.3) for production 3D runs.",
@@ -133,7 +133,7 @@ def generate_warpx_input(config: SimConfig) -> str:
                 f"geometry.prob_hi = {domain.z_max} {domain.r_max}",
                 "",
                 f"amr.n_cell = {res.nz} {res.nr}",
-                "amr.max_level = 0",
+                f"amr.max_level = {res.amr_max_level}",
                 "",
                 "################",
                 "# BOUNDARY",
@@ -142,6 +142,26 @@ def generate_warpx_input(config: SimConfig) -> str:
                 "boundary.field_hi = pml pml",
                 "boundary.particle_lo = absorbing reflecting",
                 "boundary.particle_hi = absorbing absorbing",
+            ]
+        )
+
+    # AMR sub-cycling parameters (only written when AMR is active)
+    if res.amr_max_level > 0:
+        blocking = 8
+        max_grid = max(res.nz // 4, 32)
+        lines.extend(
+            [
+                "",
+                "################",
+                "# AMR",
+                "################",
+                f"amr.ref_ratio = {res.amr_ref_ratio}",
+                f"amr.regrid_int = {res.amr_regrid_int}",
+                f"amr.blocking_factor = {blocking}",
+                f"amr.max_grid_size = {max_grid}",
+                # Refine where plasma density is highest (near detachment front)
+                "warpx.refine_plasma = 1",
+                "amr.n_error_buf = 2",
             ]
         )
 

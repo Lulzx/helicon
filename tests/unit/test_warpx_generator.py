@@ -130,3 +130,63 @@ class TestNeutralsInWarpXInput:
         config = self._config_with_neutrals(species="D")
         text = generate_warpx_input(config)
         assert "D" in text  # neutral species D appears in the output
+
+
+class TestAMRConfig:
+    def _amr_config(self, max_level: int = 1, ref_ratio: int = 2) -> SimConfig:
+        from helicon.config.parser import ResolutionConfig
+
+        return SimConfig(
+            nozzle=NozzleConfig(
+                type="converging_diverging",
+                coils=[CoilConfig(z=0.0, r=0.15, I=50000)],
+                domain=DomainConfig(z_min=-0.5, z_max=2.0, r_max=0.8),
+                resolution=ResolutionConfig(
+                    nz=128,
+                    nr=64,
+                    amr_max_level=max_level,
+                    amr_ref_ratio=ref_ratio,
+                ),
+            ),
+            plasma=PlasmaSourceConfig(
+                n0=1e18, T_i_eV=100, T_e_eV=100, v_injection_ms=50000
+            ),
+        )
+
+    def test_uniform_grid_by_default(self):
+        text = generate_warpx_input(_make_config())
+        assert "amr.max_level = 0" in text
+        assert "amr.ref_ratio" not in text
+
+    def test_amr_max_level_written(self):
+        text = generate_warpx_input(self._amr_config(max_level=1))
+        assert "amr.max_level = 1" in text
+
+    def test_amr_ref_ratio_written(self):
+        text = generate_warpx_input(self._amr_config(max_level=1, ref_ratio=2))
+        assert "amr.ref_ratio = 2" in text
+
+    def test_amr_regrid_int_written(self):
+        text = generate_warpx_input(self._amr_config(max_level=1))
+        assert "amr.regrid_int" in text
+
+    def test_amr_blocking_factor_written(self):
+        text = generate_warpx_input(self._amr_config(max_level=1))
+        assert "amr.blocking_factor" in text
+
+    def test_refine_plasma_written(self):
+        text = generate_warpx_input(self._amr_config(max_level=1))
+        assert "warpx.refine_plasma = 1" in text
+
+    def test_no_amr_block_when_disabled(self):
+        text = generate_warpx_input(self._amr_config(max_level=0))
+        assert "amr.ref_ratio" not in text
+        assert "warpx.refine_plasma" not in text
+
+    def test_resolution_config_defaults(self):
+        from helicon.config.parser import ResolutionConfig
+
+        r = ResolutionConfig()
+        assert r.amr_max_level == 0
+        assert r.amr_ref_ratio == 2
+        assert r.amr_regrid_int == 10

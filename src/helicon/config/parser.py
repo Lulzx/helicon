@@ -61,6 +61,26 @@ class ResolutionConfig(BaseModel):
             "Recommended: 32–128 for production 3D runs."
         ),
     )
+    amr_max_level: int = Field(
+        default=0,
+        ge=0,
+        description=(
+            "Maximum AMR refinement level. 0 = uniform grid (default). "
+            "1 = one level of factor-2 refinement around the detachment front. "
+            "Resolves the narrow electron demagnetization layer at lower cost than "
+            "uniformly doubling the grid. Requires WarpX AMR support."
+        ),
+    )
+    amr_ref_ratio: int = Field(
+        default=2,
+        ge=2,
+        description="Refinement ratio between AMR levels. Default: 2 (factor-2 refinement).",
+    )
+    amr_regrid_int: int = Field(
+        default=10,
+        gt=0,
+        description="Steps between AMR regridding. Default: 10.",
+    )
 
 
 class NozzleConfig(BaseModel):
