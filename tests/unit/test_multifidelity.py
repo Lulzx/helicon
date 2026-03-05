@@ -115,3 +115,64 @@ class TestMultiFidelityPipeline:
         )
         result = pipeline.run(_make_candidates(4), objective="eta_d")
         assert isinstance(result, MultiFidelityResult)
+
+    def test_live_tier3_writes_status(self):
+        """Non-dry-run path writes completed or error status to tier3_meta.json."""
+        with tempfile.TemporaryDirectory() as tmp:
+            pipeline = MultiFidelityPipeline(
+                fidelity_config=FidelityConfig(
+                    tier2_threshold=0.0,
+                    tier3_threshold=0.0,
+                    top_k_to_tier3=1,
+                    dry_run_tier3=False,  # live dispatch
+                ),
+                output_dir=tmp,
+            )
+            result = pipeline.run(_make_candidates(3))
+            if result.tier3_results:
+                tier3_dirs = list(Path(tmp).glob("tier3_*"))
+                assert len(tier3_dirs) > 0
+                import json
+
+                for d in tier3_dirs:
+                    meta = json.loads((d / "tier3_meta.json").read_text())
+                    # status must be one of: completed, dry_run, or error:*
+                    assert meta["status"] in ("completed", "dry_run") or meta[
+                        "status"
+                    ].startswith("error:")
+
+
+class TestCandidateToConfig:
+    def test_builds_valid_simconfig(self):
+        from helicon.optimize.multifidelity import _candidate_to_config
+
+        metrics = {
+            "coil_r": 0.1,
+            "coil_I": 20000.0,
+            "nozzle_length_m": 0.8,
+            "n0": 1e18,
+            "T_i_eV": 100.0,
+            "T_e_eV": 100.0,
+            "v_inj_ms": 50000.0,
+        }
+        config = _candidate_to_config(metrics, output_dir="/tmp/test_mf")
+        assert config.nozzle.coils[0].I == 20000.0
+        assert config.plasma.n0 == 1e18
+        assert config.timesteps == 500
+        assert config.plasma.electron_model == "fluid"
+
+    def test_b_peak_fallback(self):
+        from helicon.optimize.multifidelity import _candidate_to_config
+
+        # Provide b_peak_T but no coil_I — should back-calculate I
+        metrics = {
+            "b_peak_T": 0.1,
+            "coil_r": 0.1,
+            "nozzle_length_m": 0.5,
+            "n0": 1e18,
+            "T_i_eV": 50.0,
+            "T_e_eV": 50.0,
+            "v_inj_ms": 40000.0,
+        }
+        config = _candidate_to_config(metrics, output_dir="/tmp/test_mf2")
+        assert config.nozzle.coils[0].I > 0

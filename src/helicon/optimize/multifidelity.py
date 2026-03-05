@@ -127,6 +127,61 @@ class MultiFidelityResult:
         }
 
 
+def _candidate_to_config(metrics: dict[str, Any], output_dir: str = "mf_tier3") -> Any:
+    """Build a minimal SimConfig from Tier-2 metrics dict.
+
+    Maps the analytical/surrogate metrics back to a runnable SimConfig so
+    Tier-3 WarpX dispatch can use the standard ``run_simulation()`` path.
+    """
+    from helicon.config.parser import (
+        CoilConfig,
+        DomainConfig,
+        NozzleConfig,
+        PlasmaSourceConfig,
+        SimConfig,
+    )
+
+    coil_r = float(metrics.get("coil_r", metrics.get("nozzle_length_m", 0.1)))
+    coil_I = float(metrics.get("coil_I", 10_000.0))
+    b_peak = float(metrics.get("b_peak_T", 0.05))
+    # Back-calculate approximate current from peak B if coil_I not in metrics
+    if "coil_I" not in metrics and b_peak > 0:
+        import math
+
+        mu0 = 4e-7 * math.pi
+        coil_I = b_peak * 2 * coil_r / mu0
+
+    nozzle_length = float(metrics.get("nozzle_length_m", max(coil_r * 5, 0.5)))
+
+    nozzle = NozzleConfig(
+        type="converging_diverging",
+        coils=[CoilConfig(z=0.0, r=max(coil_r, 0.05), I=coil_I)],
+        domain=DomainConfig(
+            z_min=-nozzle_length * 0.2,
+            z_max=nozzle_length,
+            r_max=max(coil_r * 3, 0.3),
+        ),
+    )
+    plasma = PlasmaSourceConfig(
+        n0=float(metrics.get("n0", 1e18)),
+        T_i_eV=float(metrics.get("T_i_eV", 100.0)),
+        T_e_eV=float(metrics.get("T_e_eV", 100.0)),
+        v_injection_ms=float(metrics.get("v_inj_ms", 50_000.0)),
+        electron_model="fluid",  # faster for MF Tier-3 screening
+    )
+    return SimConfig(
+        nozzle=nozzle,
+        plasma=plasma,
+        timesteps=500,  # short run for MF screening
+        output_dir=output_dir,
+        diagnostics={
+            "mode": "scan",
+            "field_dump_interval": 500,
+            "particle_dump_interval": 500,
+        },
+    )
+
+
 class MultiFidelityPipeline:
     """Three-tier multi-fidelity nozzle optimisation pipeline.
 
@@ -363,6 +418,9 @@ class MultiFidelityPipeline:
 
         for r in top_tier2:
             t_start = time.monotonic()
+            out = self.output_dir / f"tier3_{r.candidate_id}"
+            out.mkdir(exist_ok=True)
+
             meta = {
                 "candidate_id": r.candidate_id,
                 "tier2_score": r.score,
@@ -370,21 +428,40 @@ class MultiFidelityPipeline:
                 "dry_run": self.cfg.dry_run_tier3,
                 "status": "queued",
             }
-            out = self.output_dir / f"tier3_{r.candidate_id}"
-            out.mkdir(exist_ok=True)
             (out / "tier3_meta.json").write_text(json.dumps(meta, indent=2))
-            dt = time.monotonic() - t_start
 
-            if not self.cfg.dry_run_tier3:
-                # Actual WarpX run would happen here — use cloud backend
-                metrics = r.metrics
-                score = r.score
-                status = "running"
-            else:
+            if self.cfg.dry_run_tier3:
                 metrics = r.metrics
                 score = r.score
                 status = "dry_run"
+            else:
+                # Build a SimConfig from the candidate and run WarpX
+                try:
+                    from helicon.runner.launch import run_simulation
 
+                    config = _candidate_to_config(r.metrics, output_dir=str(out))
+                    run_result = run_simulation(config, output_dir=out, dry_run=False)
+                    # Extract postprocess metrics if available
+                    try:
+                        from helicon.postprocess.thrust import compute_thrust
+
+                        pp = compute_thrust(str(out))
+                        pic_metrics = {
+                            "thrust_N": pp.thrust_N,
+                            "isp_s": pp.isp_s,
+                        }
+                    except Exception:
+                        pic_metrics = {}
+                    metrics = {**r.metrics, **pic_metrics}
+                    score = r.score
+                    status = "completed"
+                    meta["wall_time_s"] = run_result.wall_time_s
+                except Exception as exc:
+                    metrics = r.metrics
+                    score = r.score
+                    status = f"error: {exc}"
+
+            dt = time.monotonic() - t_start
             meta["status"] = status
             (out / "tier3_meta.json").write_text(json.dumps(meta, indent=2))
 
