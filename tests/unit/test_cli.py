@@ -587,3 +587,51 @@ def test_surrogate_train_writes_model_files(tmp_path):
     # Should contain at least one file (weights or metadata)
     files = list(out.iterdir())
     assert len(files) > 0
+
+
+# ---------------------------------------------------------------------------
+# helicon export-cad
+# ---------------------------------------------------------------------------
+
+
+def test_export_cad_step(tmp_path):
+    runner = CliRunner()
+    with tempfile.TemporaryDirectory() as tmpdir:
+        config_path = _write_config(tmpdir)
+        out = str(tmp_path / "coils.step")
+        result = runner.invoke(
+            main,
+            [
+                "export-cad",
+                "--config",
+                config_path,
+                "--output",
+                out,
+                "--format",
+                "step",
+            ],
+        )
+    assert result.exit_code == 0, result.output
+    assert (tmp_path / "coils.step").exists()
+    assert "Exported" in result.output
+
+
+def test_export_cad_iges(tmp_path):
+    runner = CliRunner()
+    with tempfile.TemporaryDirectory() as tmpdir:
+        config_path = _write_config(tmpdir)
+        out = str(tmp_path / "coils.iges")
+        result = runner.invoke(
+            main,
+            [
+                "export-cad",
+                "--config",
+                config_path,
+                "--output",
+                out,
+                "--format",
+                "iges",
+            ],
+        )
+    assert result.exit_code == 0, result.output
+    assert (tmp_path / "coils.iges").exists()
