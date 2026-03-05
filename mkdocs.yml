@@ -38,10 +38,13 @@ nav:
       - Post-Processing: guide/postprocessing.md
       - Parameter Scans: guide/scans.md
       - Optimization: guide/optimization.md
+      - Apple Silicon: guide/apple_silicon.md
   - Validation:
       - Overview: validation/index.md
       - Free Expansion: validation/free_expansion.md
+      - Guiding-Center Orbit: validation/guiding_center.md
       - Merino-Ahedo: validation/merino_ahedo.md
+      - MN1D Benchmark: validation/mn1d_comparison.md
       - VASIMR VX-200: validation/vasimr.md
       - Resistive Detachment: validation/dimov.md
   - API Reference:
