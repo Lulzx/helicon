@@ -9,3 +9,6 @@ build/
 .pytest_cache/
 .ruff_cache/
 results/
+mf_output/
+scan_results/
+cloud_scan_results/

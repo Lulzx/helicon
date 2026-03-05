@@ -54,6 +54,9 @@ nav:
       - helicon.postprocess: api/postprocess.md
       - helicon.optimize: api/optimize.md
       - helicon.validate: api/validate.md
+      - helicon.surrogate: api/surrogate.md
+      - helicon.detach: api/detach.md
+      - helicon.perf: api/perf.md
   - FAQ: faq.md
   - Contributing: contributing.md
   - Changelog: changelog.md
