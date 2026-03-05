@@ -42,7 +42,12 @@
   `helicon.Metrics`, `helicon.DetachmentMetrics`)
 - Added `tests/unit/test_mission_cli.py`: 14 tests for throttle-map + mission + regression CLI
 - Added `tests/unit/test_diagnostics.py`: 9 tests for `DiagnosticSchedule` / `resolve_schedule`
-- Total: 1258 tests (was 1198)
+- Added `tests/unit/test_moments.py`: 8 tests for `MomentData` dataclass + bin-index logic
+- Added `tests/unit/test_fieldline_classify.py`: 8 tests for `ParticleClassification`, `_navigate_openpmd`
+- Added `tests/unit/test_biot_savart_3d.py`: 16 tests for 3D Biot-Savart solver (`Coil3D`, `Grid3D`, `BField3D`, `compute_bfield_3d`)
+- Added `tests/unit/test_sim3d.py`: 9 tests for `Sim3DConfig`, `Sim3DResult`, `_make_grid_params`, `run_3d_simulation`
+- Added `ScanResult.plot_pareto()` test in `test_scan.py` (spec §6.2)
+- Total: 1300 tests (was 1258)
 
 ---
 

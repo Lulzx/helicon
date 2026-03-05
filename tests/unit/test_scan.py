@@ -337,3 +337,10 @@ class TestScanResultExport:
             assert "params" in entry
             assert "coils.0.I" in entry["params"]
             assert "screened_out" in entry
+
+    def test_plot_pareto_returns_tuple(self, base_config):
+        """plot_pareto() returns (fig, ax) or (None, None) without crashing."""
+        result = self._make_result(base_config)
+        out = result.plot_pareto()
+        assert isinstance(out, tuple)
+        assert len(out) == 2
