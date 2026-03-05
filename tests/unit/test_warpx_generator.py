@@ -148,9 +148,7 @@ class TestAMRConfig:
                     amr_ref_ratio=ref_ratio,
                 ),
             ),
-            plasma=PlasmaSourceConfig(
-                n0=1e18, T_i_eV=100, T_e_eV=100, v_injection_ms=50000
-            ),
+            plasma=PlasmaSourceConfig(n0=1e18, T_i_eV=100, T_e_eV=100, v_injection_ms=50000),
         )
 
     def test_uniform_grid_by_default(self):

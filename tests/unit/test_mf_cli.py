@@ -243,9 +243,7 @@ class TestMfPromote:
         runner = CliRunner()
         with tempfile.TemporaryDirectory() as tmp:
             d = self._write_tier3_dir(tmp)
-            runner.invoke(
-                main, ["mf", "promote", d, "--output", str(Path(tmp) / "pic")]
-            )
+            runner.invoke(main, ["mf", "promote", d, "--output", str(Path(tmp) / "pic")])
             meta = json.loads((Path(d) / "tier3_meta.json").read_text())
             # Must have been updated — either completed or error, not still queued/dry_run
             assert meta["status"] in ("completed",) or meta["status"].startswith("error:")
