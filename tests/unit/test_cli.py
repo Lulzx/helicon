@@ -537,3 +537,53 @@ def test_convergence_dry_run(tmp_path):
         )
     assert result.exit_code == 0, result.output
     assert "Levels run:" in result.output
+
+
+# ---------------------------------------------------------------------------
+# helicon surrogate-train
+# ---------------------------------------------------------------------------
+
+
+def test_surrogate_train_basic(tmp_path):
+    runner = CliRunner()
+    result = runner.invoke(
+        main,
+        [
+            "surrogate-train",
+            "--n-samples",
+            "5",
+            "--epochs",
+            "2",
+            "--output",
+            str(tmp_path / "surrogate"),
+            "--seed",
+            "0",
+        ],
+    )
+    assert result.exit_code == 0, result.output
+    assert "Surrogate saved" in result.output
+    assert (tmp_path / "surrogate").exists()
+
+
+def test_surrogate_train_writes_model_files(tmp_path):
+    runner = CliRunner()
+    out = tmp_path / "surrogate"
+    runner.invoke(
+        main,
+        [
+            "surrogate-train",
+            "--n-samples",
+            "5",
+            "--epochs",
+            "1",
+            "--output",
+            str(out),
+            "--seed",
+            "42",
+        ],
+    )
+    # Model directory should exist with saved weights
+    assert out.exists()
+    # Should contain at least one file (weights or metadata)
+    files = list(out.iterdir())
+    assert len(files) > 0
