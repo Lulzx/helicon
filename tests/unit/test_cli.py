@@ -183,3 +183,163 @@ def test_perf_cmd_json():
     data = __import__("json").loads(result.output)
     assert "chip_model" in data
     assert "openmp" in data
+
+
+# ---------------------------------------------------------------------------
+# helicon scan
+# ---------------------------------------------------------------------------
+
+
+def test_scan_dry_run(tmp_path):
+    runner = CliRunner()
+    with tempfile.TemporaryDirectory() as tmpdir:
+        config_path = _write_config(tmpdir)
+        out = str(tmp_path / "scan_out")
+        result = runner.invoke(
+            main,
+            [
+                "scan",
+                "--config", config_path,
+                "--vary", "coils.0.I:5000:15000:2",
+                "--output", out,
+                "--dry-run",
+            ],
+        )
+    assert result.exit_code == 0, result.output
+    assert "Done:" in result.output
+    assert "CSV:" in result.output
+    assert "JSON:" in result.output
+
+
+def test_scan_writes_csv_and_json(tmp_path):
+    import json
+
+    runner = CliRunner()
+    with tempfile.TemporaryDirectory() as tmpdir:
+        config_path = _write_config(tmpdir)
+        out = tmp_path / "scan_out"
+        runner.invoke(
+            main,
+            [
+                "scan",
+                "--config", config_path,
+                "--vary", "coils.0.I:5000:15000:2",
+                "--output", str(out),
+                "--dry-run",
+            ],
+        )
+    assert (out / "scan_results.csv").exists()
+    assert (out / "scan_summary.json").exists()
+    data = json.loads((out / "scan_summary.json").read_text())
+    assert data["n_points"] == 2
+
+
+def test_scan_bad_vary(tmp_path):
+    runner = CliRunner()
+    with tempfile.TemporaryDirectory() as tmpdir:
+        config_path = _write_config(tmpdir)
+        result = runner.invoke(
+            main,
+            ["scan", "--config", config_path, "--vary", "badspec", "--output", str(tmp_path)],
+        )
+    assert result.exit_code != 0
+
+
+# ---------------------------------------------------------------------------
+# helicon doctor, init, schema
+# ---------------------------------------------------------------------------
+
+
+def test_doctor_cmd():
+    runner = CliRunner()
+    result = runner.invoke(main, ["doctor"])
+    assert result.exit_code == 0
+    assert "Python" in result.output or "python" in result.output.lower()
+
+
+def test_init_cmd(tmp_path):
+    runner = CliRunner()
+    out = str(tmp_path / "my_nozzle.yaml")
+    result = runner.invoke(main, ["init", "test_nozzle", "--output", out])
+    assert result.exit_code == 0, result.output
+    assert (tmp_path / "my_nozzle.yaml").exists()
+
+
+def test_schema_cmd():
+    runner = CliRunner()
+    result = runner.invoke(main, ["schema"])
+    assert result.exit_code == 0
+    data = __import__("json").loads(result.output)
+    assert "properties" in data or "title" in data
+
+
+# ---------------------------------------------------------------------------
+# helicon benchmark
+# ---------------------------------------------------------------------------
+
+
+def test_benchmark_cmd(tmp_path):
+    runner = CliRunner()
+    result = runner.invoke(main, ["benchmark", "--repeat", "1"])
+    assert result.exit_code == 0
+    assert "Biot" in result.output or "benchmark" in result.output.lower()
+
+
+# ---------------------------------------------------------------------------
+# helicon detach assess
+# ---------------------------------------------------------------------------
+
+
+def test_detach_assess_json():
+    runner = CliRunner()
+    result = runner.invoke(
+        main,
+        [
+            "detach", "assess",
+            "--n", "1e18",
+            "--Te", "100",
+            "--Ti", "100",
+            "--B", "0.05",
+            "--vz", "50000",
+            "--json",
+        ],
+    )
+    assert result.exit_code in (0, 1, 2), result.output
+    data = __import__("json").loads(result.output)
+    assert "is_detached" in data or "detached" in str(data)
+
+
+def test_detach_assess_text():
+    runner = CliRunner()
+    result = runner.invoke(
+        main,
+        [
+            "detach", "assess",
+            "--n", "1e18",
+            "--Te", "100",
+            "--Ti", "100",
+            "--B", "0.1",
+            "--vz", "20000",
+        ],
+    )
+    assert result.exit_code in (0, 1, 2)
+
+
+# ---------------------------------------------------------------------------
+# helicon sensitivity (dry-run via analytical only)
+# ---------------------------------------------------------------------------
+
+
+def test_sensitivity_cmd(tmp_path):
+    runner = CliRunner()
+    result = runner.invoke(
+        main,
+        [
+            "sensitivity",
+            "--preset", "sunbird",
+            "--n-samples", "8",
+            "--output", str(tmp_path / "sobol.json"),
+        ],
+    )
+    assert result.exit_code == 0, result.output
+    assert "Sobol" in result.output or "S1" in result.output or "coil" in result.output.lower()
