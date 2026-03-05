@@ -9,7 +9,11 @@ import numpy as np
 import pytest
 
 from helicon.fields.biot_savart import BField
-from helicon.fields.import_external import load_csv_bfield, load_femm_bfield
+from helicon.fields.import_external import (
+    load_comsol_bfield,
+    load_csv_bfield,
+    load_femm_bfield,
+)
 
 
 # ---------------------------------------------------------------------------
@@ -199,3 +203,100 @@ class TestLoadFEMMBField:
                 f.write("2.0\t1.0\t0.02\t0.01\t0.022\n")
             bf = load_femm_bfield(path, length_scale=1.0)
         assert bf.r[0] == pytest.approx(1.0)
+
+
+# ---------------------------------------------------------------------------
+# load_comsol_bfield
+# ---------------------------------------------------------------------------
+
+
+def _write_comsol(path: Path, nr: int = 3, nz: int = 4) -> tuple[np.ndarray, np.ndarray]:
+    """Write a synthetic COMSOL-style export file."""
+    r_vals = np.linspace(0.0, 0.2, nr)
+    z_vals = np.linspace(-0.3, 0.5, nz)
+
+    Br_true = np.zeros((nr, nz))
+    Bz_true = np.zeros((nr, nz))
+    for i, r in enumerate(r_vals):
+        for j, z in enumerate(z_vals):
+            Br_true[i, j] = 0.01 * r
+            Bz_true[i, j] = 0.05 + 0.001 * z
+
+    with path.open("w") as f:
+        f.write("% COMSOL 6.1.0 export\n")
+        f.write("% Model: magnetic_nozzle\n")
+        f.write("% r (m)   z (m)   mf.Br (T)   mf.Bz (T)\n")
+        for i, r in enumerate(r_vals):
+            for j, z in enumerate(z_vals):
+                f.write(f"{r:.6e}  {z:.6e}  {Br_true[i, j]:.6e}  {Bz_true[i, j]:.6e}\n")
+
+    return Br_true, Bz_true
+
+
+class TestLoadCOMSOLBField:
+    def test_returns_bfield(self, tmp_path):
+        path = tmp_path / "field.txt"
+        _write_comsol(path)
+        bf = load_comsol_bfield(path)
+        assert isinstance(bf, BField)
+
+    def test_correct_shapes(self, tmp_path):
+        nr, nz = 3, 4
+        path = tmp_path / "field.txt"
+        _write_comsol(path, nr=nr, nz=nz)
+        bf = load_comsol_bfield(path)
+        assert bf.Br.shape == (nr, nz)
+        assert bf.Bz.shape == (nr, nz)
+        assert len(bf.r) == nr
+        assert len(bf.z) == nz
+
+    def test_values_match_ground_truth(self, tmp_path):
+        nr, nz = 3, 4
+        path = tmp_path / "field.txt"
+        Br_true, Bz_true = _write_comsol(path, nr=nr, nz=nz)
+        bf = load_comsol_bfield(path)
+        np.testing.assert_allclose(bf.Br, Br_true, atol=1e-10)
+        np.testing.assert_allclose(bf.Bz, Bz_true, atol=1e-10)
+
+    def test_backend_tag(self, tmp_path):
+        path = tmp_path / "field.txt"
+        _write_comsol(path)
+        bf = load_comsol_bfield(path)
+        assert bf.backend == "comsol"
+
+    def test_empty_coils(self, tmp_path):
+        path = tmp_path / "field.txt"
+        _write_comsol(path)
+        bf = load_comsol_bfield(path)
+        assert bf.coils == []
+
+    def test_length_scale(self, tmp_path):
+        path = tmp_path / "field_mm.txt"
+        # Write in mm
+        with path.open("w") as f:
+            f.write("% r (mm)  z (mm)  Br (T)  Bz (T)\n")
+            f.write("0.0    0.0    0.001  0.05\n")
+            f.write("100.0  0.0    0.002  0.05\n")
+            f.write("0.0    200.0  0.001  0.04\n")
+            f.write("100.0  200.0  0.002  0.04\n")
+        bf = load_comsol_bfield(path, length_scale=1e-3)
+        assert bf.r.max() == pytest.approx(0.1, abs=1e-9)
+        assert bf.z.max() == pytest.approx(0.2, abs=1e-9)
+
+    def test_empty_file_raises(self, tmp_path):
+        path = tmp_path / "empty.txt"
+        path.write_text("% just comments\n% no data\n")
+        with pytest.raises(ValueError, match="No valid numeric data"):
+            load_comsol_bfield(path)
+
+    def test_column_name_override(self, tmp_path):
+        path = tmp_path / "reordered.txt"
+        with path.open("w") as f:
+            f.write("% z (m)  r (m)  Bz (T)  Br (T)\n")
+            f.write("0.0   0.0   0.05  0.001\n")
+            f.write("0.0   0.1   0.05  0.002\n")
+            f.write("0.5   0.0   0.04  0.001\n")
+            f.write("0.5   0.1   0.04  0.002\n")
+        # Columns are z, r, Bz, Br (reversed from default)
+        bf = load_comsol_bfield(path, r_col=1, z_col=0, Br_col=3, Bz_col=2)
+        assert bf.Br.shape == (2, 2)

@@ -13,7 +13,11 @@ from helicon.fields.field_lines import (
     trace_field_lines,
 )
 from helicon.fields.frc_topology import FRCTopologyResult, find_frc_topology
-from helicon.fields.import_external import load_csv_bfield, load_femm_bfield
+from helicon.fields.import_external import (
+    load_comsol_bfield,
+    load_csv_bfield,
+    load_femm_bfield,
+)
 
 
 def compute(nozzle_or_coils, grid=None, **kwargs) -> BField:
@@ -69,6 +73,7 @@ __all__ = [
     "compute_bfield_cached",
     "compute_flux_function",
     "find_frc_topology",
+    "load_comsol_bfield",
     "load_csv_bfield",
     "load_femm_bfield",
     "trace_field_line",
