@@ -33,9 +33,16 @@
 ### Infrastructure
 - Removed Lambda Labs and AWS cloud backend stubs; only `LocalBackend` remains
 - Added `mf_output/`, `scan_results/`, `cloud_scan_results/` to `.gitignore`
-- Updated `CITATION.cff` to v2.8.0 (was stale at v1.1.0)
-- 7 new tests for `ScanResult.to_csv()` / `to_json_summary()`; 8 new tests for
-  `load_comsol_bfield()`; total: 1198 tests
+- Updated `CITATION.cff` to v2.9.0
+- Expanded CLI test coverage to all commands: `throttle-map`, `mission`, `regression`,
+  `validate`, `run-3d`, `postprocess`, `optimize`, `convergence`, `surrogate-train`,
+  `export-cad` — total CLI commands with test coverage: 22/22
+- Added `tests/unit/test_public_api.py`: 14 tests for spec §6.2 top-level API
+  (`helicon.Config`, `helicon.fields.compute()`, `helicon.run()`, `helicon.scan()`,
+  `helicon.Metrics`, `helicon.DetachmentMetrics`)
+- Added `tests/unit/test_mission_cli.py`: 14 tests for throttle-map + mission + regression CLI
+- Added `tests/unit/test_diagnostics.py`: 9 tests for `DiagnosticSchedule` / `resolve_schedule`
+- Total: 1258 tests (was 1198)
 
 ---
 
