@@ -1,5 +1,44 @@
 # Changelog
 
+## v2.9.0 (2026-03)
+
+### New Features
+
+**COMSOL field map import** (spec §3.2 Module 2)
+- `fields/import_external.py`: `load_comsol_bfield()` — parse COMSOL Multiphysics export
+  files (%-comment header, space/tab-delimited data) with flexible column selection by
+  index or partial name, and `length_scale` for unit conversion (mm→m etc.)
+- Exported from `helicon.fields` public API
+
+**ScanResult CSV / JSON export** (spec §6.3)
+- `optimize/scan.py`: `ScanResult.to_csv(path)` — write tabulated parameter scan results
+  to CSV (one row per scan point; parameter columns + metric columns)
+- `optimize/scan.py`: `ScanResult.to_json_summary(path)` — write structured JSON summary
+  with params + metrics + screened_out flag per point
+- `helicon scan` CLI now automatically writes `scan_results.csv` and `scan_summary.json`
+  to the output directory
+
+**Documentation improvements**
+- Added validation case docs for `guiding_center` and `mn1d_comparison` (previously
+  missing from `docs_src/validation/`; all 6 spec-required cases now documented)
+- Added API reference pages for `helicon.surrogate`, `helicon.detach`, `helicon.perf`
+- Added Apple Silicon guide and Timing Reference to User Guide nav
+- Added simulation wall-time estimates for all 6 validation cases on M2 Pro, M4 Pro,
+  M4 Max, RTX 3090, A100, H100
+
+### Bug Fixes
+- `cli.py` `mf promote`: fixed `wall_time_s` → `wall_time_seconds` attribute name
+  (`RunResult.wall_time_seconds` is the correct field name)
+
+### Infrastructure
+- Removed Lambda Labs and AWS cloud backend stubs; only `LocalBackend` remains
+- Added `mf_output/`, `scan_results/`, `cloud_scan_results/` to `.gitignore`
+- Updated `CITATION.cff` to v2.8.0 (was stale at v1.1.0)
+- 7 new tests for `ScanResult.to_csv()` / `to_json_summary()`; 8 new tests for
+  `load_comsol_bfield()`; total: 1198 tests
+
+---
+
 ## v2.7.0 (2026-03)
 
 ### New Features
