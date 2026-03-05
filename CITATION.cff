@@ -2,7 +2,7 @@ cff-version: 1.2.0
 message: "If you use Helicon in your research, please cite it as below."
 type: software
 title: "Helicon: GPU-Accelerated Magnetic Nozzle Simulation & Detachment Analysis Toolkit"
-version: 2.8.0
+version: 2.9.0
 date-released: "2026-03-05"
 license: MIT
 repository-code: "https://github.com/lulzx/helicon"

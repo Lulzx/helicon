@@ -1,6 +1,6 @@
 [project]
 name = "helicon"
-version = "2.8.0"
+version = "2.9.0"
 description = "GPU-Accelerated Magnetic Nozzle Simulation & Detachment Analysis Toolkit"
 license = "MIT"
 requires-python = ">=3.11"

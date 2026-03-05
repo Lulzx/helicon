@@ -34,7 +34,7 @@ def test_version():
     runner = CliRunner()
     result = runner.invoke(main, ["--version"])
     assert result.exit_code == 0
-    assert "2.8.0" in result.output
+    assert "2.9.0" in result.output
 
 
 def test_run_dry_run_with_config():
@@ -445,3 +445,95 @@ def test_run_3d_save_json(tmp_path):
         )
     assert result.exit_code == 0, result.output
     assert (tmp_path / "sim3d_out" / "sim3d_result.json").exists()
+
+
+# ---------------------------------------------------------------------------
+# helicon postprocess
+# ---------------------------------------------------------------------------
+
+
+def test_postprocess_empty_dir(tmp_path):
+    """postprocess on empty dir exits 0 (FileNotFoundError caught internally)."""
+    runner = CliRunner()
+    result = runner.invoke(main, ["postprocess", "--input", str(tmp_path)])
+    assert result.exit_code == 0, result.output
+
+
+def test_postprocess_outputs_json(tmp_path):
+    """postprocess with no --output flag writes JSON to stdout."""
+    runner = CliRunner()
+    result = runner.invoke(
+        main,
+        ["postprocess", "--input", str(tmp_path), "--metrics", "thrust"],
+    )
+    assert result.exit_code == 0, result.output
+    assert "{" in result.output  # JSON dict in stdout
+
+
+def test_postprocess_output_file(tmp_path):
+    """postprocess with --output writes JSON file."""
+    runner = CliRunner()
+    out_file = str(tmp_path / "metrics.json")
+    result = runner.invoke(
+        main,
+        [
+            "postprocess",
+            "--input",
+            str(tmp_path),
+            "--metrics",
+            "thrust",
+            "--output",
+            out_file,
+        ],
+    )
+    assert result.exit_code == 0, result.output
+    assert (tmp_path / "metrics.json").exists()
+
+
+# ---------------------------------------------------------------------------
+# helicon optimize and convergence (dry-run)
+# ---------------------------------------------------------------------------
+
+
+def test_optimize_dry_run(tmp_path):
+    runner = CliRunner()
+    with tempfile.TemporaryDirectory() as tmpdir:
+        config_path = _write_config(tmpdir)
+        result = runner.invoke(
+            main,
+            [
+                "optimize",
+                "--config",
+                config_path,
+                "--vary",
+                "coils.0.I:5000:15000:4",
+                "--n-iterations",
+                "4",
+                "--dry-run",
+                "--output",
+                str(tmp_path / "opt_out"),
+            ],
+        )
+    assert result.exit_code == 0, result.output
+    assert "Done:" in result.output
+
+
+def test_convergence_dry_run(tmp_path):
+    runner = CliRunner()
+    with tempfile.TemporaryDirectory() as tmpdir:
+        config_path = _write_config(tmpdir)
+        result = runner.invoke(
+            main,
+            [
+                "convergence",
+                "--config",
+                config_path,
+                "--resolutions",
+                "16x8,32x16",
+                "--dry-run",
+                "--output",
+                str(tmp_path / "conv_out"),
+            ],
+        )
+    assert result.exit_code == 0, result.output
+    assert "Levels run:" in result.output
