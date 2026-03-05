@@ -271,3 +271,69 @@ def test_run_scan_creates_subdirs(base_config):
     assert len(subdirs) == 2
     assert subdirs[0].name == "point_0000"
     assert subdirs[1].name == "point_0001"
+
+
+# ---------------------------------------------------------------------------
+# ScanResult CSV / JSON export (spec §6.3)
+# ---------------------------------------------------------------------------
+
+
+class TestScanResultExport:
+    def _make_result(self, base_config):
+        ranges = [ParameterRange("coils.0.I", 800.0, 1200.0, 3)]
+        with tempfile.TemporaryDirectory() as tmp:
+            return run_scan(base_config, ranges, output_base=tmp, dry_run=True)
+
+    def test_to_csv_creates_file(self, base_config, tmp_path):
+        result = self._make_result(base_config)
+        csv_path = result.to_csv(tmp_path / "out.csv")
+        assert csv_path.exists()
+
+    def test_to_csv_has_header_and_rows(self, base_config, tmp_path):
+        import csv
+
+        result = self._make_result(base_config)
+        csv_path = result.to_csv(tmp_path / "out.csv")
+        with csv_path.open() as f:
+            reader = csv.DictReader(f)
+            rows = list(reader)
+        assert len(rows) == 3
+        assert "coils.0.I" in rows[0]
+
+    def test_to_csv_param_values(self, base_config, tmp_path):
+        import csv
+
+        result = self._make_result(base_config)
+        csv_path = result.to_csv(tmp_path / "out.csv")
+        with csv_path.open() as f:
+            reader = csv.DictReader(f)
+            rows = list(reader)
+        vals = [float(r["coils.0.I"]) for r in rows]
+        assert vals[0] < vals[-1]
+
+    def test_to_json_summary_creates_file(self, base_config, tmp_path):
+        result = self._make_result(base_config)
+        p = result.to_json_summary(tmp_path / "summary.json")
+        assert p.exists()
+
+    def test_to_json_summary_structure(self, base_config, tmp_path):
+        import json
+
+        result = self._make_result(base_config)
+        p = result.to_json_summary(tmp_path / "summary.json")
+        data = json.loads(p.read_text())
+        assert data["n_points"] == 3
+        assert "param_names" in data
+        assert "results" in data
+        assert len(data["results"]) == 3
+
+    def test_to_json_summary_each_result_has_params(self, base_config, tmp_path):
+        import json
+
+        result = self._make_result(base_config)
+        p = result.to_json_summary(tmp_path / "summary.json")
+        data = json.loads(p.read_text())
+        for entry in data["results"]:
+            assert "params" in entry
+            assert "coils.0.I" in entry["params"]
+            assert "screened_out" in entry

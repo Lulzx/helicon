@@ -140,6 +140,85 @@ class ScanResult:
 
         return result.plot(labels=(x_key, y_key), ax=ax)
 
+    def to_csv(self, path: str | Path) -> Path:
+        """Write tabulated scan results to a CSV file.
+
+        Each row represents one scan point.  Columns include the varied
+        parameters (from :attr:`param_names`) followed by all scalar
+        metric values.
+
+        Parameters
+        ----------
+        path : path-like
+            Destination CSV file path.
+
+        Returns
+        -------
+        Path
+            Resolved path of the written file.
+        """
+        import csv as _csv
+
+        out = Path(path)
+        out.parent.mkdir(parents=True, exist_ok=True)
+
+        # Collect all metric keys across all points (union)
+        metric_keys: list[str] = []
+        seen: set[str] = set()
+        for m in self.metrics:
+            for k in m:
+                if k not in seen:
+                    metric_keys.append(k)
+                    seen.add(k)
+
+        fieldnames = self.param_names + metric_keys
+
+        with out.open("w", newline="") as f:
+            writer = _csv.DictWriter(f, fieldnames=fieldnames, extrasaction="ignore")
+            writer.writeheader()
+            for point, metrics in zip(self.points, self.metrics):
+                row: dict[str, Any] = dict(point.params)
+                row.update(metrics)
+                writer.writerow(row)
+
+        return out
+
+    def to_json_summary(self, path: str | Path) -> Path:
+        """Write a JSON summary of the scan to *path*.
+
+        The summary includes the parameter names, count of succeeded /
+        screened points, and all metric dicts.
+
+        Parameters
+        ----------
+        path : path-like
+            Destination JSON file path.
+
+        Returns
+        -------
+        Path
+            Resolved path of the written file.
+        """
+        import json as _json
+
+        out = Path(path)
+        out.parent.mkdir(parents=True, exist_ok=True)
+
+        summary = {
+            "n_points": len(self.points),
+            "n_screened": self.n_screened,
+            "n_succeeded": sum(1 for m in self.metrics if m.get("success")),
+            "param_names": self.param_names,
+            "objectives": self.objectives,
+            "results": [
+                {"params": dict(p.params), "metrics": m, "screened_out": p.screened_out}
+                for p, m in zip(self.points, self.metrics)
+            ],
+        }
+
+        out.write_text(_json.dumps(summary, indent=2, default=str))
+        return out
+
 
 def _set_nested(data: dict, path: str, value: float) -> dict:
     """Set a value in a nested structure using dot-notation path.

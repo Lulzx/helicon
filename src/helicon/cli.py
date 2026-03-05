@@ -391,7 +391,12 @@ def scan(
             f"  Prescreened: {result.n_screened}/{n_points} "
             f"filtered by mirror ratio < {min_mirror_ratio}"
         )
+    # Write tabulated results (spec §6.3)
+    csv_path = result.to_csv(Path(output_dir) / "scan_results.csv")
+    json_path = result.to_json_summary(Path(output_dir) / "scan_summary.json")
     click.echo(f"Output: {output_dir}/")
+    click.echo(f"  CSV:  {csv_path}")
+    click.echo(f"  JSON: {json_path}")
 
 
 @main.command()
