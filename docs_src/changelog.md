@@ -39,6 +39,160 @@
 
 ---
 
+## v2.8.0 (2026-03)
+
+### New Features
+
+**`helicon mf` CLI command group**
+- `helicon mf report PATH` — reads all `tier3_meta.json` files from a multi-fidelity scan output directory, ranks candidates by tier2 score, and prints a formatted table; `--json` for machine-readable output
+- `helicon mf run` — CLI surface for `MultiFidelityPipeline`: `--vary`, `--n-tier1`, `--tier2-threshold`, `--tier3-threshold`, `--top-k`, `--objective`, `--dry-run` flags; reports tier promotion counts and best candidate metrics
+- 9 tests added; total 1174
+
+---
+
+## v2.6.0 (2026-03)
+
+### New Features
+
+**Detachment CLI group**
+- `helicon detach` command group with five subcommands: `assess`, `calibrate`, `invert`, `simulate`, `report`
+- `helicon detach assess` — full multi-criterion detachment state evaluation with optional `--control` and `--json` flags
+- `helicon detach invert` — invert thrust measurement to plasma state estimate
+- `helicon detach calibrate` — calibrate detachment score weights from synthetic data
+- `helicon detach simulate` — simulate Lyapunov-stable feedback controller over N steps
+- `helicon detach report` — full multi-criterion report (MHD, kinetic, sheath, Lyapunov)
+
+---
+
+## v2.5.0 (2026-03)
+
+### New Features
+
+**Novel detachment physics contributions**
+- Five novel detachment analysis models beyond the base MHD framework
+- Kinetic FLR corrections (Northrop 2nd-order, kinetic Alfvén magnetisation)
+- Sheath coupling correction: Debye length, sheath potential, electric-to-mirror ratio
+- Lyapunov stability certificate: V, dV/dt, convergence time per controller step
+- Detachment score BCE calibration from synthetic PIC scan data
+- Thrust inversion: recover n₀, Tᵢ, η_d from measured force and mass flow
+
+---
+
+## v2.4.0 (2026-03)
+
+### New Features
+
+**Real-time detachment control model (`helicon/detach/`)**
+- `detach/mhd.py`: MHD detachment model — mirror ratio, beta, field-line divergence criterion
+- `detach/kinetic.py`: Kinetic FLR corrections to MHD detachment scores
+- `detach/sheath.py`: Sheath coupling model with Debye-length correction to η_d
+- `detach/controller.py`: Lyapunov-stable feedback controller — computes control action to drive plasma toward target detachment state; proves stability via V̇ < 0 certificate
+- `detach/calibrate.py`: BCE weight calibration on synthetic scan database
+- `detach/invert.py`: Thrust-measurement inversion to plasma state
+
+---
+
+## v2.3.0 (2026-03)
+
+### New Features
+
+**Sensitivity & Provenance CLI**
+- `helicon sensitivity` — Sobol sensitivity analysis with first-order and total-effect indices; `--json` output
+- `helicon provenance list/show/lineage` — browse the JSON-lines audit trail, inspect individual records, trace design lineage graphs
+- `helicon perf` — Apple Silicon hardware profile with WarpX OpenMP and MLX tuning recommendations
+
+---
+
+## v2.2.0 (2026-03)
+
+### Improvements
+
+**Hardening & tooling**
+- Pre-commit hook (`.git/hooks/pre-commit`): runs `ruff check` then `pytest` before every commit; blocks on failure
+- CI lint + test failures resolved across all modules
+- `ruff` format applied to entire codebase; stale `noqa` directives removed
+- `helicon doctor --json` added; structured environment report for CI integration
+
+---
+
+## v2.1.0 (2026-03)
+
+### New Features
+
+**Ecosystem & Community modules**
+- `helicon/plugins/`: `PluginRegistry` — register, get, call, and list plugins by namespace; entry-point auto-discovery via `importlib.metadata`
+- `helicon/multithruster/`: `ThrusterArray`, `ArrayConfig` — model 2–4 nozzle arrays with plume-plume interaction and combined thrust/Isp
+- `helicon/valdb/`: `ValidationDatabase` (JSON-lines) — add, query, delete, export `ValidationRecord` entries; `helicon valdb` CLI group
+- `helicon/widgets/`: `FieldTopologyWidget`, `CoilEditorWidget` — ipywidgets UI with matplotlib rendering for Jupyter
+- `helicon/validate/`: `RegressionSuite`, `save_baseline`, `compare_to_baseline` — automated annual regression against stored baselines; `helicon regression` CLI group
+- `helicon array` CLI command — combined multi-thruster array performance
+- `helicon plugins` CLI command — list registered plugins
+
+---
+
+## v2.0.0 (2026-03)
+
+### New Features
+
+**Engineering design tool**
+- `helicon/surrogate/`: `NozzleSurrogate` MLX MLP — train on PIC scan database via `mlx.nn`, predict thrust/η_d/plume angle in microseconds on Metal GPU; Monte Carlo UQ via `surrogate.uq`
+- `helicon/app/`: Streamlit interactive nozzle design explorer — real-time surrogate inference on Metal GPU, one-click dispatch to full WarpX PIC; `helicon app` launcher
+- `helicon/provenance.py`: JSON-lines audit trail — every design decision logged with inputs, outputs, and git SHA; lineage graph reconstruction
+- `helicon/export/`: STEP/IGES CAD export for optimised coil geometry via `cadquery`; `helicon export-cad` CLI command
+- `optimize/manufacturability.py`: REBCO coil buildability constraints — winding pack geometry, minimum bend radius, tape width discretisation
+- `optimize/multifidelity.py`: Three-tier multi-fidelity pipeline — Tier 1 analytical (seconds) → Tier 2 surrogate (µs) → Tier 3 WarpX PIC (hours); automatic candidate promotion
+- `helicon surrogate-train` CLI command
+
+---
+
+## v1.3.0 (2026-03)
+
+### New Features
+
+**Mission integration**
+- `helicon/mission/throttle.py`: Throttle curve generation — thrust and Isp as functions of power and mass flow rate; interpolation tables for mission planners; `helicon throttle-map` CLI command
+- `helicon/mission/trajectory.py`: Propellant budget and burn-time estimation for ΔV targets; `helicon mission` CLI command
+- `helicon/mission/spacecraft.py`: Spacecraft interaction model — backflow fraction, plume electron charging, magnetic torque from nozzle field on bus
+- `helicon/mission/pulsed.py`: Pulsed mission profiles for PPR-class engines — impulse-averaged thrust/Isp/η_d over burst cycles
+- `helicon/cloud/`: Cloud HPC backends — local, Lambda Labs, AWS p4d; `helicon scan --cloud` for remote WarpX submission
+
+---
+
+## v1.2.0 (2026-03)
+
+### New Features
+
+**Extended physics**
+- `helicon/neutrals/`: Monte Carlo neutral dynamics — `cross_sections.py` (ionisation, charge exchange, recombination), `monte_carlo.py` (neutral particle push on Metal GPU via MLX); replaces static background neutral model
+- `helicon/hybrid/`: CGL double-adiabatic electron fluid — `cgl_fluid.py` (Chew-Goldberger-Low electron pressure tensor), `lhdi.py` (lower-hybrid drift instability anomalous transport sub-grid model), `coupler.py` (WarpX ion PIC + MLX fluid electron coupling)
+- `postprocess/species.py`: Multi-ion species detachment tracking — separate η_d per species (D⁺, He²⁺, H⁺, α); MLX-accelerated species-resolved moment computation
+
+---
+
+## v1.1.0 (2026-03)
+
+### New Features
+
+**MLX-native acceleration**
+- `postprocess/thrust.py`: `_thrust_reduce_mlx` — thrust and mass-flow reduction on Metal GPU via `mlx.core`; auto-selected when MLX available
+- `postprocess/plume.py`: `compute_electron_magnetization(..., backend="mlx")` — electron magnetisation grid computed on Metal GPU
+- `fields/biot_savart.py`: `_compute_mlx` with `mlx.core.compile` for fused kernels; batch-evaluate B(r,z) on AMR-resolution grids via `vmap`
+- `optimize/analytical.py`: Fully differentiable Breizman-Arefiev paraxial model and Little-Choueiri C_T in MLX — `mlx.core.grad` through entire Tier-1 analytical pipeline
+- `benchmark.py`: `BenchmarkSuite` — NumPy vs MLX timing comparison for Biot-Savart, thrust reduction, electron magnetisation, analytical screening, and differentiable gradient; `helicon benchmark` CLI command
+- `perf/profiler.py`: `AppleSiliconProfiler` — chip detection, P/E core count, GPU cores, memory bandwidth probe, WarpX OpenMP and MLX tuning recommendations, unified memory capacity estimates
+
+---
+
+## v1.0.0 (2026-03)
+
+### Milestone: Validated Research Tool
+
+- All six validation cases passing with documented error bounds
+- Stable public API under semantic versioning: `helicon.Config`, `helicon.fields.compute()`, `helicon.run()`, `helicon.postprocess()`, `helicon.scan()`
+- `helicon/_reproducibility.py`: full run metadata per spec §14 — config hash, git SHA, WarpX version, random seeds, environment snapshot
+- `helicon doctor` reports backend availability across Metal, CUDA, OMP, and MLX
+
+---
 
 ## v0.4.0 (2026-03)
 
