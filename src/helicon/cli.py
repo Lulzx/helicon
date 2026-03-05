@@ -2009,5 +2009,68 @@ def mf_run(
         click.echo(f"Tier-3 outputs in: {output_dir}/")
 
 
+@mf_group.command("promote")
+@click.argument("candidate_dir", type=click.Path(exists=True))
+@click.option(
+    "--output", "output_dir", default=None, type=click.Path(), help="Override output dir"
+)
+@click.option("--json", "as_json", is_flag=True, help="Output result as JSON")
+def mf_promote(candidate_dir: str, output_dir: str | None, as_json: bool) -> None:
+    """Promote a single dry-run tier3 candidate to a full WarpX PIC run.
+
+    CANDIDATE_DIR is a tier3_* subdirectory produced by `helicon mf run`.
+    Reads tier3_meta.json, builds a SimConfig, and dispatches run_simulation().
+    """
+    import json as _json
+
+    from helicon.optimize.multifidelity import _candidate_to_config
+    from helicon.runner.launch import run_simulation
+
+    meta_path = Path(candidate_dir) / "tier3_meta.json"
+    if not meta_path.exists():
+        click.echo(f"No tier3_meta.json found in {candidate_dir}", err=True)
+        sys.exit(1)
+
+    meta = _json.loads(meta_path.read_text())
+    cid = meta.get("candidate_id", Path(candidate_dir).name)
+
+    if meta.get("status") == "completed":
+        click.echo(f"Candidate {cid} already completed. Re-running anyway.")
+
+    out = Path(output_dir) if output_dir else Path(candidate_dir) / "pic_run"
+    metrics = meta.get("tier2_metrics", {})
+
+    if not as_json:
+        click.echo(f"Promoting {cid} to full WarpX PIC → {out}")
+
+    try:
+        config = _candidate_to_config(metrics, output_dir=str(out))
+        run_result = run_simulation(config, output_dir=out, dry_run=False)
+        meta["status"] = "completed"
+        meta["wall_time_s"] = run_result.wall_time_s
+        meta["pic_output_dir"] = str(out)
+        meta_path.write_text(_json.dumps(meta, indent=2))
+
+        if as_json:
+            click.echo(
+                _json.dumps(
+                    {
+                        "candidate_id": cid,
+                        "status": "completed",
+                        "wall_time_s": run_result.wall_time_s,
+                        "pic_output_dir": str(out),
+                    },
+                    indent=2,
+                )
+            )
+        else:
+            click.echo(f"Completed in {run_result.wall_time_s:.1f} s → {out}")
+    except Exception as exc:
+        meta["status"] = f"error: {exc}"
+        meta_path.write_text(_json.dumps(meta, indent=2))
+        click.echo(f"Error: {exc}", err=True)
+        sys.exit(1)
+
+
 if __name__ == "__main__":
     main()

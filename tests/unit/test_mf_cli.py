@@ -204,3 +204,54 @@ class TestMfRun:
                 ],
             )
         assert result.exit_code != 0
+
+
+class TestMfPromote:
+    def _write_tier3_dir(self, tmpdir: str, status: str = "dry_run") -> str:
+        d = Path(tmpdir) / "tier3_t2_0001"
+        d.mkdir()
+        meta = {
+            "candidate_id": "t2_0001",
+            "tier2_score": 0.85,
+            "tier2_metrics": {
+                "eta_d": 0.88,
+                "thrust_N": 2.5e-4,
+                "coil_r": 0.1,
+                "coil_I": 20000.0,
+                "nozzle_length_m": 0.5,
+                "n0": 1e18,
+                "T_i_eV": 100.0,
+                "T_e_eV": 100.0,
+                "v_inj_ms": 50000.0,
+            },
+            "dry_run": True,
+            "status": status,
+        }
+        (d / "tier3_meta.json").write_text(json.dumps(meta))
+        return str(d)
+
+    def test_promote_missing_meta(self):
+        runner = CliRunner()
+        with tempfile.TemporaryDirectory() as tmp:
+            empty = Path(tmp) / "tier3_empty"
+            empty.mkdir()
+            result = runner.invoke(main, ["mf", "promote", str(empty)])
+        assert result.exit_code != 0
+
+    def test_promote_updates_status(self):
+        """Promote runs and writes completed or error status to meta."""
+        runner = CliRunner()
+        with tempfile.TemporaryDirectory() as tmp:
+            d = self._write_tier3_dir(tmp)
+            runner.invoke(
+                main, ["mf", "promote", d, "--output", str(Path(tmp) / "pic")]
+            )
+            meta = json.loads((Path(d) / "tier3_meta.json").read_text())
+            # Must have been updated — either completed or error, not still queued/dry_run
+            assert meta["status"] in ("completed",) or meta["status"].startswith("error:")
+
+    def test_promote_help(self):
+        runner = CliRunner()
+        result = runner.invoke(main, ["mf", "promote", "--help"])
+        assert result.exit_code == 0
+        assert "CANDIDATE_DIR" in result.output
